@@ -1,37 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WLTR Docs (web UI)
 
-## Getting Started
+Next.js (App Router) client for the **WLTR** REST API: laboratories, runs, calibration groups, method configs, and related admin flows. The UI talks to the backend either through a **same-origin BFF proxy** (default in dev) or **directly** to a public API URL (optional).
 
-First, run the development server:
+## Prerequisites
+
+- **Node.js** 20+ (LTS recommended)
+- **npm** 10+ (or compatible package manager)
+- A running **WLTR API** (default expectations below assume it on port **5000**)
+
+## Install
+
+```bash
+npm install
+```
+
+## Configuration
+
+| Variable | Where | Purpose |
+|----------|--------|---------|
+| `WLTR_API_ORIGIN` | Server only | Base URL of the backend **without** `/api` (no trailing slash). Used by `src/app/api/wltr/[[...path]]/route.ts` to proxy browser calls. Default: `http://localhost:5000`. |
+| `NEXT_PUBLIC_WLTR_DIRECT_API` | Client | Set to `true` to call the API from the browser **directly** instead of `/api/wltr`. Requires the API to allow your origin (CORS) and to accept the auth pattern the app uses (Bearer + refresh in `sessionStorage` when applicable). |
+| `NEXT_PUBLIC_WLTR_API_BASE_URL` | Client | Used when `NEXT_PUBLIC_WLTR_DIRECT_API=true`. Full API base including `/api`. Default: `http://localhost:5000/api`. |
+
+**Typical local setup:** leave direct API off; ensure the WLTR API is reachable at `WLTR_API_ORIGIN` so the Next.js route can proxy `/api/wltr/*` to `{WLTR_API_ORIGIN}/api/*`.
+
+**Production behind one hostname:** deploy the app, set `WLTR_API_ORIGIN` to your internal or public API origin (e.g. `https://api.example.com`). Clients use same origin; cookies for refresh can work with the BFF.
+
+## Run locally (development)
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Hot reload is enabled.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Build and run (production-style)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+By default the server listens on **port 3000**. Override with the standard Next.js / Node convention, for example:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+set PORT=8080
+npm run start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+On Unix:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+PORT=8080 npm run start
+```
 
-## Deploy on Vercel
+For a real deployment, run `npm run build` in CI or on the host, then `npm run start` under a process manager (systemd, PM2, Docker, Kubernetes, etc.) with `WLTR_API_ORIGIN` (and any `NEXT_PUBLIC_*` vars) set for that environment.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Other scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# WLTR-test-ui
+| Command | Description |
+|---------|-------------|
+| `npm run lint` | ESLint |
+| `npm test` | Vitest (once) |
+| `npm run test:watch` | Vitest watch mode |
+| `npm run generate:api-types` | Regenerates `openapi/wltr.openapi.json` stub and `src/lib/types/api.d.ts` from `scripts/generate-openapi-stub.mjs` |
+
+## API types
+
+OpenAPI-driven types are generated from the stub script, not from a live server. After changing `scripts/generate-openapi-stub.mjs`, run `npm run generate:api-types` and fix any TypeScript fallout if you consume the new paths.
