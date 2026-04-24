@@ -1,0 +1,210 @@
+"use client";
+
+import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
+import { createMethodConfig } from "@/lib/api/wltr-api";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+export default function NewMethodConfigPage() {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: "",
+    defaultRegressionType: 0,
+    defaultWeightingMode: 0,
+    forceZeroIntercept: false,
+    labelMode: 0,
+    minCorrelation: 0.99,
+    maxRSE: 0,
+    pctDiffLowBound: -20,
+    pctDiffHighBound: 20,
+    minPointsRequired: 5,
+    maxMissedPoints: 0,
+    icvLimitPercent: 20,
+    internalStandardResponseMin: "",
+    internalStandardResponseMax: "",
+  });
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await createMethodConfig({
+        ...form,
+        internalStandardResponseMin:
+          form.internalStandardResponseMin === "" ? null : Number(form.internalStandardResponseMin),
+        internalStandardResponseMax:
+          form.internalStandardResponseMax === "" ? null : Number(form.internalStandardResponseMax),
+      });
+      const id = String((res as { id?: string }).id ?? "");
+      router.replace(`/method-configs/${id}`);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <PageHeader title="New method configuration" />
+      <Card>
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <div>
+            <Label htmlFor="name">Name</Label>
+            <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="reg">Regression type (0–3)</Label>
+              <Select
+                id="reg"
+                value={String(form.defaultRegressionType)}
+                onChange={(e) => setForm({ ...form, defaultRegressionType: Number(e.target.value) })}
+              >
+                <option value={0}>0</option>
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={3}>3</option>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="wm">Weighting mode</Label>
+              <Select
+                id="wm"
+                value={String(form.defaultWeightingMode)}
+                onChange={(e) => setForm({ ...form, defaultWeightingMode: Number(e.target.value) })}
+              >
+                <option value={0}>0 — None (w = 1)</option>
+                <option value={1}>1 — Inverse X (w = 1/X)</option>
+                <option value={2}>2 — Inverse X² (w = 1/X²)</option>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="lm">Label mode (0–1)</Label>
+              <Select
+                id="lm"
+                value={String(form.labelMode)}
+                onChange={(e) => setForm({ ...form, labelMode: Number(e.target.value) })}
+              >
+                <option value={0}>0</option>
+                <option value={1}>1</option>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="fzi"
+                type="checkbox"
+                checked={form.forceZeroIntercept}
+                onChange={(e) => setForm({ ...form, forceZeroIntercept: e.target.checked })}
+              />
+              <Label htmlFor="fzi">Force zero intercept</Label>
+            </div>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="minCorrelation">minCorrelation</Label>
+              <Input
+                id="minCorrelation"
+                type="number"
+                step="0.0001"
+                value={form.minCorrelation}
+                onChange={(e) => setForm({ ...form, minCorrelation: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="maxRSE">maxRSE</Label>
+              <Input id="maxRSE" type="number" step="0.0001" value={form.maxRSE} onChange={(e) => setForm({ ...form, maxRSE: Number(e.target.value) })} />
+            </div>
+            <div>
+              <Label htmlFor="pctDiffLowBound">pctDiffLowBound</Label>
+              <Input
+                id="pctDiffLowBound"
+                type="number"
+                step="0.0001"
+                value={form.pctDiffLowBound}
+                onChange={(e) => setForm({ ...form, pctDiffLowBound: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="pctDiffHighBound">pctDiffHighBound</Label>
+              <Input
+                id="pctDiffHighBound"
+                type="number"
+                step="0.0001"
+                value={form.pctDiffHighBound}
+                onChange={(e) => setForm({ ...form, pctDiffHighBound: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="minPointsRequired">minPointsRequired</Label>
+              <Input
+                id="minPointsRequired"
+                type="number"
+                value={form.minPointsRequired}
+                onChange={(e) => setForm({ ...form, minPointsRequired: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="maxMissedPoints">maxMissedPoints</Label>
+              <Input
+                id="maxMissedPoints"
+                type="number"
+                value={form.maxMissedPoints}
+                onChange={(e) => setForm({ ...form, maxMissedPoints: Number(e.target.value) })}
+              />
+            </div>
+            <div>
+              <Label htmlFor="icvLimitPercent">icvLimitPercent</Label>
+              <Input
+                id="icvLimitPercent"
+                type="number"
+                step="0.0001"
+                value={form.icvLimitPercent}
+                onChange={(e) => setForm({ ...form, icvLimitPercent: Number(e.target.value) })}
+              />
+            </div>
+          </div>
+          <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
+            <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
+              IS response bounds (optional)
+            </div>
+            <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+              Inclusive thresholds on <strong>mean</strong> internal-standard response for summary warnings (
+              <code className="text-[11px]">internalStandardResponseMin</code> /{" "}
+              <code className="text-[11px]">Max</code>). Leave blank for no bound.
+            </p>
+            <div className="mt-3 grid gap-4 md:grid-cols-2">
+              <div>
+                <Label htmlFor="isMin">internalStandardResponseMin</Label>
+                <Input
+                  id="isMin"
+                  type="number"
+                  step="any"
+                  value={form.internalStandardResponseMin}
+                  onChange={(e) => setForm({ ...form, internalStandardResponseMin: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="isMax">internalStandardResponseMax</Label>
+                <Input
+                  id="isMax"
+                  type="number"
+                  step="any"
+                  value={form.internalStandardResponseMax}
+                  onChange={(e) => setForm({ ...form, internalStandardResponseMax: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+          {error ? <div className="text-sm text-red-600">{error}</div> : null}
+          <Button type="submit" disabled={busy}>
+            {busy ? "Creating…" : "Create"}
+          </Button>
+        </form>
+      </Card>
+    </div>
+  );
+}
