@@ -1,6 +1,9 @@
 "use client";
 
+import { CalibrationGroupComputePanel } from "@/components/calibration-group-compute-panel";
 import { CalibrationGroupReadinessPanel } from "@/components/calibration-group-readiness-panel";
+import { CalibrationGroupRegressionDebugPanel } from "@/components/calibration-group-regression-debug-panel";
+import { CalibrationGroupRegressionInputsPanel } from "@/components/calibration-group-regression-inputs-panel";
 import { InternalStandardSummariesPanel } from "@/components/internal-standard-summaries-panel";
 import { Badge, Button, Card, Label, PageHeader, Select } from "@/components/ui";
 import {
@@ -201,6 +204,8 @@ function useGroupEdit(groupId: string, group: GroupDetail, onSaved: () => void) 
         icvRunId: icvRunId.trim() || null,
       });
       await qc.invalidateQueries({ queryKey: ["calibration-groups", groupId] });
+      await qc.invalidateQueries({ queryKey: ["calibration-group-regression-inputs", groupId] });
+      await qc.invalidateQueries({ queryKey: ["calibration-group-readiness", groupId] });
       onSaved();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to save.");
@@ -410,6 +415,7 @@ export default function CalibrationGroupDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { me } = useAuth();
   const canEdit = hasPermission(me, PERMS.runsUpload);
+  const canViewRegressionDebug = hasPermission(me, PERMS.groupsApprove);
   const [editing, setEditing] = useState(false);
 
   const groupQuery = useQuery({
@@ -458,6 +464,14 @@ export default function CalibrationGroupDetailPage() {
       ) : null}
 
       <CalibrationGroupReadinessPanel groupId={id} me={me} />
+      {canEditGroup ? (
+        <CalibrationGroupComputePanel groupId={id} me={me} canCompute />
+      ) : null}
+      <CalibrationGroupRegressionInputsPanel
+        groupId={id}
+        canManagePoints={Boolean(group && canEdit && isEditable(group.status))}
+      />
+      {canViewRegressionDebug ? <CalibrationGroupRegressionDebugPanel groupId={id} me={me} /> : null}
       <InternalStandardSummariesPanel variant="calibrationGroup" resourceId={id} me={me} />
     </div>
   );

@@ -1,72 +1,130 @@
 "use client";
 
-import { apiFetch } from "@/lib/api/client";
-import { parseErrorResponse } from "@/lib/api/errors";
-import { Button, Card, Input, Label } from "@/components/ui";
+import { Button, Card, Input, Label, Textarea } from "@/components/ui";
+import { acceptInviteRegister } from "@/lib/api/wltr-api";
+import { INVITE_ACCEPT_PATH } from "@/lib/invite-links";
+import Link from "next/link";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
 
-function AcceptForm() {
+function AcceptInviteFormInner() {
   const sp = useSearchParams();
-  const [token, setToken] = useState(sp.get("token") ?? "");
-  const [password, setPassword] = useState("");
-  const [done, setDone] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [identityError, setIdentityError] = useState<string | null>(null);
 
-  async function onSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    document.title = `Accept invite — WLTR QA`;
+    return () => {
+      document.title = `WLTR QA`;
+    };
+  }, []);
+
+  const tokenFromLink = !!sp?.get("token")?.trim();
+  const [token, setToken] = useState(() => sp.get("token")?.trim() ?? "");
+
+  useEffect(() => {
+    const t = sp?.get("token")?.trim();
+    if (t) setToken(t);
+  }, [sp]);
+
+  const [pwd, setPwd] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setBusy(true);
-    setError(null);
+    setIdentityError(null);
+    setResult(null);
+
     try {
-      const res = await apiFetch("Auth/accept-invite", {
-        method: "POST",
-        skipAuth: true,
-        body: JSON.stringify({ token, password }),
-      });
-      if (!res.ok) throw await parseErrorResponse(res);
-      setDone(true);
+      setBusy(true);
+      const fd = new FormData();
+      fd.set("Token", token);
+      fd.set("Password", pwd);
+      fd.set("ConfirmPassword", pwd);
+
+      await acceptInviteRegister(fd);
+      const tail = tokenFromLink ? " (token came from your invitation URL.)" : "";
+      setResult(`Success. You can sign in now.${tail}`);
+      setPwd("");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Request failed");
+      setIdentityError(err instanceof Error ? err.message : "Invitation failed.");
     } finally {
       setBusy(false);
     }
   }
 
-  return done ? (
-    <div className="text-sm text-neutral-700 dark:text-neutral-300">Invitation accepted. You can sign in.</div>
-  ) : (
-    <form className="mt-6 space-y-4" onSubmit={onSubmit}>
-      <div>
-        <Label htmlFor="token">Invitation token</Label>
-        <Input id="token" value={token} onChange={(e) => setToken(e.target.value)} required />
+  return (
+    <Card className={tokenFromLink ? "ring-2 ring-neutral-300 dark:ring-neutral-600" : ""}>
+      <h1 className="text-xl font-semibold">Accept invite</h1>
+      <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+        Invitation links match{" "}
+        <code className="rounded bg-neutral-100 px-1 font-mono text-xs dark:bg-neutral-800">{INVITE_ACCEPT_PATH}?token=&lt;raw-token&gt;</code>.
+        Opening that link fills the token below; otherwise paste it from whoever invited you.
+      </p>
+      <div className="mt-4 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300">
+        {tokenFromLink
+          ? "Token prefilled from the URL query (`token`)."
+          : "No `token` in the URL — paste the plaintext token manually."}
       </div>
-      <div>
-        <Label htmlFor="password">Choose password</Label>
-        <Input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+
+      <form className="mt-6 space-y-4" autoComplete="on" onSubmit={submit}>
+        {tokenFromLink ? (
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">
+            Same plaintext value as shown once after creating an invitation; not stored retrievably on the server.
+          </p>
+        ) : null}
+
+        <div>
+          <Label htmlFor="invite-token">Invitation token</Label>
+          <Textarea
+            id="invite-token"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            spellCheck={false}
+            className="min-h-[7rem] font-mono text-xs"
+            aria-invalid={!!identityError}
+            placeholder="Invitation token…"
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="invite-pwd">Password</Label>
+          <Input
+            id="invite-pwd"
+            name="pwd"
+            type="password"
+            autoComplete="new-password"
+            value={pwd}
+            onChange={(e) => setPwd(e.target.value)}
+            required
+            placeholder="Define your password"
+          />
+        </div>
+        {identityError ? <div className="text-sm text-red-600">{identityError}</div> : null}
+        {result ? <div className="text-sm text-emerald-700 dark:text-emerald-400">{result}</div> : null}
+        <Button type="submit" className="w-full" disabled={busy}>
+          {busy ? "Accepting…" : "Accept invitation"}
+        </Button>
+      </form>
+      <div className="mt-4 text-sm">
+        <Link className="text-neutral-700 underline dark:text-neutral-300" href="/login">
+          Sign in
+        </Link>
       </div>
-      {error ? <div className="text-sm text-red-600">{error}</div> : null}
-      <Button type="submit" className="w-full" disabled={busy}>
-        {busy ? "Submitting…" : "Create account"}
-      </Button>
-    </form>
+    </Card>
   );
 }
 
 export default function AcceptInvitePage() {
   return (
-    <Card>
-      <h1 className="text-xl font-semibold">Accept invitation</h1>
-      <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">Finish registration using your one-time token.</p>
-      <Suspense fallback={<div className="mt-6 text-sm">Loading…</div>}>
-        <AcceptForm />
-      </Suspense>
-    </Card>
+    <Suspense
+      fallback={
+        <div className="animate-pulse rounded-xl border border-neutral-200 bg-neutral-50 p-6 text-sm dark:border-neutral-800 dark:bg-neutral-900">
+          Loading…
+        </div>
+      }
+    >
+      <AcceptInviteFormInner />
+    </Suspense>
   );
 }

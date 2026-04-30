@@ -63,8 +63,14 @@ For a real deployment, run `npm run build` in CI or on the host, then `npm run s
 | `npm run lint` | ESLint |
 | `npm test` | Vitest (once) |
 | `npm run test:watch` | Vitest watch mode |
-| `npm run generate:api-types` | Regenerates `openapi/wltr.openapi.json` stub and `src/lib/types/api.d.ts` from `scripts/generate-openapi-stub.mjs` |
+| `npm run generate:openapi` | Writes `openapi/wltr.openapi.json` from `openapi/wltr.openapi.source.json` (if present) or from the built-in stub in `scripts/generate-openapi.mjs` |
+| `npm run generate:api-types` | Runs `generate:openapi`, then `openapi-typescript` → `src/lib/types/api.d.ts` |
 
 ## API types
 
-OpenAPI-driven types are generated from the stub script, not from a live server. After changing `scripts/generate-openapi-stub.mjs`, run `npm run generate:api-types` and fix any TypeScript fallout if you consume the new paths.
+Types are generated from `openapi/wltr.openapi.json`, not from a live server.
+
+- **Full spec (recommended for accurate types):** save the backend export as `openapi/wltr.openapi.source.json`, or set `WLTR_OPENAPI_PATH` to that file, then run `npm run generate:api-types`.
+- **Stub:** if no source file is present, `scripts/generate-openapi.mjs` emits a smaller document (metadata, tags, Bearer security, ProblemDetails on errors, and path coverage aligned to this client).
+
+After changing path coverage in `scripts/generate-openapi.mjs` or refreshing the source OpenAPI, run `npm run generate:api-types` and fix any TypeScript fallout where you consume new paths or stricter response types.

@@ -10,14 +10,18 @@ export const RunStatus = {
   Valid: 0,
   ValidWithWarnings: 1,
   Invalid: 2,
+  /** Fourth `RunStatus` member in newer API snapshots; verify label against live Swagger/domain. */
+  Unknown: 3,
 } as const;
 export type RunStatus = (typeof RunStatus)[keyof typeof RunStatus];
 
+/** Match `Wltr.Domain.Enums.RegressionType`; weighting is separate (`WeightingMode`). */
 export const RegressionType = {
   Linear: 0,
   Quadratic: 1,
-  WeightedLinear: 2,
-  WeightedQuadratic: 3,
+  Average: 2,
+  /** Backend-specific / reserved fourth member — confirm naming in Swagger. */
+  Type3: 3,
 } as const;
 
 /** API integers: 0 = None, 1 = InverseX (1/X), 2 = InverseXSquared (1/X²). */
@@ -50,6 +54,7 @@ export const RUN_STATUS_LABEL: Record<number, string> = {
   0: "Valid",
   1: "Valid with warnings",
   2: "Invalid",
+  3: "Unknown",
 };
 
 export const RUN_TYPE_LABEL: Record<number, string> = {
@@ -57,11 +62,39 @@ export const RUN_TYPE_LABEL: Record<number, string> = {
   1: "ICV",
 };
 
+/** Display strings for method config `defaultRegressionType` / snapshot `regressionType` integers. */
+export const REGRESSION_TYPE_LABEL: Record<number, string> = {
+  0: "Linear",
+  1: "Quadratic",
+  2: "Average",
+  3: "Type 3",
+};
+
 export const GROUP_STATUS_LABEL: Record<number, string> = {
   0: "Draft",
   1: "Computed",
   2: "Approved",
   3: "Rejected",
+};
+
+/** `Wltr.Domain.Enums.ExclusionReason` (JSON integers). Manual POST body accepts 1 or 2 only. */
+export const ExclusionReason = {
+  None: 0,
+  ManualExclude: 1,
+  PctDiffOutOfRange: 2,
+  MissingRatio: 3,
+  MissingIS: 4,
+  InvalidX: 5,
+} as const;
+export type ExclusionReason = (typeof ExclusionReason)[keyof typeof ExclusionReason];
+
+export const EXCLUSION_REASON_LABEL: Record<number, string> = {
+  0: "None",
+  1: "Manual exclude",
+  2: "% diff out of range",
+  3: "Missing ratio",
+  4: "Missing IS",
+  5: "Invalid X",
 };
 
 export type MeResponse = {

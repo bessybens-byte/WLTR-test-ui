@@ -2,6 +2,7 @@
 
 import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import { createMethodConfig } from "@/lib/api/wltr-api";
+import { REGRESSION_TYPE_LABEL } from "@/lib/types/wltr";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -58,16 +59,17 @@ export default function NewMethodConfigPage() {
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <Label htmlFor="reg">Regression type (0–3)</Label>
+              <Label htmlFor="reg">Regression type</Label>
               <Select
                 id="reg"
                 value={String(form.defaultRegressionType)}
                 onChange={(e) => setForm({ ...form, defaultRegressionType: Number(e.target.value) })}
               >
-                <option value={0}>0</option>
-                <option value={1}>1</option>
-                <option value={2}>2</option>
-                <option value={3}>3</option>
+                {[0, 1, 2, 3].map((v) => (
+                  <option key={v} value={v}>
+                    {v} — {REGRESSION_TYPE_LABEL[v]}
+                  </option>
+                ))}
               </Select>
             </div>
             <div>

@@ -7,8 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "generate:openapi-stub": "node scripts/generate-openapi-stub.mjs",
-    "generate:api-types": "npm run generate:openapi-stub && openapi-typescript openapi/wltr.openapi.json -o src/lib/types/api.d.ts",
+    "generate:openapi": "node scripts/generate-openapi.mjs",
+    "generate:openapi-stub": "node scripts/generate-openapi.mjs",
+    "generate:api-types": "npm run generate:openapi && openapi-typescript openapi/wltr.openapi.json -o src/lib/types/api.d.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

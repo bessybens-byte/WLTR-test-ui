@@ -139,6 +139,16 @@ export async function createInvitation(body: unknown): Promise<Record<string, un
   return apiJson(`Invitations`, { method: "POST", body: JSON.stringify(body) });
 }
 
+/** Multipart form: Token, Password, ConfirmPassword (ASP.NET model binding). */
+export async function acceptInviteRegister(form: FormData): Promise<void> {
+  const res = await apiFetch(`Auth/accept-invite`, {
+    method: "POST",
+    body: form,
+    skipAuth: true,
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
 export async function listAnalytes(params?: {
   page?: number;
   pageSize?: number;
@@ -324,6 +334,53 @@ export async function getCalibrationGroupReadiness(
   params?: { laboratoryId?: string },
 ): Promise<Record<string, unknown>> {
   return apiJson(`calibration-groups/${groupId}/readiness`, { searchParams: params });
+}
+
+/** Per-analyte assembled X/Y/weight tables; after compute rows include diagnostics from stored points. */
+export async function getCalibrationGroupRegressionInputs(
+  groupId: string,
+): Promise<Record<string, unknown>[]> {
+  return apiJson(`calibration-groups/${groupId}/regression-inputs`);
+}
+
+/** Weighted regression for all analytes; **204** on success. Clears curves/points on recompute. Requires `perm.runs.upload`; group Draft or Computed. */
+export async function computeCalibrationGroup(groupId: string): Promise<void> {
+  const res = await apiFetch(`calibration-groups/${groupId}/compute`, { method: "POST" });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Full regression QA snapshot for one analyte after compute — requires **`perm.groups.approve`**. Platform operators must pass **`laboratoryId`**. */
+export async function getCalibrationGroupRegressionDebug(
+  groupId: string,
+  analyteId: string,
+  params?: { laboratoryId?: string },
+): Promise<Record<string, unknown>> {
+  return apiJson(
+    `calibration-groups/${groupId}/analytes/${encodeURIComponent(analyteId)}/regression-debug`,
+    { searchParams: params },
+  );
+}
+
+/** Exclude a persisted calibration point (after compute); requires `perm.runs.upload`; group Draft or Computed. */
+export async function excludeCalibrationPoint(
+  groupId: string,
+  pointId: string,
+  body: { reason: number; note: string },
+): Promise<void> {
+  const res = await apiFetch(
+    `calibration-groups/${groupId}/points/${encodeURIComponent(pointId)}/exclude`,
+    { method: "POST", body: JSON.stringify(body) },
+  );
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Re-include a previously excluded calibration point. */
+export async function reinstateCalibrationPoint(groupId: string, pointId: string): Promise<void> {
+  const res = await apiFetch(
+    `calibration-groups/${groupId}/points/${encodeURIComponent(pointId)}/exclude`,
+    { method: "DELETE" },
+  );
+  if (!res.ok) throw await parseErrorResponse(res);
 }
 
 /**
