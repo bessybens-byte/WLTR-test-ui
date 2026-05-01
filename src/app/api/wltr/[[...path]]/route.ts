@@ -12,6 +12,17 @@ function joinPath(segments: string[] | undefined): string {
   return segments.map((s) => encodeURIComponent(s)).join("/");
 }
 
+/** JwtBearer rejects bad/expired Bearer with 401 before AllowAnonymous endpoints run — do not forward. */
+function shouldStripForwardedAuth(joined: string): boolean {
+  return (
+    joined === "Auth/login" ||
+    joined === "Auth/refresh" ||
+    joined === "Auth/forgot-password" ||
+    joined === "Auth/reset-password" ||
+    joined === "Auth/accept-invite"
+  );
+}
+
 async function readRefreshFromCookie(): Promise<string | undefined> {
   const c = await cookies();
   return c.get(REFRESH_COOKIE)?.value;
@@ -51,38 +62,51 @@ async function proxy(
   url.search = request.nextUrl.search;
 
   const headers = new Headers();
+  const stripAuth = shouldStripForwardedAuth(joined);
   const pass = ["content-type", "accept", "authorization", "user-agent"];
   for (const h of pass) {
+    if (stripAuth && h === "authorization") continue;
     const v = request.headers.get(h);
     if (v) headers.set(h, v);
   }
 
-  let bodyText: string | undefined;
-  if (method !== "GET" && method !== "HEAD") {
-    bodyText = await request.text();
-  }
-
   const authPath = joined.startsWith("Auth/");
-  if (authPath && (joined === "Auth/refresh" || joined === "Auth/logout") && bodyText) {
-    try {
-      const j = JSON.parse(bodyText) as Record<string, unknown>;
-      if (!j.refreshToken) {
+  const refreshLogout = authPath && (joined === "Auth/refresh" || joined === "Auth/logout");
+
+  let body: BodyInit | undefined;
+  if (method !== "GET" && method !== "HEAD") {
+    if (refreshLogout) {
+      let bodyText = await request.text();
+      if (bodyText) {
+        try {
+          const j = JSON.parse(bodyText) as Record<string, unknown>;
+          if (!j.refreshToken) {
+            const rt = await readRefreshFromCookie();
+            if (rt) j.refreshToken = rt;
+            bodyText = JSON.stringify(j);
+          }
+        } catch {
+          /* ignore */
+        }
+      } else {
         const rt = await readRefreshFromCookie();
-        if (rt) j.refreshToken = rt;
-        bodyText = JSON.stringify(j);
+        if (rt) bodyText = JSON.stringify({ refreshToken: rt });
       }
-    } catch {
-      /* ignore */
+      body = bodyText;
+    } else {
+      const inboundCt = request.headers.get("content-type") || "";
+      if (inboundCt.includes("multipart/form-data")) {
+        body = await request.arrayBuffer();
+      } else {
+        body = await request.text();
+      }
     }
-  } else if (authPath && (joined === "Auth/refresh" || joined === "Auth/logout") && !bodyText) {
-    const rt = await readRefreshFromCookie();
-    if (rt) bodyText = JSON.stringify({ refreshToken: rt });
   }
 
   const upstream = await fetch(url.toString(), {
     method,
     headers,
-    body: bodyText,
+    body,
     redirect: "manual",
   });
 

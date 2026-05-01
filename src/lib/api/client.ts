@@ -60,6 +60,8 @@ export async function apiFetch(path: string, init?: ApiFetchInit): Promise<Respo
   const { searchParams, skipAuth, skipRefresh, ...rest } = init || {};
   const url = buildApiUrl(path.replace(/^\//, ""), searchParams);
   const headers = new Headers(rest.headers);
+  /** Invalid/expired Bearer causes JwtBearer middleware to return 401 before anonymous actions run — drop it explicitly. */
+  if (skipAuth) headers.delete("Authorization");
   const token = getAccessToken();
   if (token && !skipAuth && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);

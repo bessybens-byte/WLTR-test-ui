@@ -139,12 +139,20 @@ export async function createInvitation(body: unknown): Promise<Record<string, un
   return apiJson(`Invitations`, { method: "POST", body: JSON.stringify(body) });
 }
 
-/** Multipart form: Token, Password, ConfirmPassword (ASP.NET model binding). */
-export async function acceptInviteRegister(form: FormData): Promise<void> {
+/** JSON matches OpenAPI `/api/Auth/accept-invite` (multipart was mangled when proxied via `request.text()`). */
+export async function acceptInviteRegister(payload: {
+  token: string;
+  password: string;
+  confirmPassword?: string;
+}): Promise<void> {
   const res = await apiFetch(`Auth/accept-invite`, {
     method: "POST",
-    body: form,
     skipAuth: true,
+    body: JSON.stringify({
+      token: payload.token,
+      password: payload.password,
+      confirmPassword: payload.confirmPassword ?? payload.password,
+    }),
   });
   if (!res.ok) throw await parseErrorResponse(res);
 }
