@@ -15,6 +15,12 @@ async function plotly(): Promise<PlotlyStatic> {
   return inst as PlotlyStatic;
 }
 
+function isPlotDisplayed(el: HTMLElement): boolean {
+  if (!el.classList.contains("js-plotly-plot")) return false;
+  const { width, height } = el.getBoundingClientRect();
+  return width > 0 && height > 0;
+}
+
 /** Renders Plotly **`data` / `layout` / `config`** from the calibration chart API (`perm.view`). */
 export function CalibrationPlotlyChart({
   chartJson,
@@ -43,34 +49,34 @@ export function CalibrationPlotlyChart({
     if (!el || !payload) return;
 
     let alive = true;
+    let ro: ResizeObserver | null = null;
+
     void plotly().then(async (Plotly) => {
       if (!alive) return;
       await Plotly.react(el, payload.data, payload.layout, {
         ...(typeof payload.config === "object" && payload.config !== null ? payload.config : {}),
         responsive: true,
       });
+      if (!alive) return;
+
+      ro = new ResizeObserver(() => {
+        if (!isPlotDisplayed(el)) return;
+        try {
+          Plotly.Plots.resize(el);
+        } catch {
+          // Plotly throws if the div is not yet a displayed plot (e.g. hidden tab).
+        }
+      });
+      ro.observe(el);
     });
 
     return () => {
       alive = false;
+      ro?.disconnect();
       void plotly().then((Plotly) => {
-        Plotly.purge(el);
+        if (el.classList.contains("js-plotly-plot")) Plotly.purge(el);
       });
     };
-  }, [payload]);
-
-  useEffect(() => {
-    if (!payload) return;
-    const el = ref.current;
-    if (!el) return;
-
-    const ro = new ResizeObserver(() => {
-      void plotly().then((Plotly) => {
-        Plotly.Plots.resize(el);
-      });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
   }, [payload]);
 
   if (!payload) {
