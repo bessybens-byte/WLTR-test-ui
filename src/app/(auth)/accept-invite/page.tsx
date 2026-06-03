@@ -37,7 +37,7 @@ function AcceptInviteFormInner() {
 
     try {
       setBusy(true);
-      await acceptInviteRegister({ token: token.trim(), password: pwd, confirmPassword: pwd });
+      await acceptInviteRegister({ token: token.trim(), password: pwd });
       const tail = tokenFromLink ? " (token came from your invitation URL.)" : "";
       setResult(`Success. You can sign in now.${tail}`);
       setPwd("");

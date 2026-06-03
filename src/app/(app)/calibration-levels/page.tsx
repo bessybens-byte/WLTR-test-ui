@@ -3,11 +3,15 @@
 import { Button, Card, EmptyState, PageHeader } from "@/components/ui";
 import { PaginationBar } from "@/components/pagination";
 import { listCalibrationLevels } from "@/lib/api/wltr-api";
+import { hasPermission, PERMS } from "@/lib/types/wltr";
+import { useAuth } from "@/providers/auth-provider";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 
 export default function CalibrationLevelsPage() {
+  const { me } = useAuth();
+  const canEdit = hasPermission(me, PERMS.configEdit);
   const [page, setPage] = useState(1);
   const pageSize = 25;
   const q = useQuery({
@@ -20,9 +24,11 @@ export default function CalibrationLevelsPage() {
       <PageHeader
         title="Calibration levels"
         actions={
-          <Link href="/calibration-levels/new">
-            <Button>New level</Button>
-          </Link>
+          canEdit ? (
+            <Link href="/calibration-levels/new">
+              <Button>New level</Button>
+            </Link>
+          ) : null
         }
       />
       <Card>

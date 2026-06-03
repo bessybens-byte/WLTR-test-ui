@@ -1,9 +1,12 @@
 "use client";
 
+import { CalibrationGroupExcludedAnalytesPanel } from "@/components/calibration-group-excluded-analytes-panel";
 import { CalibrationGroupComputePanel } from "@/components/calibration-group-compute-panel";
 import { CalibrationGroupReadinessPanel } from "@/components/calibration-group-readiness-panel";
 import { CalibrationGroupRegressionDebugPanel } from "@/components/calibration-group-regression-debug-panel";
 import { CalibrationGroupRegressionInputsPanel } from "@/components/calibration-group-regression-inputs-panel";
+import { CalibrationGroupRegressionResultsPanel } from "@/components/calibration-group-regression-results-panel";
+import { CalibrationGroupWorkflowPanel } from "@/components/calibration-group-workflow-panel";
 import { InternalStandardSummariesPanel } from "@/components/internal-standard-summaries-panel";
 import { Badge, Button, Card, Label, PageHeader, Select } from "@/components/ui";
 import {
@@ -33,6 +36,7 @@ type GroupDetail = Readonly<{
   calRunIds: readonly string[];
   computedAt: string | null;
   computationVersion: string | null;
+  computationStale: boolean;
   createdAt: string;
 }>;
 
@@ -83,6 +87,7 @@ function mapGroupDetail(row: Record<string, unknown>, id: string): GroupDetail {
     calRunIds: Array.isArray(row.calRunIds) ? (row.calRunIds as unknown[]).map((v) => s(v)) : [],
     computedAt: typeof row.computedAt === "string" ? row.computedAt : null,
     computationVersion: typeof row.computationVersion === "string" ? row.computationVersion : null,
+    computationStale: Boolean(row.isComputationStale ?? row.computationStale),
     createdAt: s(row.createdAt),
   };
 }
@@ -415,7 +420,9 @@ export default function CalibrationGroupDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { me } = useAuth();
   const canEdit = hasPermission(me, PERMS.runsUpload);
+  const canCompute = hasPermission(me, PERMS.runsUpload);
   const canViewRegressionDebug = hasPermission(me, PERMS.groupsApprove);
+  const canViewCalibrationChart = hasPermission(me, PERMS.view);
   const [editing, setEditing] = useState(false);
 
   const groupQuery = useQuery({
@@ -464,13 +471,28 @@ export default function CalibrationGroupDetailPage() {
       ) : null}
 
       <CalibrationGroupReadinessPanel groupId={id} me={me} />
-      {canEditGroup ? (
+      <CalibrationGroupExcludedAnalytesPanel groupId={id} canEdit={canEdit} />
+      {canCompute && group && isEditable(group.status) ? (
         <CalibrationGroupComputePanel groupId={id} me={me} canCompute />
+      ) : null}
+      {group && group.status >= CalibrationGroupStatus.Computed ? (
+        <CalibrationGroupWorkflowPanel
+          groupStatus={group.status}
+          computationStale={group.computationStale}
+          me={me}
+        />
       ) : null}
       <CalibrationGroupRegressionInputsPanel
         groupId={id}
         canManagePoints={Boolean(group && canEdit && isEditable(group.status))}
       />
+      {canViewCalibrationChart ? (
+        <CalibrationGroupRegressionResultsPanel
+          groupId={id}
+          me={me}
+          canSummarizeFromDebug={canViewRegressionDebug}
+        />
+      ) : null}
       {canViewRegressionDebug ? <CalibrationGroupRegressionDebugPanel groupId={id} me={me} /> : null}
       <InternalStandardSummariesPanel variant="calibrationGroup" resourceId={id} me={me} />
     </div>

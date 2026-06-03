@@ -63,7 +63,9 @@ const paths = {
   "/api/calibration-levels": ["get", "post"],
   "/api/calibration-levels/{id}": ["get", "put", "delete"],
   "/api/instruments": ["get", "post"],
-  "/api/instruments/{id}": ["get"],
+  "/api/instruments/{id}": ["get", "put", "delete"],
+  "/api/instruments/{id}/suppressed-analytes": ["get", "post"],
+  "/api/instruments/{id}/suppressed-analytes/{analyteId}": ["delete"],
   "/api/internal-standards": ["get", "post"],
   "/api/internal-standards/{id}": ["get", "put", "delete"],
   "/api/Invitations": ["post"],
@@ -94,9 +96,13 @@ const paths = {
   "/api/calibration-groups/{id}/regression-inputs": ["get"],
   "/api/calibration-groups/{id}/compute": ["post"],
   "/api/calibration-groups/{id}/analytes/{analyteId}/regression-debug": ["get"],
+  "/api/calibration-groups/{id}/analytes/{analyteId}/chart": ["get"],
   "/api/calibration-groups/{id}/internal-standard-summaries": ["get"],
   "/api/calibration-groups/{id}/points/{pointId}/exclude": ["post", "delete"],
+  "/api/calibration-groups/{id}/excluded-analytes": ["get", "post"],
+  "/api/calibration-groups/{id}/excluded-analytes/{analyteId}": ["delete"],
   "/api/Users": ["get"],
+  "/api/Users/{userId}": ["get"],
   "/api/Users/{userId}/deactivate": ["put"],
   "/api/Users/{userId}/reactivate": ["put"],
   "/": ["get"],
@@ -230,6 +236,11 @@ function buildQueryParameters(method, routePath) {
   }
 
   if (routePath === "/api/calibration-groups/{id}/analytes/{analyteId}/regression-debug") {
+    parameters.push({ name: "laboratoryId", in: "query", schema: { type: "string", format: "uuid" } });
+    return parameters;
+  }
+
+  if (routePath === "/api/calibration-groups/{id}/analytes/{analyteId}/chart") {
     parameters.push({ name: "laboratoryId", in: "query", schema: { type: "string", format: "uuid" } });
     return parameters;
   }

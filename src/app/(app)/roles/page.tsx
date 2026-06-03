@@ -3,23 +3,11 @@
 import { Button, Card, EmptyState, Input, Label, PageHeader } from "@/components/ui";
 import { PaginationBar } from "@/components/pagination";
 import { assignRoles, createRole, listRoles, removeRoles } from "@/lib/api/wltr-api";
+import { ALL_PERMISSIONS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-
-const ALL_PERMS = [
-  "perm.view",
-  "perm.runs.upload",
-  "perm.runs.delete",
-  "perm.groups.approve",
-  "perm.config.edit",
-  "perm.users.manage_lab",
-  "perm.roles.manage_lab",
-  "perm.laboratories.manage",
-  "perm.laboratories.create",
-  "perm.platform.manage",
-];
 
 export default function RolesPage() {
   const { me } = useAuth();
@@ -114,7 +102,7 @@ export default function RolesPage() {
           <div className="space-y-2">
             <div className="text-sm text-neutral-600 dark:text-neutral-400">Permissions</div>
             <div className="grid gap-2 md:grid-cols-2">
-              {ALL_PERMS.map((p) => (
+              {ALL_PERMISSIONS.map((p) => (
                 <label key={p} className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={perms.includes(p)} onChange={() => togglePerm(p)} />
                   {p}

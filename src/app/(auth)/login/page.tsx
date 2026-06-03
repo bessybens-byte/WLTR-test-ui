@@ -4,15 +4,19 @@ import { Button, Card, Input, Label } from "@/components/ui";
 import { useAuth } from "@/providers/auth-provider";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, me, loading } = useAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!loading && me) router.replace("/dashboard");
+  }, [loading, me, router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,6 +31,8 @@ export default function LoginPage() {
       setBusy(false);
     }
   }
+
+  if (loading || me) return null;
 
   return (
     <Card>

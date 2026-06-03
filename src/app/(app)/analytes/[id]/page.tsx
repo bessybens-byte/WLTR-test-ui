@@ -1,6 +1,7 @@
 "use client";
 
 import { AnalyteInternalStandardSelect } from "@/components/analyte-internal-standard-select";
+import { ViewOnlyNotice } from "@/components/view-only-notice";
 import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
 import {
   createAnalyteAlias,
@@ -10,6 +11,8 @@ import {
   updateAnalyte,
   updateAnalyteAlias,
 } from "@/lib/api/wltr-api";
+import { hasPermission, PERMS } from "@/lib/types/wltr";
+import { useAuth } from "@/providers/auth-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -17,6 +20,8 @@ import { useEffect, useState } from "react";
 
 export default function AnalyteDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { me } = useAuth();
+  const canEdit = hasPermission(me, PERMS.configEdit);
   const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["analyte", id],
@@ -96,18 +101,18 @@ export default function AnalyteDetailPage() {
             className="space-y-6"
             onSubmit={(e) => {
               e.preventDefault();
-              save.mutate();
+              if (canEdit) save.mutate();
             }}
           >
             <div className="space-y-4">
               <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Identity</div>
               <div>
                 <Label htmlFor="name">Name</Label>
-                <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={!canEdit} />
               </div>
               <div>
                 <Label htmlFor="casNumber">CAS</Label>
-                <Input id="casNumber" value={form.casNumber} onChange={(e) => setForm({ ...form, casNumber: e.target.value })} />
+                <Input id="casNumber" value={form.casNumber} onChange={(e) => setForm({ ...form, casNumber: e.target.value })} disabled={!canEdit} />
               </div>
             </div>
             <div className="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50/80 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">
@@ -131,23 +136,34 @@ export default function AnalyteDetailPage() {
                 onChange={(internalStandardId) =>
                   setForm({ ...form, defaultInternalStandardId: internalStandardId })
                 }
+                disabled={!canEdit}
               />
             </div>
             {save.isError ? <div className="text-sm text-red-600">{(save.error as Error).message}</div> : null}
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={save.isPending}>
-                Save
-              </Button>
-              <Button type="button" variant="danger" disabled={del.isPending} onClick={() => del.mutate()}>
-                Delete
-              </Button>
-            </div>
+            {canEdit ? (
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={save.isPending}>
+                  Save
+                </Button>
+                <Button type="button" variant="danger" disabled={del.isPending} onClick={() => del.mutate()}>
+                  Delete
+                </Button>
+              </div>
+            ) : (
+              <ViewOnlyNotice />
+            )}
           </form>
         ) : null}
       </Card>
 
       <Card>
         <div className="text-sm font-medium">Aliases</div>
+        {!canEdit ? (
+          <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
+            Raw compound names that map to this analyte on run upload.
+          </p>
+        ) : null}
+        {canEdit ? (
         <form
           className="mt-3 flex flex-col gap-2 md:flex-row md:items-end"
           onSubmit={(e) => {
@@ -163,13 +179,16 @@ export default function AnalyteDetailPage() {
             Add
           </Button>
         </form>
+        ) : null}
         <div className="mt-4 space-y-3">
           {aliases.map((a) => (
             <div key={a.id} className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-800 md:flex-row md:items-center">
               <Input
                 value={aliasEdits[a.id] ?? a.aliasName ?? ""}
                 onChange={(e) => setAliasEdits((prev) => ({ ...prev, [a.id]: e.target.value }))}
+                disabled={!canEdit}
               />
+              {canEdit ? (
               <div className="flex gap-2">
                 <Button type="button" variant="secondary" onClick={() => void saveAlias(a.id)}>
                   Rename
@@ -178,8 +197,10 @@ export default function AnalyteDetailPage() {
                   Delete
                 </Button>
               </div>
+              ) : null}
             </div>
           ))}
+          {!aliases.length ? <p className="text-sm text-neutral-500">No aliases yet.</p> : null}
         </div>
       </Card>
     </div>

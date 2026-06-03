@@ -5,6 +5,7 @@ import { PaginationBar } from "@/components/pagination";
 import { deactivateUser, listUsers, reactivateUser } from "@/lib/api/wltr-api";
 import { useAuth } from "@/providers/auth-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function UsersPage() {
@@ -43,7 +44,7 @@ export default function UsersPage() {
 
   return (
     <div>
-      <PageHeader title="Users" description="Requires perm.users.manage_lab." />
+      <PageHeader title="Users" description="Manage team members in your laboratory — view accounts and activate or deactivate access." />
       {platform ? (
         <Card className="mb-4">
           <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
@@ -67,6 +68,7 @@ export default function UsersPage() {
               <thead>
                 <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
                   <th className="py-2 pr-3">Email</th>
+                  <th className="py-2 pr-3">Name</th>
                   <th className="py-2 pr-3">Laboratory</th>
                   <th className="py-2 pr-3">Actions</th>
                 </tr>
@@ -77,10 +79,22 @@ export default function UsersPage() {
                   const id = String(r.id ?? "");
                   return (
                     <tr key={id} className="border-b border-neutral-100 dark:border-neutral-900">
-                      <td className="py-2 pr-3">{String(r.email ?? "")}</td>
-                      <td className="py-2 pr-3">{String(r.laboratoryId ?? "")}</td>
+                      <td className="py-2 pr-3">
+                        <Link className="font-medium text-blue-600 underline dark:text-blue-400" href={`/users/${encodeURIComponent(id)}`}>
+                          {String(r.email ?? "")}
+                        </Link>
+                      </td>
+                      <td className="py-2 pr-3 text-neutral-700 dark:text-neutral-300">
+                        {[r.firstName, r.lastName].filter(Boolean).join(" ") || "—"}
+                      </td>
+                      <td className="py-2 pr-3">{String(r.laboratoryName ?? r.laboratoryId ?? "")}</td>
                       <td className="py-2 pr-3">
                         <div className="flex flex-wrap gap-2">
+                          <Link href={`/users/${encodeURIComponent(id)}`}>
+                            <Button variant="secondary" type="button">
+                              View
+                            </Button>
+                          </Link>
                           <Button
                             variant="secondary"
                             type="button"

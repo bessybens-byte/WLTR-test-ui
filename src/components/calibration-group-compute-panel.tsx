@@ -4,7 +4,6 @@ import { Button, Card } from "@/components/ui";
 import { computeCalibrationGroup, getCalibrationGroupReadiness } from "@/lib/api/wltr-api";
 import type { MeResponse } from "@/lib/types/wltr";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo } from "react";
 
 export function CalibrationGroupComputePanel({
   groupId,
@@ -18,7 +17,7 @@ export function CalibrationGroupComputePanel({
   const qc = useQueryClient();
   const labInJwt = me?.laboratoryId;
 
-  const readinessParams = useMemo(() => (labInJwt ? { laboratoryId: labInJwt } : {}), [labInJwt]);
+  const readinessParams = labInJwt ? { laboratoryId: labInJwt } : undefined;
 
   const readiness = useQuery({
     queryKey: ["calibration-group-readiness", groupId, readinessParams],
@@ -34,6 +33,7 @@ export function CalibrationGroupComputePanel({
         qc.invalidateQueries({ queryKey: ["calibration-group-regression-inputs", groupId] }),
         qc.invalidateQueries({ queryKey: ["calibration-group-readiness", groupId] }),
         qc.invalidateQueries({ queryKey: ["calibration-group-regression-debug", groupId] }),
+        qc.invalidateQueries({ queryKey: ["calibration-group-chart", groupId] }),
       ]);
     },
   });
@@ -49,35 +49,33 @@ export function CalibrationGroupComputePanel({
 
   return (
     <Card>
-      <div className="text-sm font-medium">Regression compute</div>
+      <div className="text-sm font-medium">Run regression</div>
       <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-        Runs <code className="rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">POST …/compute</code>,
-        freezing the method snapshot and persisting curves and per-point diagnostics. Draft and Computed groups only;
-        recompute clears curves and points and does not preserve manual include/exclude flags. Requires{" "}
-        <code className="rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">perm.runs.upload</code>.
+        Runs weighted least-squares for every analyte (`POST /api/calibration-groups/&#123;id&#125;/compute`). Requires{" "}
+        <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">perm.runs.upload</code>. Recompute clears
+        manual point exclusions.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          disabled={computeDisabled}
-          onClick={() => {
-            void mut.mutateAsync();
-          }}
-        >
-          {mut.isPending ? "Computing…" : "Run regression"}
+        <Button type="button" disabled={computeDisabled} onClick={() => mut.mutate()}>
+          {mut.isPending ? "Computing…" : "Compute calibration"}
         </Button>
         {readinessBlocks ? (
           <span className="text-xs text-amber-700 dark:text-amber-400">
-            Readiness check reports blocking issues — clear them first.
+            Readiness check reports blocking issues — resolve them before computing.
           </span>
         ) : null}
         {!labInJwt ? (
           <span className="text-xs text-neutral-500">
-            Platform operators: ensure the group is eligible; the server validates scope and readiness rules.
+            Platform operators: pass laboratory scope on readiness and related endpoints when required.
           </span>
         ) : null}
       </div>
       {mut.isError ? <div className="mt-2 text-sm text-red-600">{(mut.error as Error).message}</div> : null}
+      {mut.isSuccess ? (
+        <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">
+          Regression completed. Refresh regression inputs and charts below.
+        </p>
+      ) : null}
     </Card>
   );
 }

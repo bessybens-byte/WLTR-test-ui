@@ -1,8 +1,10 @@
 "use client";
 
+import { ViewOnlyNotice } from "@/components/view-only-notice";
 import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import { deleteMethodConfig, getMethodConfig, updateMethodConfig } from "@/lib/api/wltr-api";
-import { REGRESSION_TYPE_LABEL } from "@/lib/types/wltr";
+import { hasPermission, PERMS, REGRESSION_TYPE_LABEL } from "@/lib/types/wltr";
+import { useAuth } from "@/providers/auth-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -10,6 +12,8 @@ import { useEffect, useState } from "react";
 
 export default function MethodConfigDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const { me } = useAuth();
+  const canEdit = hasPermission(me, PERMS.configEdit);
   const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["method-config", id],
@@ -101,12 +105,12 @@ export default function MethodConfigDetailPage() {
             className="space-y-4"
             onSubmit={(e) => {
               e.preventDefault();
-              save.mutate();
+              if (canEdit) save.mutate();
             }}
           >
             <div>
               <Label htmlFor="name">Name</Label>
-              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={!canEdit} />
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -115,6 +119,7 @@ export default function MethodConfigDetailPage() {
                   id="reg"
                   value={String(form.defaultRegressionType)}
                   onChange={(e) => setForm({ ...form, defaultRegressionType: Number(e.target.value) })}
+                  disabled={!canEdit}
                 >
                   {[0, 1, 2, 3].map((v) => (
                     <option key={v} value={v}>
@@ -129,6 +134,7 @@ export default function MethodConfigDetailPage() {
                   id="wm"
                   value={String(form.defaultWeightingMode)}
                   onChange={(e) => setForm({ ...form, defaultWeightingMode: Number(e.target.value) })}
+                  disabled={!canEdit}
                 >
                   <option value={0}>0 — None (w = 1)</option>
                   <option value={1}>1 — Inverse X (w = 1/X)</option>
@@ -141,6 +147,7 @@ export default function MethodConfigDetailPage() {
                   id="lm"
                   value={String(form.labelMode)}
                   onChange={(e) => setForm({ ...form, labelMode: Number(e.target.value) })}
+                  disabled={!canEdit}
                 >
                   <option value={0}>0</option>
                   <option value={1}>1</option>
@@ -152,6 +159,7 @@ export default function MethodConfigDetailPage() {
                   type="checkbox"
                   checked={form.forceZeroIntercept}
                   onChange={(e) => setForm({ ...form, forceZeroIntercept: e.target.checked })}
+                  disabled={!canEdit}
                 />
                 <Label htmlFor="fzi">Force zero intercept</Label>
               </div>
@@ -165,11 +173,12 @@ export default function MethodConfigDetailPage() {
                   step="0.0001"
                   value={form.minCorrelation}
                   onChange={(e) => setForm({ ...form, minCorrelation: Number(e.target.value) })}
+                  disabled={!canEdit}
                 />
               </div>
               <div>
                 <Label htmlFor="maxRSE">maxRSE</Label>
-                <Input id="maxRSE" type="number" step="0.0001" value={form.maxRSE} onChange={(e) => setForm({ ...form, maxRSE: Number(e.target.value) })} />
+                <Input id="maxRSE" type="number" step="0.0001" value={form.maxRSE} onChange={(e) => setForm({ ...form, maxRSE: Number(e.target.value) })} disabled={!canEdit} />
               </div>
               <div>
                 <Label htmlFor="pctDiffLowBound">pctDiffLowBound</Label>
@@ -179,6 +188,7 @@ export default function MethodConfigDetailPage() {
                   step="0.0001"
                   value={form.pctDiffLowBound}
                   onChange={(e) => setForm({ ...form, pctDiffLowBound: Number(e.target.value) })}
+                  disabled={!canEdit}
                 />
               </div>
               <div>
@@ -189,6 +199,7 @@ export default function MethodConfigDetailPage() {
                   step="0.0001"
                   value={form.pctDiffHighBound}
                   onChange={(e) => setForm({ ...form, pctDiffHighBound: Number(e.target.value) })}
+                  disabled={!canEdit}
                 />
               </div>
               <div>
@@ -198,6 +209,7 @@ export default function MethodConfigDetailPage() {
                   type="number"
                   value={form.minPointsRequired}
                   onChange={(e) => setForm({ ...form, minPointsRequired: Number(e.target.value) })}
+                  disabled={!canEdit}
                 />
               </div>
               <div>
@@ -207,6 +219,7 @@ export default function MethodConfigDetailPage() {
                   type="number"
                   value={form.maxMissedPoints}
                   onChange={(e) => setForm({ ...form, maxMissedPoints: Number(e.target.value) })}
+                  disabled={!canEdit}
                 />
               </div>
               <div>
@@ -217,6 +230,7 @@ export default function MethodConfigDetailPage() {
                   step="0.0001"
                   value={form.icvLimitPercent}
                   onChange={(e) => setForm({ ...form, icvLimitPercent: Number(e.target.value) })}
+                  disabled={!canEdit}
                 />
               </div>
             </div>
@@ -236,6 +250,7 @@ export default function MethodConfigDetailPage() {
                     step="any"
                     value={form.internalStandardResponseMin}
                     onChange={(e) => setForm({ ...form, internalStandardResponseMin: e.target.value })}
+                    disabled={!canEdit}
                   />
                 </div>
                 <div>
@@ -246,20 +261,25 @@ export default function MethodConfigDetailPage() {
                     step="any"
                     value={form.internalStandardResponseMax}
                     onChange={(e) => setForm({ ...form, internalStandardResponseMax: e.target.value })}
+                    disabled={!canEdit}
                   />
                 </div>
               </div>
             </div>
             {save.isError ? <div className="text-sm text-red-600">{(save.error as Error).message}</div> : null}
             {versionNote ? <div className="text-sm text-neutral-700 dark:text-neutral-300">{versionNote}</div> : null}
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" disabled={save.isPending}>
-                Save (PUT returns currentVersion)
-              </Button>
-              <Button type="button" variant="danger" disabled={del.isPending} onClick={() => del.mutate()}>
-                Delete
-              </Button>
-            </div>
+            {canEdit ? (
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" disabled={save.isPending}>
+                  Save changes
+                </Button>
+                <Button type="button" variant="danger" disabled={del.isPending} onClick={() => del.mutate()}>
+                  Delete
+                </Button>
+              </div>
+            ) : (
+              <ViewOnlyNotice />
+            )}
           </form>
         ) : null}
       </Card>

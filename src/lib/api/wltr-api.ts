@@ -97,6 +97,79 @@ export async function listRoles(params?: {
   return apiJson(`Roles`, { searchParams: params });
 }
 
+/** Paginate role list until `roleId` is found (API has no GET /Roles/{id}). */
+export async function findRoleById(
+  roleId: string,
+  params?: { laboratoryId?: string },
+): Promise<Record<string, unknown> | null> {
+  const decoded = decodeURIComponent(roleId);
+  let page = 1;
+  const pageSize = 100;
+  for (;;) {
+    const res = await listRoles({
+      page,
+      pageSize,
+      sort: "name:asc",
+      laboratoryId: params?.laboratoryId,
+    });
+    const items = res.items ?? [];
+    const hit = items.find((r) => String((r as Record<string, unknown>).roleId) === decoded);
+    if (hit) return hit as Record<string, unknown>;
+    if (page * pageSize >= res.totalCount) return null;
+    page += 1;
+  }
+}
+
+export async function login(body: { email: string; password: string }): Promise<Record<string, unknown>> {
+  return apiJson(`Auth/login`, { method: "POST", body: JSON.stringify(body), skipAuth: true });
+}
+
+export async function refreshSession(body: { refreshToken: string }): Promise<Record<string, unknown>> {
+  return apiJson(`Auth/refresh`, { method: "POST", body: JSON.stringify(body), skipAuth: true });
+}
+
+export async function logoutSession(body: { refreshToken: string }): Promise<void> {
+  const res = await apiFetch(`Auth/logout`, {
+    method: "POST",
+    body: JSON.stringify(body),
+    skipAuth: true,
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function forgotPassword(body: { email: string }): Promise<void> {
+  const res = await apiFetch(`Auth/forgot-password`, {
+    method: "POST",
+    body: JSON.stringify(body),
+    skipAuth: true,
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function resetPassword(body: {
+  userId: string;
+  token: string;
+  newPassword: string;
+}): Promise<void> {
+  const res = await apiFetch(`Auth/reset-password`, {
+    method: "POST",
+    body: JSON.stringify(body),
+    skipAuth: true,
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function changePassword(body: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<void> {
+  const res = await apiFetch(`Auth/change-password`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
 export async function createRole(body: unknown): Promise<Record<string, unknown>> {
   return apiJson(`Roles`, { method: "POST", body: JSON.stringify(body) });
 }
@@ -139,19 +212,14 @@ export async function createInvitation(body: unknown): Promise<Record<string, un
   return apiJson(`Invitations`, { method: "POST", body: JSON.stringify(body) });
 }
 
-/** JSON matches OpenAPI `/api/Auth/accept-invite` (multipart was mangled when proxied via `request.text()`). */
-export async function acceptInviteRegister(payload: {
-  token: string;
-  password: string;
-  confirmPassword?: string;
-}): Promise<void> {
+/** Body matches OpenAPI `AcceptInviteRequest` (`token`, `password` only). */
+export async function acceptInviteRegister(payload: { token: string; password: string }): Promise<void> {
   const res = await apiFetch(`Auth/accept-invite`, {
     method: "POST",
     skipAuth: true,
     body: JSON.stringify({
       token: payload.token,
       password: payload.password,
-      confirmPassword: payload.confirmPassword ?? payload.password,
     }),
   });
   if (!res.ok) throw await parseErrorResponse(res);
@@ -351,10 +419,70 @@ export async function getCalibrationGroupRegressionInputs(
   return apiJson(`calibration-groups/${groupId}/regression-inputs`);
 }
 
-/** Weighted regression for all analytes; **204** on success. Clears curves/points on recompute. Requires `perm.runs.upload`; group Draft or Computed. */
+/** Weighted regression for all analytes. Requires `perm.runs.upload`. Returns **204** on success. */
 export async function computeCalibrationGroup(groupId: string): Promise<void> {
   const res = await apiFetch(`calibration-groups/${groupId}/compute`, { method: "POST" });
   if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function listExcludedGroupAnalytes(groupId: string): Promise<Record<string, unknown>[]> {
+  return apiJson(`calibration-groups/${groupId}/excluded-analytes`);
+}
+
+export async function excludeGroupAnalyte(groupId: string, body: unknown): Promise<void> {
+  const res = await apiFetch(`calibration-groups/${groupId}/excluded-analytes`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function removeExcludedGroupAnalyte(groupId: string, analyteId: string): Promise<void> {
+  const res = await apiFetch(
+    `calibration-groups/${groupId}/excluded-analytes/${encodeURIComponent(analyteId)}`,
+    { method: "DELETE" },
+  );
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function listSuppressedInstrumentAnalytes(instrumentId: string): Promise<Record<string, unknown>[]> {
+  return apiJson(`instruments/${instrumentId}/suppressed-analytes`);
+}
+
+export async function suppressInstrumentAnalyte(instrumentId: string, body: unknown): Promise<void> {
+  const res = await apiFetch(`instruments/${instrumentId}/suppressed-analytes`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function removeSuppressedInstrumentAnalyte(
+  instrumentId: string,
+  analyteId: string,
+): Promise<void> {
+  const res = await apiFetch(
+    `instruments/${instrumentId}/suppressed-analytes/${encodeURIComponent(analyteId)}`,
+    { method: "DELETE" },
+  );
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function updateInstrument(id: string, body: unknown): Promise<void> {
+  const res = await apiFetch(`instruments/${id}`, { method: "PUT", body: JSON.stringify(body) });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function deleteInstrument(id: string): Promise<void> {
+  const res = await apiFetch(`instruments/${id}`, { method: "DELETE" });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function getUser(
+  userId: string,
+  params?: { laboratoryId?: string },
+): Promise<Record<string, unknown>> {
+  return apiJson(`Users/${encodeURIComponent(userId)}`, { searchParams: params });
 }
 
 /** Full regression QA snapshot for one analyte after compute — requires **`perm.groups.approve`**. Platform operators must pass **`laboratoryId`**. */
@@ -367,6 +495,17 @@ export async function getCalibrationGroupRegressionDebug(
     `calibration-groups/${groupId}/analytes/${encodeURIComponent(analyteId)}/regression-debug`,
     { searchParams: params },
   );
+}
+
+/** Plotly figure (`data`, `layout`, `config`). Requires **`perm.view`** and a **computed** group. Platform operators must pass **`laboratoryId`**. */
+export async function getCalibrationGroupChart(
+  groupId: string,
+  analyteId: string,
+  params?: { laboratoryId?: string },
+): Promise<{ data?: unknown; layout?: unknown; config?: unknown } & Record<string, unknown>> {
+  return apiJson(`calibration-groups/${groupId}/analytes/${encodeURIComponent(analyteId)}/chart`, {
+    searchParams: params,
+  });
 }
 
 /** Exclude a persisted calibration point (after compute); requires `perm.runs.upload`; group Draft or Computed. */
@@ -425,8 +564,17 @@ export async function listInstruments(params?: {
   page?: number;
   pageSize?: number;
   sort?: string;
+  isActive?: boolean;
+  instrumentType?: string;
 }): Promise<Paged<Record<string, unknown>>> {
-  return apiJson(`instruments`, { searchParams: params });
+  const searchParams: Record<string, string | number | undefined> = {
+    page: params?.page,
+    pageSize: params?.pageSize,
+    sort: params?.sort,
+    instrumentType: params?.instrumentType,
+  };
+  if (params?.isActive !== undefined) searchParams.isActive = String(params.isActive);
+  return apiJson(`instruments`, { searchParams });
 }
 
 export async function getInstrument(id: string): Promise<Record<string, unknown>> {

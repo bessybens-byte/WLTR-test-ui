@@ -77,6 +77,8 @@ function RegressionPointsTable({
   const invalidate = async () => {
     await qc.invalidateQueries({ queryKey: ["calibration-group-regression-inputs", groupId] });
     await qc.invalidateQueries({ queryKey: ["calibration-group-readiness"] });
+    await qc.invalidateQueries({ queryKey: ["calibration-group-chart", groupId] });
+    await qc.invalidateQueries({ queryKey: ["calibration-group-regression-debug", groupId] });
   };
 
   const excludeMut = useMutation({

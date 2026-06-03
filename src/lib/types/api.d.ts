@@ -11,12 +11,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/analytes */
+        /**
+         * Returns a page of analytes for the caller's laboratory.
+         * @description Soft-deleted analytes are excluded. Platform operators without a laboratory claim receive an empty page.
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description 1-based page index (default 1). */
                     page?: number;
+                    /** @description Items per page, capped at 100 (default 25). */
                     pageSize?: number;
+                    /**
+                     * @description Optional sort expression: `field` or `field:asc` / `field:desc`.
+                     *     Supported fields: `name` (default), `createdAt`.
+                     */
                     sort?: string;
                 };
                 header?: never;
@@ -31,33 +40,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["PagedResultOfAnalyteListItemDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -71,33 +54,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -108,7 +64,17 @@ export interface paths {
             };
         };
         put?: never;
-        /** POST /api/analytes */
+        /**
+         * Creates a canonical analyte for the caller's laboratory.
+         * @description The laboratory is derived from the `LaboratoryId` JWT claim. Returns <strong>400</strong>
+         *     when the caller's token has no laboratory claim.
+         *
+         *     Names are normalized before the uniqueness check — `Benzene`, `BENZENE`, and `ben-zene`
+         *     are treated as the same name. A duplicate returns <strong>400</strong> with the conflicting name in
+         *     the error detail.
+         *     On success the response body contains the new analyte's GUID and the `Location` header
+         *     points to `GET /api/analytes/{id}`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -116,36 +82,21 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description Canonical analyte name. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["CreateAnalyteRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description Created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["CreateAnalyteResponse"];
                     };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -154,7 +105,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -168,33 +118,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -217,11 +140,19 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/analytes / suggestions */
+        /**
+         * Ranks canonical analytes that may match the given raw compound text.
+         * @description Returns up to `top` canonical analyte candidates ordered by relevance for the given raw compound name.
+         *     Matching applies the same normalization as alias resolution (case-insensitive; hyphens, underscores, and
+         *     extra whitespace ignored), so `ben-zene` and `BENZENE` produce the same suggestions.
+         *     Results are scoped to the caller's laboratory; platform operators without a laboratory claim receive an empty list.
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description Raw compound name as it appears in the instrument export (used as the search query). */
                     rawName?: string;
+                    /** @description Maximum number of results to return (1–32, default 8). */
                     top?: number;
                 };
                 header?: never;
@@ -236,33 +167,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["AnalyteSuggestionItemDto"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -276,33 +181,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -327,7 +205,16 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/analytes / unresolved */
+        /**
+         * Lists distinct unresolved raw compound names for the laboratory with counts.
+         * @description Returns the set of normalized raw compound names that have at least one `CalibrationMeasurement`
+         *     row in the caller's laboratory without a resolved `analyteId`. Each item includes the raw name and
+         *     the number of measurement rows awaiting mapping.
+         *
+         *     Use this endpoint to discover which compound names still need to be resolved via
+         *     `POST /api/runs/{id}/analyte-mapping/resolve` or by adding an analyte alias.
+         *     Scoped to the JWT `LaboratoryId`; platform operators without a laboratory claim receive an empty list.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -343,33 +230,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["UnresolvedAnalyteNameDto"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -383,33 +244,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -434,16 +268,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/analytes / {id} */
+        /**
+         * Returns a canonical analyte with all its aliases.
+         * @description Returns <strong>404</strong> when the analyte does not exist, has been soft-deleted, or belongs to a
+         *     different laboratory than the caller's JWT claim. Cross-lab ids are treated as not-found to prevent IDOR enumeration.
+         */
         get: {
             parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                };
+                query?: never;
                 header?: never;
                 path: {
+                    /** @description Analyte GUID. */
                     id: string;
                 };
                 cookie?: never;
@@ -456,33 +291,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["AnalyteDetailDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -505,24 +314,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -532,40 +323,29 @@ export interface paths {
                 };
             };
         };
-        /** PUT /api/analytes / {id} */
+        /**
+         * Updates a canonical analyte name.
+         * @description Applies the same name normalization and per-laboratory uniqueness check as create.
+         *     Returns <strong>400</strong> when the analyte is not found, has been deleted, or belongs to another laboratory.
+         *     Cross-lab ids are treated as not-found rather than forbidden.
+         */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Analyte GUID to update. */
                     id: string;
                 };
                 cookie?: never;
             };
+            /** @description Replacement canonical name. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["UpdateAnalyteRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -580,7 +360,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -594,33 +373,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -631,36 +383,26 @@ export interface paths {
             };
         };
         post?: never;
-        /** DELETE /api/analytes / {id} */
+        /**
+         * Soft-deletes a canonical analyte when not referenced by any measurement or calibration curve.
+         * @description The analyte is soft-deleted (excluded from all queries) rather than physically removed to preserve audit trail integrity.
+         *
+         *     Returns <strong>409 Conflict</strong> when at least one `CalibrationMeasurement` or `CalibrationCurve`
+         *     still references this analyte. Remove or re-map those records first.
+         *     Returns <strong>400</strong> when the analyte is not found, already deleted, or belongs to another laboratory.
+         */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Analyte GUID to delete. */
                     id: string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -675,7 +417,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -696,26 +437,8 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
                 /** @description Conflict */
                 409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -739,46 +462,41 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/analytes / {analyteId} / aliases */
+        /**
+         * Adds a raw-name alias to a canonical analyte.
+         * @description An alias maps an instrument-reported raw name (e.g. `Benzene (Internal)`, `BENZ`) to the
+         *     canonical analyte so that compound rows in run uploads are automatically resolved.
+         *
+         *     Alias raw names follow the same normalization and uniqueness rules as analyte names.
+         *     A duplicate alias (same normalized raw name under the same analyte) returns <strong>400</strong>.
+         *     Returns <strong>400</strong> when the parent analyte is not found or belongs to another laboratory.
+         *     On success the response body contains the new alias GUID.
+         */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Parent analyte GUID. */
                     analyteId: string;
                 };
                 cookie?: never;
             };
+            /** @description Raw alias name as it appears in instrument output. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["CreateAnalyteAliasRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description Created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["CreateAnalyteAliasResponse"];
                     };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -787,7 +505,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -801,33 +518,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -851,40 +541,28 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** PUT /api/analytes / aliases / {aliasId} */
+        /**
+         * Renames an analyte alias.
+         * @description Applies the same normalization and uniqueness rules as alias creation.
+         *     Returns <strong>400</strong> when the alias is not found or belongs to an analyte in another laboratory.
+         */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Alias GUID to update. */
                     aliasId: string;
                 };
                 cookie?: never;
             };
+            /** @description Replacement raw name. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["UpdateAnalyteAliasRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -899,7 +577,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -913,33 +590,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -950,36 +600,24 @@ export interface paths {
             };
         };
         post?: never;
-        /** DELETE /api/analytes / aliases / {aliasId} */
+        /**
+         * Soft-deletes an analyte alias.
+         * @description Removing an alias means future run uploads will no longer auto-resolve compound rows with that raw name.
+         *     Existing measurements already linked to the analyte are not affected.
+         *     Returns <strong>400</strong> when the alias is not found or belongs to another laboratory.
+         */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Alias GUID to delete. */
                     aliasId: string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -994,7 +632,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1008,33 +645,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1056,14 +666,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/Auth / me */
+        /**
+         * Returns enriched identity and profile context for the currently authenticated user.
+         * @description Returns user id, email, laboratory id, technician profile fields, assigned role names, effective permissions,
+         *     and a concurrency token. Platform operators may have null laboratory id and technician fields.
+         */
         get: {
             parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                };
+                query?: never;
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1076,33 +686,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "text/plain": components["schemas"]["AuthController_MeResponse"];
+                        "application/json": components["schemas"]["AuthController_MeResponse"];
+                        "text/json": components["schemas"]["AuthController_MeResponse"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1111,48 +697,18 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
         };
-        /** PUT /api/Auth / me */
+        /**
+         * Updates self-service profile fields for the authenticated user.
+         * @description Updates the linked technician profile: first name, last name, qualifications, and hire date.
+         *     Supply `RowVersion` from the last `GET me` response for optimistic concurrency.
+         */
         put: {
             parameters: {
                 query?: never;
@@ -1162,28 +718,10 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["AuthController_UpdateMeRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -1197,8 +735,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1207,25 +746,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Conflict */
@@ -1234,16 +757,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -1264,7 +780,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/Auth / change-password */
+        /**
+         * Changes the authenticated user's password.
+         * @description Verifies the current password before applying the change.
+         *     On success, all active refresh tokens for the user are revoked (forces re-login on other devices).
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1274,28 +794,10 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["AuthController_ChangePasswordRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -1309,8 +811,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1319,43 +822,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -1375,7 +844,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/Auth / accept-invite */
+        /**
+         * Completes registration from a one-time invitation token.
+         * @description The token must be valid, unexpired, and unused. On success, a laboratory-scoped user is created
+         *     and the invitation is marked as accepted.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1385,28 +858,10 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["AuthController_AcceptInviteRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -1420,44 +875,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Too Many Requests */
@@ -1466,7 +886,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -1486,7 +908,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/Auth / login */
+        /**
+         * Authenticates a user and returns access and refresh tokens.
+         * @description Access tokens are short-lived JWT bearer tokens. Refresh tokens are opaque strings that can be exchanged
+         *     using `POST /api/Auth/refresh` to rotate the session.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1496,7 +922,7 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["AuthController_LoginRequest"];
                 };
             };
             responses: {
@@ -1506,24 +932,10 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "text/plain": components["schemas"]["AuthController_LoginResponse"];
+                        "application/json": components["schemas"]["AuthController_LoginResponse"];
+                        "text/json": components["schemas"]["AuthController_LoginResponse"];
                     };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -1531,8 +943,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1541,34 +954,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Too Many Requests */
@@ -1577,7 +965,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -1597,7 +987,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/Auth / refresh */
+        /** Exchanges a refresh token for a new access and refresh pair (rotation). */
         post: {
             parameters: {
                 query?: never;
@@ -1607,7 +997,7 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["AuthController_RefreshRequest"];
                 };
             };
             responses: {
@@ -1617,24 +1007,10 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "text/plain": components["schemas"]["AuthController_LoginResponse"];
+                        "application/json": components["schemas"]["AuthController_LoginResponse"];
+                        "text/json": components["schemas"]["AuthController_LoginResponse"];
                     };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -1642,8 +1018,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1652,34 +1029,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Too Many Requests */
@@ -1688,7 +1040,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -1708,7 +1062,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/Auth / logout */
+        /** Revokes a refresh token (logout). */
         post: {
             parameters: {
                 query?: never;
@@ -1718,28 +1072,10 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["AuthController_RefreshRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -1747,59 +1083,15 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
                 /** @description Unauthorized */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -1819,7 +1111,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/Auth / forgot-password */
+        /**
+         * Requests a one-time password reset token by email.
+         * @description Always returns a generic success response to avoid account enumeration, even when the email is unknown.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1829,28 +1124,10 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["AuthController_ForgotPasswordRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -1864,44 +1141,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Too Many Requests */
@@ -1910,7 +1152,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
                     };
                 };
             };
@@ -1930,7 +1174,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/Auth / reset-password */
+        /**
+         * Completes password reset using a one-time token.
+         * @description On success, active refresh tokens for the user are revoked.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1940,28 +1187,10 @@ export interface paths {
             };
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["AuthController_ResetPasswordRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -1975,8 +1204,72 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Too Many Requests */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/plain": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns a page of calibration groups visible to the caller.
+         * @description <strong>Laboratory scope:</strong> lab users see only groups whose instrument belongs to their JWT laboratory.
+         *                 Platform operators must supply `laboratoryId` to scope results; omitting it returns groups across all labs.
+         *
+         *     <strong>Sort:</strong>
+         *       `createdAt` (default, newest first) or `status`; append `:asc` or `:desc`.
+         *
+         *     For full detail including linked CAL run ids, follow up with `GET /api/calibration-groups/{id}`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Platform operators only: scope results to a specific laboratory. */
+                    laboratoryId?: string;
+                    /** @description 1-based page index (default 1). */
+                    page?: number;
+                    /** @description Items per page, capped at 100 (default 25). */
+                    pageSize?: number;
+                    /** @description Sort expression: `createdAt` or `status`, optionally suffixed with `:asc` or `:desc`. */
+                    sort?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PagedResultOfCalibrationGroupListItemResponse"];
                     };
                 };
                 /** @description Unauthorized */
@@ -1997,8 +1290,51 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Not Found */
-                404: {
+            };
+        };
+        put?: never;
+        /**
+         * Creates a <strong>draft</strong> calibration group from one or more CAL runs and an optional ICV on one instrument.
+         * @description <strong>Prerequisites:</strong> Same as `POST /api/runs` — the JWT must include a `LaboratoryId` claim, and
+         *                 the current user must have an active <strong>lab technician</strong> profile in that lab. If not, the API returns
+         *                 <strong>400</strong> with `ProblemDetails` in the usual shape.
+         *
+         *     <strong>Scoping:</strong>
+         *       Wltr.Api.Models.CreateCalibrationGroupRequest.InstrumentId and
+         *                 Wltr.Api.Models.CreateCalibrationGroupRequest.MethodConfigId are resolved in the caller's lab. Every id in
+         *                 `calRunIds` must be a <strong>CAL</strong> run on that instrument; optional `icvRunId` (if set) must be an
+         *                 <strong>ICV</strong> on the same instrument. Runs in `Invalid` status are rejected. Each CAL run must have a
+         *                 mapped `calibrationLevelId`, and no two CAL runs may share the same level in this request.
+         *
+         *     <strong>Success:</strong>
+         *       <strong>201</strong> with Wltr.Api.Models.CreateCalibrationGroupResponse and a
+         *                 `Location: /api/calibration-groups/{id}` header. See also the OpenAPI section <em>Calibration groups — create draft</em>.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Body: see Wltr.Api.Models.CreateCalibrationGroupRequest. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateCalibrationGroupRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CreateCalibrationGroupResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2006,8 +1342,8 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Conflict */
-                409: {
+                /** @description Unauthorized */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2015,8 +1351,8 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Too Many Requests */
-                429: {
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2032,6 +1368,1259 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/calibration-groups/candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns CAL and ICV runs for an instrument with eligibility flags for draft group assembly.
+         * @description <strong>Required:</strong>
+         *       `instrumentId` is mandatory. Omitting it or passing an empty GUID returns
+         *                 <strong>400</strong> with a `ProblemDetails` body.
+         *
+         *     <strong>Laboratory scope:</strong> lab users may only query instruments in their own JWT laboratory.
+         *                 Platform operators may query any instrument. An instrument outside the caller's scope returns <strong>404</strong>
+         *                 (indistinguishable from a missing instrument by design).
+         *
+         *     <strong>Eligibility flags:</strong>
+         *       <list type="bullet">
+         *         <item>
+         *           <description>
+         *             `isEligibleAsCal` — `true` when the run is not `Invalid` and has a resolved `calibrationLevelId`.</description>
+         *         </item>
+         *         <item>
+         *           <description>
+         *             `isEligibleAsIcv` — `true` when the run is not `Invalid`.</description>
+         *         </item>
+         *         <item>
+         *           <description>
+         *             `ineligibilityReason` — human-readable explanation when the row's primary role flag is `false`; `null` when eligible.</description>
+         *         </item>
+         *       </list>
+         *
+         *     Both `calRuns` and `icvRuns` are ordered newest `runDate` first; ties broken by `id` ascending.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Required. Instrument whose runs should be evaluated (must be in the caller's lab). */
+                    instrumentId?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupCandidatesResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns full detail for a single calibration group, including the linked CAL run ids, method config reference,
+         *     and optional snapshot identifier set at compute time.
+         * @description <strong>Laboratory scope:</strong> lab users see only groups whose instrument belongs to their JWT laboratory.
+         *                 Platform operators may query any group. Out-of-scope or missing groups return <strong>404</strong>.
+         *
+         *     `methodConfigSnapshotId` is `null` while the group is in `Draft` status.
+         *                 It is populated after `POST .../compute` freezes the config version.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CalibrationGroupDetailResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        /**
+         * Updates run membership and method config on a non-locked calibration group.
+         * @description <strong>Status rules:</strong>
+         *       <list type="bullet">
+         *         <item>
+         *           <description>
+         *             `Draft` — updated in place; no status change.</description>
+         *         </item>
+         *         <item>
+         *           <description>
+         *             `Computed` — allowed; group reverts to `Draft`, clearing `methodConfigSnapshotId`, `computedAt`, `computationVersion`, and all stored calibration curves before applying the new values.</description>
+         *         </item>
+         *         <item>
+         *           <description>
+         *             `Approved` or `Rejected` — rejected with <strong>409 Conflict</strong>; these groups are immutable.</description>
+         *         </item>
+         *       </list>
+         *
+         *     <strong>Validation:</strong> the same rules as `POST /api/calibration-groups` apply —
+         *                 all `calRunIds` must be `CAL` runs on the group's instrument; `icvRunId` (if supplied)
+         *                 must be an `ICV` on the same instrument; no run may appear in both lists.
+         *                 Returns <strong>400</strong> on violation.
+         *
+         *     <strong>Laboratory scope:</strong> the group must belong to the caller's laboratory; out-of-scope or missing
+         *                 groups return <strong>404</strong>.
+         *
+         *     <strong>Success:</strong>
+         *       <strong>204 No Content</strong>.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Replacement `methodConfigId`, `calRunIds`, and optional `icvRunId`. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateCalibrationGroupRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/internal-standard-summaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Aggregates internal-standard (IS) `Response` statistics across all CAL runs linked to this group (many-to-many).
+         * @description The group's optional <strong>ICV</strong> run is <strong>not</strong> included — only runs in `CalRuns`.
+         *                 Each summary row includes `distinctCalibrationRunCount` so analysts can see how many acquisitions contributed.
+         *
+         *     <strong>Laboratory scope</strong> matches `GET /api/runs/{id}/internal-standard-summaries`: JWT laboratory for
+         *                 lab users; platform operators must supply `laboratoryId` matching the group's instrument laboratory.
+         *
+         *     <strong>Thresholds:</strong> if `methodConfigId` is omitted, bounds come from the group's
+         *                 `MethodConfigSnapshot` when `methodConfigSnapshotId` is set, otherwise from the live `MethodConfig`
+         *                 referenced by `methodConfigId` on the group. Passing `methodConfigId` explicitly overrides that default
+         *                 (still must be in the effective lab). See OpenAPI intro <strong>Internal standard response summaries</strong>.
+         *
+         *     <strong>Export:</strong>
+         *       `format=csv` returns UTF-8 CSV; otherwise a JSON array.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Required for platform operators; ignored for laboratory users. */
+                    laboratoryId?: string;
+                    /** @description Optional override for which method config supplies `internalStandardResponseMin`/`Max`. */
+                    methodConfigId?: string;
+                    /** @description `csv` for file download; otherwise JSON. */
+                    format?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["InternalStandardSummaryDto"][];
+                        "text/csv": components["schemas"]["InternalStandardSummaryDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/csv": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/csv": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/csv": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/csv": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evaluates whether the calibration group is ready for regression (compute): minimum CAL levels, level mappings,
+         *     persisted run status, analyte mapping, and internal-standard / response-ratio rules on linked CAL runs only (not ICV).
+         * @description Returns <strong>200 OK</strong> with a Wltr.Api.Models.CalibrationGroupReadinessResponse body in all successful cases:
+         *                 `isReady` is `false` when `blockingIssues` is non-empty. A future compute endpoint should reject when
+         *                 `isReady` is `false` or reuse this service.
+         *
+         *     <strong>Blocking issues</strong> (`blockingIssues`) must be cleared before compute. <strong>Warnings</strong>
+         *                 (`warnings`) are non-fatal for regression when curve X comes from calibration levels (see OpenAPI
+         *                 <em>Calibration group readiness</em> for the full `code` table and rules).
+         *
+         *     <strong>Laboratory scope</strong> matches `GET .../internal-standard-summaries`: JWT `LaboratoryId` for lab users;
+         *                 platform operators must pass query `laboratoryId` equal to the group's instrument laboratory — omitting it yields
+         *                 <strong>400</strong> ProblemDetails; wrong or unknown group yields <strong>404</strong>.
+         *
+         *     <strong>401 / 403:</strong> unauthenticated or missing `perm.view`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Required for platform operators (Super Administrator without JWT laboratory); ignored for lab users. */
+                    laboratoryId?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CalibrationGroupReadinessResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/regression-inputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns per-analyte regression input tables assembled from the group's CAL runs and calibration levels.
+         * @description For each resolved analyte across the group's CAL runs, this endpoint returns one table containing:
+         *                 <list type="bullet"><item><description>`x` — true concentration from the run's calibration level.</description></item><item><description>`y` — response ratio (analyte response / IS response); `null` when normalization was not possible.</description></item><item><description>`weight` — regression weight derived from the group's method config weighting mode (`None` → 1, `1/x`, or `1/x²`).</description></item><item><description>`isIncluded` — initial inclusion state; `false` when `y` is null.</description></item><item><description>`exclusionReason` — `MissingRatio` for excluded points, `None` for included ones.</description></item><item><description>`sourceRunId` / `sourceRunName` — traceability back to the originating run.</description></item><item><description>`isManualIntegration`, `validationMessage` — parser flags from the source measurement row.</description></item></list>
+         *
+         *     Points within each analyte table are sorted by `x` (true concentration) ascending.
+         *                 The response is an empty array when the group has no CAL runs with resolved analyte measurements.
+         *
+         *     <strong>After `POST .../compute`:</strong> when the group status is `Computed`, each point row is enriched
+         *                 from the stored `CalibrationPoint` entity — `predictedY`, `residual`, and `percentDiff` are
+         *                 populated from the fitted curve. Pre-compute responses return `null` for those three fields.
+         *                 The stored `weight`, `isIncluded`, and `exclusionReason` from the compute run are also reflected.
+         *
+         *     <strong>Laboratory scope:</strong> lab users may only read groups whose instrument belongs to their JWT laboratory;
+         *                 out-of-scope or missing groups return <strong>404</strong>. Platform operators may read any group.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RegressionInputTableResponse"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/analytes/{analyteId}/regression-debug": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns the full regression debug snapshot for a single analyte curve within a calibration group.
+         * @description Exposes every intermediate value stored at compute time — weighted sums (S0, Sx, Sy, Sxx, Sxy),
+         *                 normal-equation denominator, fitted coefficients, curve-level diagnostics (SSE, SST, RSE, R²),
+         *                 ICV results, and per-point predicted/residual/percent-diff values — so QA reviewers can
+         *                 compare the application's output against the legacy Excel workbook step by step.
+         *
+         *     <strong>Status prerequisite:</strong> the endpoint returns <strong>404</strong> when the group
+         *                 has not yet been computed (no `CalibrationCurve` row exists for this analyte), when the
+         *                 analyte is not present in the group's CAL runs, or when the group is outside the caller's laboratory scope.
+         *
+         *     <strong>Access:</strong> restricted to `perm.groups.approve` — only QA and Lab Admin roles.
+         *
+         *     <strong>Laboratory scope:</strong> lab users may only read groups in their JWT laboratory.
+         *                 Platform operators must supply `laboratoryId`; omitting it returns <strong>400</strong>.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Required for platform operators; ignored for lab users. */
+                    laboratoryId?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                    /** @description Analyte identifier (UUID) whose curve should be returned. */
+                    analyteId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["RegressionDebugResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/analytes/{analyteId}/chart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns a Plotly.js-compatible JSON chart spec for the fitted calibration curve of the specified analyte.
+         * @description The response body is a JSON object with `data`, `layout`, and `config` keys that can be passed
+         *                 directly to `Plotly.react(element, spec.data, spec.layout)` or `react-plotly.js` on the client.
+         *
+         *     Three traces are included: <em>Calibration Points</em> (included scatter), <em>Excluded Points</em> (excluded scatter
+         *                 with X markers), and <em>Fitted Curve</em> (line evaluated from the regression coefficients at 100 evenly-spaced
+         *                 X values). The fitted curve trace is omitted when the regression type is `Average` or fewer than two
+         *                 included points are present.
+         *
+         *     <strong>Prerequisite:</strong> the group must have been computed (i.e. `POST .../compute` must have run
+         *                 successfully for this group). Returns <strong>404</strong> when no `CalibrationCurve` exists for this analyte
+         *                 (including draft groups that have not been computed), when the analyte is absent from the group, or when the
+         *                 group is outside the caller's laboratory scope.
+         *
+         *     <strong>Permissions:</strong>
+         *       `perm.view`.
+         *
+         *     <strong>Laboratory scope:</strong> lab users see only groups belonging to their JWT laboratory.
+         *                 Platform operators must supply `laboratoryId`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Required for platform operators; ignored for lab users. */
+                    laboratoryId?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                    /** @description Analyte identifier (UUID) whose curve chart should be returned. */
+                    analyteId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CalibrationCurveChartResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/compute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Runs weighted least-squares regression for the group, persisting fitted curves and per-point diagnostics.
+         * @description Executes the full regression pipeline for every analyte present in the group's CAL runs:
+         *                 <list type="number"><item><description>Attaches the latest `MethodConfigSnapshot` (freezing methodology at this moment).</description></item><item><description>Materialises `CalibrationPoint` rows from parsed measurements and calibration levels.</description></item><item><description>Assigns per-point weights from the frozen snapshot weighting mode.</description></item><item><description>Fits the curve using the snapshot regression type (linear, forced-zero, or quadratic).</description></item><item><description>Stamps `predictedY`, `residual`, and `percentDiff` onto every point, plus SSE/RSE/R² on the curve.</description></item></list>
+         *
+         *     <strong>Idempotent recompute:</strong> calling this endpoint on an already-`Computed` group clears all
+         *                 existing curves and points before rebuilding. Manual include/exclude overrides are <strong>not</strong>
+         *                 preserved; inclusion is re-determined by the pipeline from the current measurement data.
+         *                 To change point exclusion after compute, call `POST .../points/{pointId}/exclude` and then recompute.
+         *
+         *     <strong>Status transitions:</strong>
+         *       `Draft` and `Computed` groups may be (re)computed.
+         *                 `Approved` or `Rejected` groups are immutable — returns <strong>409 Conflict</strong>.
+         *
+         *     <strong>Validation:</strong> the group must pass the readiness check (use `GET .../readiness`)
+         *                 before calling this endpoint. If regression fails for all analytes, the request returns <strong>400</strong>
+         *                 and the group retains its previous status. If regression fails for a subset of analytes, the successful
+         *                 analytes are persisted and the group transitions to `Computed`.
+         *
+         *     <strong>Laboratory scope:</strong> lab users may only compute groups whose instrument belongs to their JWT laboratory.
+         *                 Out-of-scope or missing groups return <strong>404</strong>.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/points/{pointId}/exclude": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Manually excludes a calibration point from regression with a required analyst note.
+         * @description Only `ManualExclude` and `PctDiffOutOfRange` are accepted as exclusion reasons; auto-exclusion codes
+         *                 (`MissingRatio`, `MissingIS`, `InvalidX`) are reserved for the compute pipeline and will return
+         *                 <strong>400</strong> when submitted here.
+         *
+         *     <strong>Group status rules:</strong> exclusion is allowed only when the group is in `Draft` or `Computed`
+         *                 status. `Approved` and `Rejected` groups are immutable — returns <strong>409 Conflict</strong>.
+         *
+         *     Returns <strong>409</strong> when the point is already excluded (prevents silent overwrite of the exclusion note).
+         *
+         *     <strong>Laboratory scope:</strong> the point's containing group must belong to the caller's JWT laboratory.
+         *                 Out-of-scope or missing identifiers return <strong>404</strong>.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                    /** @description Calibration point identifier (UUID). */
+                    pointId: string;
+                };
+                cookie?: never;
+            };
+            /** @description Exclusion reason and required analyst note. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ExcludeCalibrationPointRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        /**
+         * Re-includes a previously excluded calibration point, clearing all exclusion fields.
+         * @description Clears `isIncluded`, `exclusionReason`, `exclusionNote`, `excludedByUserId`, and
+         *                 `excludedAt`. The point will contribute to the next regression computation.
+         *
+         *     <strong>Group status rules:</strong> same as `POST .../exclude` — `Approved` and `Rejected`
+         *                 groups return <strong>409 Conflict</strong>.
+         *
+         *     Returns <strong>409</strong> when the point is already included.
+         *
+         *     <strong>Laboratory scope:</strong> out-of-scope or missing identifiers return <strong>404</strong>.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                    /** @description Calibration point identifier (UUID). */
+                    pointId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/excluded-analytes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns all analytes currently excluded from regression computation for the specified calibration group.
+         * @description <strong>Laboratory scope:</strong> lab users may only read groups whose instrument belongs to their JWT laboratory.
+         *                 Out-of-scope or missing groups return <strong>404</strong>.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ExcludedAnalyteDto"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /**
+         * Adds an analyte to the calibration group's exclusion list; the analyte is skipped during regression computation.
+         * @description Any lab-scoped analyte may be added regardless of whether it currently appears in the group's measurements.
+         *                 The exclusion list is preserved across `PUT` (run membership changes).
+         *
+         *     Marks the group as computation-stale — recompute before approving.
+         *
+         *     <strong>Group status rules:</strong>
+         *       `Approved` and `Rejected` groups are immutable — returns <strong>409 Conflict</strong>.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Analyte to exclude and optional note. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ExcludeAnalyteRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/excluded-analytes/{analyteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Removes an analyte from the calibration group's exclusion list; the analyte will be included in the next regression run.
+         * @description Marks the group as computation-stale — recompute before approving.
+         *
+         *     <strong>Group status rules:</strong>
+         *       `Approved` and `Rejected` groups are immutable — returns <strong>409 Conflict</strong>.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier. */
+                    id: string;
+                    /** @description Canonical analyte identifier to re-include. */
+                    analyteId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calibration-levels": {
         parameters: {
             query?: never;
@@ -2039,12 +2628,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/calibration-levels */
+        /**
+         * Returns a page of calibration levels for the caller's laboratory.
+         * @description Results are always scoped to the `LaboratoryId` claim in the caller's JWT.
+         *     Platform operators without a laboratory claim receive an empty page.
+         *     Soft-deleted levels are excluded.
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description 1-based page index (default 1). */
                     page?: number;
+                    /** @description Items per page, capped at 100 (default 25). */
                     pageSize?: number;
+                    /**
+                     * @description Optional sort expression: `field` or `field:asc` / `field:desc`.
+                     *     Supported fields: `sortOrder` (default), `levelName`, `trueConcentration`, `createdAt`.
+                     */
                     sort?: string;
                 };
                 header?: never;
@@ -2059,33 +2659,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["PagedResultOfCalibrationLevelListItemDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2099,33 +2673,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2136,7 +2683,17 @@ export interface paths {
             };
         };
         put?: never;
-        /** POST /api/calibration-levels */
+        /**
+         * Creates a new calibration level for the caller's laboratory.
+         * @description The laboratory is derived from the `LaboratoryId` JWT claim; the caller cannot specify a
+         *     different lab. Returns <strong>400</strong> if there is no laboratory claim in the token.
+         *
+         *     <strong>Name uniqueness:</strong> the name is normalized (trimmed, lowercased, underscores/hyphens/
+         *     whitespace stripped) before the uniqueness check. `Cal_1ppb` and `CAL 1 PPB` collide;
+         *     the duplicate returns <strong>400</strong> with the conflicting name in the error detail.
+         *     On success the response body contains the new level's GUID and the `Location` header
+         *     points to `GET /api/calibration-levels/{id}`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -2144,36 +2701,21 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description Level name, true concentration (≥ 0), and display sort order (≥ 0). */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["CreateCalibrationLevelRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description Created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["CreateCalibrationLevelResponse"];
                     };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -2182,7 +2724,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2196,33 +2737,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2245,16 +2759,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/calibration-levels / {id} */
+        /**
+         * Returns full calibration level detail by id.
+         * @description Returns <strong>404</strong> if the level does not exist, has been soft-deleted, or belongs to a
+         *     different laboratory than the caller's JWT claim. Cross-lab reads are not distinguished from
+         *     not-found to prevent IDOR enumeration.
+         */
         get: {
             parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                };
+                query?: never;
                 header?: never;
                 path: {
+                    /** @description Calibration level GUID. */
                     id: string;
                 };
                 cookie?: never;
@@ -2267,33 +2783,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["CalibrationLevelDetailDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2316,24 +2806,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2343,40 +2815,32 @@ export interface paths {
                 };
             };
         };
-        /** PUT /api/calibration-levels / {id} */
+        /**
+         * Updates a calibration level. Edits apply to future work only; historical computations are unaffected.
+         * @description "Future work only" means that `CalibrationPoint` rows already computed retain the concentration
+         *     values used at computation time. Only new runs and recomputations will use the updated value.
+         *
+         *     If the name changes, the same normalization and per-laboratory uniqueness check as create is applied;
+         *     a collision returns <strong>400</strong>. Attempting to update a level that belongs to a different
+         *     laboratory also returns <strong>400</strong> (IDOR protection).
+         */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Calibration level GUID to update. */
                     id: string;
                 };
                 cookie?: never;
             };
+            /** @description Replacement level name, true concentration (≥ 0), and display sort order (≥ 0). */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["UpdateCalibrationLevelRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -2391,7 +2855,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2405,33 +2868,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2442,36 +2878,28 @@ export interface paths {
             };
         };
         post?: never;
-        /** DELETE /api/calibration-levels / {id} */
+        /**
+         * Soft-deletes a calibration level. Returns 409 if referenced by any run or computed point.
+         * @description The level is soft-deleted (excluded from all queries) rather than physically removed to preserve
+         *     audit trail integrity.
+         *
+         *     Returns <strong>409 Conflict</strong> if at least one `CalibrationRun` or
+         *     `CalibrationPoint` references this level. Remove or reassign those records first.
+         *     Returns <strong>400</strong> if the level is not found, has already been deleted, or belongs to
+         *     a different laboratory than the caller's JWT claim.
+         */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Calibration level GUID to delete. */
                     id: string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -2486,7 +2914,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2507,26 +2934,8 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
                 /** @description Conflict */
                 409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2548,13 +2957,31 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/instruments */
+        /**
+         * Returns a page of instruments visible to the caller.
+         * @description <strong>Laboratory scope:</strong> lab users see only instruments belonging to their JWT laboratory.
+         *                 Platform operators see instruments across all laboratories.
+         *
+         *     <strong>Sort:</strong>
+         *       `name` (default, case-insensitive ascending) or `createdAt`;
+         *                 append `:asc` or `:desc` to override direction.
+         *
+         *     <strong>Filters:</strong> optional isActive (exact) and instrumentType
+         *                 (case-insensitive equality after trim). Omitted or blank filter arguments have no effect.
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description 1-based page index (default 1). */
                     page?: number;
+                    /** @description Items per page, capped at 100 (default 25). */
                     pageSize?: number;
+                    /** @description Sort expression: `name` or `createdAt`, optionally suffixed with `:asc` or `:desc`. */
                     sort?: string;
+                    /** @description When set, only instruments with this active flag are returned. */
+                    isActive?: boolean;
+                    /** @description When set, only instruments whose type equals this value (case-insensitive) are returned. */
+                    instrumentType?: string;
                 };
                 header?: never;
                 path?: never;
@@ -2568,33 +2995,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["PagedResultOfInstrumentListItemResponse"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2608,33 +3009,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2645,7 +3019,16 @@ export interface paths {
             };
         };
         put?: never;
-        /** POST /api/instruments */
+        /**
+         * Creates an instrument in the caller's laboratory.
+         * @description The laboratory is derived from the `LaboratoryId` JWT claim; callers cannot specify a different lab.
+         *     Returns <strong>400</strong> when the name is blank, exceeds the maximum length, duplicates an existing
+         *     instrument name in the same lab (case-insensitive), or when the token has no laboratory claim.
+         *     Returns <strong>403</strong> for platform operators.
+         *
+         *     On success the response body contains the new instrument GUID and the `Location` header is set to
+         *     `/api/instruments/{id}`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -2653,36 +3036,21 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description New instrument fields. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["CreateInstrumentRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description Created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["CreateInstrumentResponse"];
                     };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -2691,7 +3059,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2705,33 +3072,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2754,16 +3094,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/instruments / {id} */
+        /**
+         * Returns full detail for a single instrument.
+         * @description <strong>Laboratory scope:</strong> lab users may only access instruments belonging to their JWT laboratory.
+         *                 Platform operators may access any instrument. Out-of-scope or missing instruments return <strong>404</strong>
+         *                 (indistinguishable by design to prevent tenancy inference).
+         *
+         *     The detail response includes all audit fields (`createdAt`, `createdBy`, `updatedAt`, `updatedBy`)
+         *                 and `rowVersion` for optimistic concurrency on `PUT`.
+         */
         get: {
             parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                };
+                query?: never;
                 header?: never;
                 path: {
+                    /** @description Instrument identifier (UUID). */
                     id: string;
                 };
                 cookie?: never;
@@ -2776,18 +3121,62 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["InstrumentDetailResponse"];
                     };
                 };
-                /** @description Created */
-                201: {
+                /** @description Unauthorized */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        /**
+         * Replaces mutable fields on an instrument.
+         * @description Returns <strong>404</strong> when the id is unknown or outside the caller's laboratory.
+         *     Returns <strong>409</strong> when `rowVersion` does not match the stored concurrency token.
+         *     Returns <strong>400</strong> for validation or duplicate name (case-insensitive within the lab).
+         *     Returns <strong>403</strong> for platform operators.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Instrument id. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Replacement field values and concurrency token. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateInstrumentRequest"];
+                };
+            };
+            responses: {
                 /** @description No Content */
                 204: {
                     headers: {
@@ -2802,7 +3191,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2841,8 +3229,130 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Too Many Requests */
-                429: {
+            };
+        };
+        post?: never;
+        /**
+         * Soft-deletes an instrument (excluded from subsequent list/detail queries).
+         * @description Returns <strong>404</strong> when the id is unknown or outside the caller's laboratory.
+         *     Existing calibration runs and groups retain the instrument id for traceability.
+         *     Returns <strong>403</strong> for platform operators.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Instrument id. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/instruments/{id}/suppressed-analytes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns all analytes suppressed on the specified instrument.
+         * @description <strong>Laboratory scope:</strong> lab users may only read instruments in their JWT laboratory.
+         *                 Out-of-scope or missing instruments return <strong>404</strong>.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Instrument identifier. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["SuppressedAnalyteDto"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2853,8 +3363,168 @@ export interface paths {
             };
         };
         put?: never;
-        post?: never;
+        /**
+         * Adds an analyte to the instrument's suppression list; the analyte will be skipped when future runs are uploaded.
+         * @description Only mapped analytes (those with a canonical record in the caller's lab) can be suppressed.
+         *                 Unmapped compound rows in raw run text are unaffected.
+         *
+         *     Suppression does <strong>not</strong> affect runs already uploaded; it takes effect on the next upload.
+         *
+         *     <strong>Platform operators</strong> cannot mutate instrument configuration — returns <strong>403</strong>.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Instrument identifier. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Analyte to suppress and optional note. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["SuppressAnalyteRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/instruments/{id}/suppressed-analytes/{analyteId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Removes an analyte from the instrument's suppression list.
+         * @description Future run uploads will resume storing measurements for this analyte.
+         *                 Already-uploaded runs are not affected.
+         *
+         *     <strong>Platform operators</strong> cannot mutate instrument configuration — returns <strong>403</strong>.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Instrument identifier. */
+                    id: string;
+                    /** @description Canonical analyte identifier to unsuppress. */
+                    analyteId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -2867,7 +3537,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/internal-standards */
+        /** Returns every internal standard for the caller's laboratory, sorted by name. */
         get: {
             parameters: {
                 query?: never;
@@ -2883,24 +3553,8 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["InternalStandardListItemDto"][];
                     };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -2909,7 +3563,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -2923,33 +3576,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2960,7 +3586,15 @@ export interface paths {
             };
         };
         put?: never;
-        /** POST /api/internal-standards */
+        /**
+         * Creates an internal standard in the caller's laboratory.
+         * @description The laboratory is derived from the `LaboratoryId` JWT claim; the caller cannot specify a different lab.
+         *
+         *     <strong>Name uniqueness:</strong> names are normalized (trimmed, lowercased, hyphens/underscores/whitespace stripped)
+         *     before the uniqueness check. Duplicates within the same laboratory return <strong>400</strong>.
+         *     On success the response body contains the new internal standard GUID and the `Location` header
+         *     points to `GET /api/internal-standards/{id}`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -2968,36 +3602,21 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description Name (required) and optional CAS number for the internal standard. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["CreateInternalStandardRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description Created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["CreateInternalStandardResponse"];
                     };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -3006,7 +3625,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3020,33 +3638,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3069,16 +3660,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/internal-standards / {id} */
+        /** Returns one internal standard by id within the caller's laboratory. */
         get: {
             parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                };
+                query?: never;
                 header?: never;
                 path: {
+                    /** @description Internal standard GUID. */
                     id: string;
                 };
                 cookie?: never;
@@ -3091,33 +3679,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["InternalStandardDetailDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3140,24 +3702,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3167,40 +3711,29 @@ export interface paths {
                 };
             };
         };
-        /** PUT /api/internal-standards / {id} */
+        /**
+         * Updates an internal standard in the caller's laboratory.
+         * @description Applies the same name normalization and per-laboratory uniqueness check as create.
+         *     Returns <strong>400</strong> when the internal standard is not found or belongs to another laboratory
+         *     (cross-lab ids are treated as not-found to prevent IDOR enumeration).
+         */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Internal standard GUID to update. */
                     id: string;
                 };
                 cookie?: never;
             };
+            /** @description Replacement name and optional CAS number. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["UpdateInternalStandardRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -3215,7 +3748,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3229,33 +3761,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3266,36 +3771,28 @@ export interface paths {
             };
         };
         post?: never;
-        /** DELETE /api/internal-standards / {id} */
+        /**
+         * Soft-deletes an internal standard when no analyte uses it as default IS.
+         * @description The internal standard is soft-deleted (excluded from all queries) to preserve audit trail integrity.
+         *
+         *     Returns <strong>409 Conflict</strong> when at least one canonical `Analyte` in the laboratory
+         *     still references this internal standard via `defaultInternalStandardId`. Update or clear those
+         *     analyte assignments before deleting.
+         *     Returns <strong>400</strong> when the internal standard is not found, already deleted, or belongs to
+         *     another laboratory.
+         */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Internal standard GUID to delete. */
                     id: string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -3310,7 +3807,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3331,26 +3827,8 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
                 /** @description Conflict */
                 409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3374,7 +3852,22 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/Invitations */
+        /**
+         * Creates a laboratory invitation, sends an acceptance email to the invitee, and returns the one-time raw token.
+         * @description On success the invitee receives an email with a link of the form
+         *     `{Invitation:FrontendBaseUrl}{Invitation:AcceptPath}?token=<raw-token>`.
+         *     Clicking the link opens the frontend acceptance page with the token pre-populated.
+         *
+         *     The `rawToken` in the response is the same plaintext token embedded in the email link.
+         *     It is shown <em>once</em> and cannot be retrieved again (only the server-side hash is persisted).
+         *     In local development, when `AzureEmail:Enabled` is `false`, the link is printed to
+         *     the console instead of being emailed — use it to test the acceptance flow without ACS.
+         *     If `initialRoleId` is supplied, the user receives that role on acceptance instead of the
+         *     default `Viewer` role. The role must belong to the same laboratory (or be a built-in role);
+         *     cross-lab or unknown role ids return <strong>400</strong>.
+         *     Platform operators can target any laboratory by providing `LaboratoryId`.
+         *     Lab admins always create invitations within their own lab.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -3382,9 +3875,10 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description Invitee email, optional laboratory id, optional validity window (days), and optional initial role id. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["InvitationsController_InviteRequest"];
                 };
             };
             responses: {
@@ -3394,24 +3888,8 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["InvitationsController_InviteCreatedResponse"];
                     };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -3420,7 +3898,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3434,24 +3911,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3483,12 +3942,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/LabTechnicians */
+        /**
+         * Returns a page of technician profiles visible to the caller.
+         * @description Lab users see only technicians in their own laboratory.
+         *     Platform operators see all technicians across all laboratories.
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description 1-based page index (default 1). */
                     page?: number;
+                    /** @description Items per page, capped at 100 (default 25). */
                     pageSize?: number;
+                    /**
+                     * @description Sort expression: `field` or `field:asc` / `field:desc`.
+                     *     Supported fields: `lastName` (default), `firstName`, `createdAt`.
+                     */
                     sort?: string;
                 };
                 header?: never;
@@ -3503,33 +3972,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["PagedResultOfLabTechnicianDetailDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3543,33 +3986,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3580,7 +3996,17 @@ export interface paths {
             };
         };
         put?: never;
-        /** POST /api/LabTechnicians */
+        /**
+         * Creates a lab technician profile and links it to an existing Identity user.
+         * @description The profile is created within the caller's laboratory scope (from the `LaboratoryId` JWT claim).
+         *     Platform operators can specify a `LaboratoryId` in the request body to create for any lab.
+         *
+         *     The `IdentityUserId` in the request must refer to an existing Identity user who does not already
+         *     have a technician profile. Returns <strong>400</strong> when the user is not found, belongs to a different
+         *     laboratory, or already has a profile.
+         *     On success the response body contains the new technician GUID and the `Location` header
+         *     points to `GET /api/LabTechnicians/{id}`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -3588,36 +4014,21 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description Identity user id, first name, last name, optional qualifications and hire date. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["CreateLabTechnicianRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description Created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["CreateLabTechnicianResponse"];
                     };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -3626,7 +4037,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3640,33 +4050,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3689,16 +4072,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/LabTechnicians / {id} */
+        /**
+         * Returns a technician profile by id, scoped to the caller's laboratory.
+         * @description Returns <strong>404</strong> when the profile does not exist or belongs to a different laboratory.
+         *     Cross-lab ids are not distinguished from not-found to prevent IDOR enumeration.
+         */
         get: {
             parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                };
+                query?: never;
                 header?: never;
                 path: {
+                    /** @description Lab technician GUID. */
                     id: string;
                 };
                 cookie?: never;
@@ -3711,33 +4095,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["LabTechnicianDetailDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3760,24 +4118,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3787,40 +4127,32 @@ export interface paths {
                 };
             };
         };
-        /** PUT /api/LabTechnicians / {id} */
+        /**
+         * Updates an existing lab technician profile.
+         * @description Lab admins can update any technician in their own laboratory; platform operators can update any.
+         *     Returns <strong>400</strong> when the profile is not found or belongs to another laboratory.
+         *
+         *     This endpoint performs an admin update (name, qualifications, hire date, active flag).
+         *     For the self-service flow where a user updates their own profile without admin permissions,
+         *     use `PUT /api/Auth/me`.
+         */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Lab technician GUID to update. */
                     id: string;
                 };
                 cookie?: never;
             };
+            /** @description Replacement name, qualifications, hire date, and active flag. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["UpdateLabTechnicianRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -3835,7 +4167,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3849,33 +4180,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3899,7 +4203,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/LabTechnicians / me */
+        /**
+         * Returns the technician profile linked to the currently authenticated user.
+         * @description Requires `perm.view` because this returns domain data from the `LabTechnician` table.
+         *     Returns <strong>404</strong> when the current user does not have a linked technician profile
+         *     (e.g. platform operators, or lab users who have not yet been given a profile by an admin).
+         *
+         *     For basic identity context (user id, email, roles, permissions) without a `perm.view` requirement,
+         *     use `GET /api/Auth/me` instead.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -3915,33 +4227,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["LabTechnicianDetailDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -3964,24 +4250,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4006,12 +4274,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/Laboratories */
+        /**
+         * Returns a page of laboratories visible to the caller.
+         * @description Lab users see only their own laboratory (at most one row).
+         *     Platform operators see all laboratories across the system.
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description 1-based page index (default 1). */
                     page?: number;
+                    /** @description Items per page, capped at 100 (default 25). */
                     pageSize?: number;
+                    /**
+                     * @description Sort expression: `field` or `field:asc` / `field:desc`.
+                     *     Supported fields: `name` (default), `createdAt`.
+                     */
                     sort?: string;
                 };
                 header?: never;
@@ -4026,33 +4304,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["PagedResultOfLaboratoryListItemDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4066,33 +4318,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4103,7 +4328,16 @@ export interface paths {
             };
         };
         put?: never;
-        /** POST /api/Laboratories */
+        /**
+         * Creates a new laboratory (platform operators only).
+         * @description Requires the `perm.laboratories.create` permission, which is held only by the WLTR Super Administrator.
+         *     Lab admins and other lab-scoped users cannot create laboratories.
+         *
+         *     After creation, an <strong>email notification</strong> is dispatched to configured recipients via the
+         *     laboratory email notifier. The notification is fire-and-forget; failure does not roll back the lab record.
+         *     On success the response body contains the new laboratory GUID and the `Location` header
+         *     points to `GET /api/Laboratories/{id}`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -4111,36 +4345,21 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description Laboratory name, address, and optional contact information. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["CreateLaboratoryRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description Created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["CreateLaboratoryResponse"];
                     };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -4149,7 +4368,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4163,33 +4381,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4212,16 +4403,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/Laboratories / {id} */
+        /**
+         * Returns full laboratory details by id.
+         * @description Lab users can only retrieve their own laboratory; attempts to read another lab's id return <strong>404</strong>
+         *     rather than <strong>403</strong> to prevent IDOR enumeration.
+         *     Platform operators can read any laboratory.
+         */
         get: {
             parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                };
+                query?: never;
                 header?: never;
                 path: {
+                    /** @description Laboratory GUID. */
                     id: string;
                 };
                 cookie?: never;
@@ -4234,33 +4427,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["LaboratoryDetailDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4283,24 +4450,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4310,40 +4459,29 @@ export interface paths {
                 };
             };
         };
-        /** PUT /api/Laboratories / {id} */
+        /**
+         * Updates a laboratory's configuration and contact fields.
+         * @description Lab administrators can update their own laboratory; platform operators can update any.
+         *     Returns <strong>400</strong> when the laboratory is not found or the caller belongs to a different lab.
+         *     Active / inactive toggle is included in the request to allow platform operators to deactivate a lab.
+         */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Laboratory GUID to update. */
                     id: string;
                 };
                 cookie?: never;
             };
+            /** @description Replacement name, address, contact, and active flag. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["UpdateLaboratoryRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -4358,7 +4496,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4372,33 +4509,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4422,12 +4532,21 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/method-configs */
+        /**
+         * Returns a page of method configs for the caller's laboratory.
+         * @description Soft-deleted configs are excluded. Platform operators without a laboratory claim receive an empty page.
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description 1-based page index (default 1). */
                     page?: number;
+                    /** @description Items per page, capped at 100 (default 25). */
                     pageSize?: number;
+                    /**
+                     * @description Sort expression: `field` or `field:asc` / `field:desc`.
+                     *     Supported fields: `name` (default), `createdAt`, `version`.
+                     */
                     sort?: string;
                 };
                 header?: never;
@@ -4442,33 +4561,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["PagedResultOfMethodConfigListItemDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4482,33 +4575,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4519,7 +4585,15 @@ export interface paths {
             };
         };
         put?: never;
-        /** POST /api/method-configs */
+        /**
+         * Creates a new method config for the caller's laboratory at version 1.
+         * @description The laboratory is derived from the `LaboratoryId` JWT claim. Returns <strong>400</strong>
+         *     when the token has no laboratory claim or when any field value is out of range.
+         *     The initial snapshot is automatically created alongside the config record.
+         *
+         *     On success the response body contains the new config GUID and the `Location` header
+         *     points to `GET /api/method-configs/{id}`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -4527,36 +4601,21 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description Regression type, weighting, force-zero flag, label mode, and acceptance thresholds. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["CreateMethodConfigRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description Created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["CreateMethodConfigResponse"];
                     };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -4565,7 +4624,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4579,33 +4637,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4628,16 +4659,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/method-configs / {id} */
+        /**
+         * Returns full method config detail by id, including the current version number.
+         * @description Returns <strong>404</strong> when the config does not exist, has been soft-deleted, or belongs to another laboratory.
+         *     Cross-lab ids are not distinguished from not-found.
+         */
         get: {
             parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                };
+                query?: never;
                 header?: never;
                 path: {
+                    /** @description Method config GUID. */
                     id: string;
                 };
                 cookie?: never;
@@ -4650,33 +4682,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["MethodConfigDetailDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4699,24 +4705,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4726,19 +4714,31 @@ export interface paths {
                 };
             };
         };
-        /** PUT /api/method-configs / {id} */
+        /**
+         * Updates a method config. Increments the version and appends a snapshot only when a tracked field changed.
+         * @description Returns <strong>200 OK</strong> with the (possibly unchanged) `currentVersion` in the body — unlike
+         *     most update endpoints which return 204. This allows callers to see whether a snapshot was created.
+         *
+         *     If no tracked field value changed, the version is <em>not</em> incremented and no new snapshot is appended,
+         *     making the update idempotent for identical payloads.
+         *     Returns <strong>409 Conflict</strong> on optimistic concurrency failure (stale `RowVersion`).
+         *     Returns <strong>400</strong> when the config is not found, belongs to another laboratory, or is
+         *     referenced by an approved calibration group (approved groups are locked).
+         */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Method config GUID to update. */
                     id: string;
                 };
                 cookie?: never;
             };
+            /** @description Replacement field values for the config. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["UpdateMethodConfigRequest"];
                 };
             };
             responses: {
@@ -4748,24 +4748,8 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["UpdateMethodConfigResponse"];
                     };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -4774,7 +4758,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4795,26 +4778,8 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
                 /** @description Conflict */
                 409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4825,36 +4790,26 @@ export interface paths {
             };
         };
         post?: never;
-        /** DELETE /api/method-configs / {id} */
+        /**
+         * Soft-deletes a method config. Returns 409 when referenced by any calibration group.
+         * @description Method configs are soft-deleted (excluded from all queries) to preserve audit trail integrity.
+         *
+         *     Returns <strong>409 Conflict</strong> when at least one `CalibrationGroup` references this config
+         *     (regardless of the group's approval status). Reassign or delete those groups first.
+         *     Returns <strong>400</strong> when the config is not found, already deleted, or belongs to another laboratory.
+         */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Method config GUID to delete. */
                     id: string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -4869,7 +4824,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4890,26 +4844,8 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
                 /** @description Conflict */
                 409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -4931,15 +4867,25 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/method-configs / {id} / snapshots */
+        /**
+         * Returns a page of snapshots for a method config, ordered most-recent first.
+         * @description Snapshots are immutable (append-only). Each snapshot captures all config field values at the time
+         *     a version was created. Use this endpoint to audit the full configuration history for a calibration group.
+         *
+         *     Returns an empty page when the config exists but has not been updated since creation
+         *     (version 1 snapshot is the creation snapshot).
+         */
         get: {
             parameters: {
                 query?: {
+                    /** @description 1-based page index (default 1). */
                     page?: number;
+                    /** @description Items per page, capped at 100 (default 25). */
                     pageSize?: number;
                 };
                 header?: never;
                 path: {
+                    /** @description Method config GUID. */
                     id: string;
                 };
                 cookie?: never;
@@ -4952,33 +4898,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["PagedResultOfMethodConfigSnapshotDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -4992,33 +4912,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5043,13 +4936,20 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/method-configs / {id} / snapshots / {version} */
+        /**
+         * Returns a specific method config snapshot by version number.
+         * @description Snapshots are immutable once created. Version numbers start at 1 and increment with each material change.
+         *     Returns <strong>404</strong> when no snapshot exists at the given version for this config,
+         *     or when the config itself is not found or belongs to another laboratory.
+         */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Method config GUID. */
                     id: string;
+                    /** @description Snapshot version number (≥ 1). */
                     version: number;
                 };
                 cookie?: never;
@@ -5062,33 +4962,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["MethodConfigSnapshotDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5111,24 +4985,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5153,14 +5009,26 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/Roles */
+        /**
+         * Lists built-in and custom roles visible in the caller's effective laboratory scope.
+         * @description Lab users see built-in roles plus custom roles scoped to their laboratory.
+         *     Platform operators without a laboratory claim see all roles across the system.
+         *     Platform operators with a `laboratoryId` query parameter see that lab's custom roles plus built-ins.
+         */
         get: {
             parameters: {
                 query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
+                    /** @description Platform operators: optional laboratory to scope the list. Lab users: ignored. */
                     laboratoryId?: string;
+                    /** @description 1-based page index (default 1). */
+                    page?: number;
+                    /** @description Items per page, capped at 100 (default 25). */
+                    pageSize?: number;
+                    /**
+                     * @description Sort expression: `field` or `field:asc` / `field:desc`.
+                     *     Supported field: `name` (default).
+                     */
+                    sort?: string;
                 };
                 header?: never;
                 path?: never;
@@ -5174,33 +5042,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["PagedResultOfRoleSummaryDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5214,33 +5056,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5251,7 +5066,18 @@ export interface paths {
             };
         };
         put?: never;
-        /** POST /api/Roles */
+        /**
+         * Creates a custom role in the caller's laboratory.
+         * @description Custom roles are scoped to a single laboratory; they cannot be shared across laboratories.
+         *     The display name must be unique within the laboratory (case-insensitive, after trimming).
+         *
+         *     At least one permission must be provided. All permission values must be from the defined set:
+         *     `perm.view`, `perm.runs.upload`, `perm.groups.approve`, `perm.config.edit`,
+         *     `perm.users.manage_lab`, `perm.roles.manage_lab`, `perm.laboratories.manage`,
+         *     `perm.laboratories.create`, `perm.platform.manage`.
+         *     Returns <strong>400</strong> when the name is blank, too long (> 128 chars), already taken in the lab,
+         *     or when any permission value is unknown.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -5259,9 +5085,10 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description Display name, optional laboratory id (platform operators), and permission list. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["RolesController_CreateRoleRequest"];
                 };
             };
             responses: {
@@ -5271,24 +5098,8 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["RoleSummaryDto"];
                     };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -5297,7 +5108,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5311,33 +5121,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5361,40 +5144,30 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** PUT /api/Roles / {roleId} / name */
+        /**
+         * Renames a custom role in the caller's laboratory.
+         * @description Built-in roles cannot be renamed via this endpoint.
+         *     The new name must be unique within the laboratory (same normalization and uniqueness rules as create).
+         *     Returns <strong>400</strong> when the role is not found, is a built-in role, belongs to another laboratory,
+         *     or the new name collides with an existing custom role.
+         */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Custom role id (Identity role id, not the display name). */
                     roleId: string;
                 };
                 cookie?: never;
             };
+            /** @description New display name and optional laboratory id. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["RolesController_RenameRoleRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -5409,7 +5182,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5423,33 +5195,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5474,40 +5219,33 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** PUT /api/Roles / {roleId} / permissions */
+        /**
+         * Replaces all permission claims on a custom role.
+         * @description This is a full replace — the provided list becomes the exact set of permissions on the role.
+         *     Built-in roles cannot be updated via this endpoint.
+         *
+         *     At least one permission must be provided. All values must be valid permission constants.
+         *     Role/permission changes take effect on the next access-token issuance for affected users.
+         *     Returns <strong>400</strong> when the role is not found, is built-in, belongs to another laboratory,
+         *     or any permission value is unrecognized.
+         */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Custom role id. */
                     roleId: string;
                 };
                 cookie?: never;
             };
+            /** @description Full replacement permission list and optional laboratory id. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["RolesController_UpdateRolePermissionsRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -5522,7 +5260,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5536,33 +5273,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5589,36 +5299,27 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** DELETE /api/Roles / {roleId} */
+        /**
+         * Retires (deletes) a custom role that is not currently assigned to any user.
+         * @description Built-in roles cannot be retired via this endpoint.
+         *     Returns <strong>400</strong> when the role still has assigned users — remove role assignments first.
+         *     Returns <strong>400</strong> when the role is not found, is a built-in role, or belongs to another laboratory.
+         */
         delete: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Platform operators: target laboratory id. Lab users: their own lab is used. */
+                    laboratoryId?: string;
+                };
                 header?: never;
                 path: {
+                    /** @description Custom role id to delete. */
                     roleId: string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -5633,7 +5334,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5647,33 +5347,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5697,7 +5370,16 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/Roles / assignments */
+        /**
+         * Assigns one or more roles to a laboratory user.
+         * @description Role ids must refer to roles visible to the caller's laboratory (built-in roles or the lab's own custom roles).
+         *     Cross-lab custom role ids are rejected with <strong>400</strong>.
+         *
+         *     Role changes take effect on the <em>next access-token issuance</em> for the target user.
+         *     The current session is unaffected until the access token expires and is refreshed.
+         *     Returns <strong>400</strong> when the target user is not found, belongs to a different laboratory,
+         *     any role id is not found, or any role is outside the laboratory scope.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -5705,30 +5387,13 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description Target user id, optional laboratory id (platform operators), and role ids to assign. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["RolesController_ChangeUserRolesRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -5743,7 +5408,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5757,33 +5421,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5793,7 +5430,12 @@ export interface paths {
                 };
             };
         };
-        /** DELETE /api/Roles / assignments */
+        /**
+         * Removes one or more roles from a laboratory user.
+         * @description Role changes take effect on the next access-token issuance for the target user.
+         *
+         *     <strong>Safety guards — returns 400 when:</strong><list type="bullet"><item><description>The caller attempts to remove their own `LabAdmin` role (self-lockout prevention).</description></item><item><description>Removing the `LabAdmin` role would leave the laboratory with no remaining lab admin (orphan-lab prevention).</description></item><item><description>The target user is not found, belongs to a different laboratory, or any role id is invalid.</description></item></list>
+         */
         delete: {
             parameters: {
                 query?: never;
@@ -5801,26 +5443,13 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            /** @description Target user id, optional laboratory id (platform operators), and role ids to remove. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["RolesController_ChangeUserRolesRequest"];
+                };
+            };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -5835,7 +5464,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5849,33 +5477,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5897,16 +5498,34 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/runs */
+        /**
+         * Returns a filtered page of calibration runs in the caller's laboratory.
+         * @description <strong>Laboratory scope:</strong> lab users see only runs whose instrument belongs to their JWT laboratory.
+         *                 Platform operators see runs across all laboratories. When `instrumentId` is supplied it must belong to
+         *                 the effective scope; an out-of-scope instrument silently returns an empty page.
+         *
+         *     <strong>Filters</strong> (all optional, combinable):
+         *                 <list type="bullet"><item><description>`instrumentId` — restrict to a single instrument.</description></item><item><description>`runType` — case-insensitive: `CAL` or `ICV`.</description></item><item><description>`status` — case-insensitive: `Valid`, `ValidWithWarnings`, or `Invalid`.</description></item></list>
+         *
+         *     <strong>Sort:</strong>
+         *       `runDate` (default, newest first), `status`, or `createdAt`;
+         *                 append `:asc` or `:desc` to override direction.
+         */
         get: {
             parameters: {
                 query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
+                    /** @description Optional: restrict to a single instrument (must be in the effective lab scope). */
                     instrumentId?: string;
+                    /** @description Optional: `CAL` or `ICV` (case-insensitive). */
                     runType?: string;
+                    /** @description Optional: `Valid`, `ValidWithWarnings`, or `Invalid` (case-insensitive). */
                     status?: string;
+                    /** @description 1-based page index (default 1). */
+                    page?: number;
+                    /** @description Items per page, capped at 100 (default 25). */
+                    pageSize?: number;
+                    /** @description Sort expression: `runDate`, `status`, or `createdAt`, optionally suffixed with `:asc` or `:desc`. */
+                    sort?: string;
                 };
                 header?: never;
                 path?: never;
@@ -5920,33 +5539,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["PagedResultOfCalibrationRunListItemResponse"];
                     };
                 };
                 /** @description Unauthorized */
@@ -5960,33 +5553,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -5997,7 +5563,23 @@ export interface paths {
             };
         };
         put?: never;
-        /** POST /api/runs */
+        /**
+         * Uploads a CAL or ICV run from raw instrument text.
+         * @description The caller must have an active <strong>lab technician profile</strong> linked to their Identity user.
+         *     The `InstrumentId` must belong to the caller's laboratory; cross-lab instrument ids return <strong>400</strong>.
+         *
+         *     For `CAL` runs, `Level` is resolved by normalized name to a calibration level in the caller's
+         *     laboratory. The level name is case-insensitive and ignores underscores, hyphens, and extra whitespace.
+         *     The response always includes `warnings` (header parse issues), `measurementCount`
+         *     (number of successfully parsed compound rows), and `measurementWarnings` (flattened human-readable
+         *     strings: parser warnings, compound-row issues, and structured measurement validation messages such as
+         *     missing analyte mapping, missing response ratio when IS rows exist, non-positive analyte or IS response,
+         *     or malformed concentration fields). For machine-readable validation with `code`, `isError`,
+         *     and `measurementId`, call `GET /api/runs/{id}/validation` after upload.
+         *     The upload succeeds even when `warnings` or `measurementWarnings` are present — check
+         *     `status` on the subsequent `GET` detail to determine usability.
+         *     The `Location` header on the 201 response points to `GET /api/runs/{id}`.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -6005,36 +5587,21 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
+            /** @description Run type (CAL/ICV), instrument id, optional calibration level name, acquisition date, and full raw text. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["CreateRunRequest"];
                 };
             };
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description Created */
                 201: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["CreateRunResponse"];
                     };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -6043,7 +5610,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -6057,33 +5623,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6106,16 +5645,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/runs / {id} */
+        /**
+         * Returns parsed metadata and status for a single run (excludes raw text).
+         * @description <list type="bullet">
+         *       <item>
+         *         <description>
+         *           <strong>200</strong> — run found and accessible. Platform operators can read any run; lab users only within their laboratory.</description>
+         *       </item>
+         *       <item>
+         *         <description>
+         *           <strong>404</strong> — no run with this id, related instrument data is missing, or the run belongs to a different laboratory than the caller's (indistinguishable by design to prevent tenancy inference).</description>
+         *       </item>
+         *     </list>
+         *                 The response includes `status` (Valid / ValidWithWarnings / Invalid), parsed header fields, and `measurementCount`.
+         *                 Raw text is intentionally excluded from this endpoint; it is available directly in the database for audit purposes.
+         */
         get: {
             parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                };
+                query?: never;
                 header?: never;
                 path: {
+                    /** @description Run GUID from `POST /api/runs`. */
                     id: string;
                 };
                 cookie?: never;
@@ -6128,33 +5678,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["RunDetailResponse"];
                     };
                 };
                 /** @description Unauthorized */
@@ -6166,35 +5690,8 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6206,52 +5703,28 @@ export interface paths {
         };
         put?: never;
         post?: never;
-        /** DELETE /api/runs / {id} */
+        /**
+         * Soft-deletes a run that is not linked to any calibration group.
+         * @description Laboratory users may delete only runs for instruments in their laboratory. If the run is a CAL or ICV member of any group, the request fails with <strong>409</strong> until the run is removed from all groups. Raw text is not returned; the audit trail records a hash and metadata.
+         */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Run identifier. */
                     id: string;
                 };
                 cookie?: never;
             };
             requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
                 };
                 /** @description Unauthorized */
                 401: {
@@ -6282,15 +5755,6 @@ export interface paths {
                 };
                 /** @description Conflict */
                 409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6305,19 +5769,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/runs/{id}/measurements": {
+    "/api/runs/{id}/internal-standard-summaries": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** GET /api/runs / {id} / measurements */
+        /**
+         * Returns aggregated internal-standard (IS) response statistics for this run (min, max, mean, count per normalized IS name).
+         * @description Only measurement rows with <strong>InternalStandard</strong> compound category are included; statistics use each row's
+         *                 <strong>Response</strong> (instrument peak area/count), grouped by the same normalized name rules used for IS matching on targets.
+         *
+         *     <strong>Laboratory scope:</strong> lab users are limited to runs whose instrument belongs to their JWT `LaboratoryId`
+         *                 (otherwise <strong>404</strong>). <strong>Platform operators</strong> must pass `laboratoryId` and it must match that
+         *                 instrument's laboratory — omitting it yields <strong>400</strong>; mismatch yields <strong>404</strong>.
+         *
+         *     <strong>Thresholds:</strong> optional `methodConfigId` selects a method config in the effective lab. When present,
+         *                 `internalStandardResponseMin` / `internalStandardResponseMax` on that config (inclusive bounds on the <strong>mean</strong>)
+         *                 set `isWarning` and `warningMessages` when the mean is strictly outside the configured range. When `methodConfigId`
+         *                 is omitted, no threshold evaluation is performed (statistics only).
+         *
+         *     <strong>Export:</strong> default response is a JSON array. Use `format=csv` for UTF-8 CSV (`text/csv`) with a header row.
+         *                 See the OpenAPI document introduction (<strong>Internal standard response summaries</strong>) for the full field reference table.
+         */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Required for platform operators; ignored for laboratory users (JWT scope applies). */
+                    laboratoryId?: string;
+                    /** @description Optional method config id for IS mean threshold flags; must belong to the effective laboratory. */
+                    methodConfigId?: string;
+                    /** @description Response format: omit or any value other than `csv` for JSON; `csv` (case-insensitive) for CSV download. */
+                    format?: string;
+                };
                 header?: never;
                 path: {
+                    /** @description Run identifier. */
                     id: string;
                 };
                 cookie?: never;
@@ -6330,24 +5818,9 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["InternalStandardSummaryDto"][];
+                        "text/csv": components["schemas"]["InternalStandardSummaryDto"][];
                     };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -6356,7 +5829,81 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "text/csv": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/csv": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/csv": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                        "text/csv": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/runs/{id}/measurements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns compound measurements for a run with analyte resolution and IS normalization fields.
+         * @description Measurements are the parsed compound result rows from the run's raw text. Each item includes:
+         *     <list type="bullet"><item><description>`id` — persisted measurement row id.</description></item><item><description>`rawCompoundName` — compound name as parsed from the export.</description></item><item><description>`analyteId` / `canonicalAnalyteName` / `isResolved` — canonical analyte when the name matched an analyte or alias at upload; otherwise null / false.</description></item><item><description>`internalStandardResponse` — response of the matched internal-standard compound row used as the divisor when normalization ran; null when no IS was linked for this row or the analyte has no default IS.</description></item><item><description>`responseRatio` — `analyteResponse / internalStandardResponse` when both the analyte response and IS response are positive and a matching IS row exists; null when normalization did not apply or IS response was not positive (see `GET /api/runs/{id}/validation` for issue codes).</description></item></list>
+         *     Lab scope rules are the same as `GET /api/runs/{id}`:<list type="bullet"><item><description><strong>200</strong> — caller is in the run's laboratory (or is a platform operator).</description></item><item><description><strong>404</strong> — no run with this id, related instrument data is missing, or the run belongs to a different laboratory than the caller's (returned as not found for lab users to prevent tenancy inference; same as `GET /api/runs/{id}`).</description></item></list>
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Run GUID. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CalibrationMeasurementListItemDto"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -6368,35 +5915,8 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6421,12 +5941,27 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/runs / {id} / validation */
+        /**
+         * Returns structured validation for parsed measurements (errors versus warnings) and aggregate run status for regression gating.
+         * @description Requires `perm.view`. Same laboratory scope as `GET /api/runs/{id}` except cross-lab access returns
+         *     <strong>403 Forbidden</strong> (not masked as 404) for this route.
+         *
+         *     The `status` string mirrors Wltr.Domain.Enums.RunStatus: `Valid`, `ValidWithWarnings`, or `Invalid`.
+         *     Wltr.Domain.Enums.RunStatus.Invalid means the run must not be used for regression (e.g. no usable target rows).
+         *     Issues are split into `errors` (`isError: true`) and `warnings` (`isError: false`).
+         *     Each issue includes `code` (numeric enum), `message`, optional `measurementId`, `rawCompoundName`,
+         *     `sourceLineNumber`, and optional `calibrationRunId` (set for some group-level readiness findings).
+         *     Common `code` values (see `RunValidationIssueCode` in schema): `NonPositiveResponse` (0) — target response not positive;
+         *     `MissingAnalyteMapping` (1); `MissingInternalStandard` (2) — run has IS compound rows but ratio missing for a target row;
+         *     `MalformedConcentrationOrRatio` (3); `NonPositiveInternalStandardResponse` (4) — IS response zero or negative so ratio cannot be computed;
+         *     `InsufficientCalibrationLevels` (5) through `InvalidResponseRatio` (10) are used by calibration-group readiness and other aggregate checks.
+         */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Run identifier. */
                     id: string;
                 };
                 cookie?: never;
@@ -6439,33 +5974,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                        "application/json": components["schemas"]["RunValidationResponse"];
                     };
                 };
                 /** @description Unauthorized */
@@ -6488,138 +5997,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/runs/{id}/internal-standard-summaries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GET /api/runs / {id} / internal-standard-summaries */
-        get: {
-            parameters: {
-                query?: {
-                    laboratoryId?: string;
-                    methodConfigId?: string;
-                    format?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                        "text/csv": string;
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6646,19 +6023,56 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** POST /api/runs / {id} / analyte-mapping / resolve */
+        /**
+         * Resolves an unmatched raw compound name to a canonical analyte, with optional permanent alias creation.
+         * @description This endpoint handles the analyte-mapping step that follows a run upload where one or more compound rows
+         *                 could not be automatically matched to a canonical analyte. It operates in two distinct modes controlled
+         *                 by `saveAsAlias`:
+         *
+         *     <strong>Mode 1 — Save alias (`saveAsAlias: true`):</strong>
+         *                 Creates a permanent `AnalyteAlias` in the laboratory that maps `rawCompoundName` to the
+         *                 target `analyteId`. After the alias is persisted, a full laboratory-wide remap runs automatically,
+         *                 resolving every existing unresolved measurement across all runs whose normalized compound name matches
+         *                 the alias. The `applyScope` field has no effect in this mode.
+         *                 <list type="bullet"><item><description>If an alias for this normalized name already exists and points to the <em>same</em> analyte, no duplicate is created; a lab remap still runs and `createdAliasId` will be `null`.</description></item><item><description>If an alias already exists pointing to a <em>different</em> analyte, the request is rejected with <strong>400</strong>.</description></item></list>
+         *
+         *     <strong>Mode 2 — Direct assignment (`saveAsAlias: false`):</strong>
+         *                 Assigns the target analyte directly to matching unresolved measurements without persisting any alias.
+         *                 No future imports are affected. `applyScope` controls which measurements are updated:
+         *                 <list type="bullet"><item><description>`RunOnly` (default) — only unresolved measurements in <em>this run</em> whose normalized compound name matches.</description></item><item><description>`Laboratory` — all unresolved measurements in the <em>entire laboratory</em> (across all runs) whose normalized compound name matches.</description></item></list>`createdAliasId` is always `null` in this mode.
+         *
+         *     <strong>Name matching:</strong>
+         *       `rawCompoundName` is normalized before matching — comparison is
+         *                 case-insensitive and ignores hyphens, underscores, and extra whitespace. Only measurements that are
+         *                 currently <em>unresolved</em> (no `analyteId` assigned) are candidates; already-resolved rows are skipped.
+         *
+         *     <strong>Scope enforcement:</strong> The run must belong to the caller's laboratory. The target analyte
+         *                 must also belong to the same laboratory. Cross-lab run IDs return <strong>404</strong>.
+         *
+         *     <strong>Response:</strong>
+         *       `updatedMeasurementCount` reflects the number of measurement rows
+         *                 whose `analyteId` was changed (may be 0 if no unresolved rows matched). `createdAliasId` is
+         *                 the new alias row ID when one was created, otherwise `null`.
+         */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Run identifier — must belong to the caller's laboratory. */
                     id: string;
                 };
                 cookie?: never;
             };
+            /**
+             * @description `rawCompoundName` — compound text as it appears on measurement rows (normalized for matching).
+             *     `analyteId` — target canonical analyte in the run's laboratory.
+             *     `saveAsAlias` — when `true`, persists a lab alias and triggers a full-lab remap (ignores `applyScope`).
+             *     `applyScope` — `RunOnly` or `Laboratory`; only used when `saveAsAlias` is `false`.
+             */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["JsonObject"];
+                    "application/json": components["schemas"]["ResolveAnalyteMappingRequest"];
                 };
             };
             responses: {
@@ -6668,24 +6082,8 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["ResolveAnalyteMappingResponse"];
                     };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -6694,7 +6092,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -6717,24 +6114,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -6745,1295 +6124,6 @@ export interface paths {
             };
         };
         delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/calibration-groups": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GET /api/calibration-groups */
-        get: {
-            parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                    laboratoryId?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        /** POST /api/calibration-groups */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["JsonObject"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/calibration-groups/candidates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GET /api/calibration-groups / candidates */
-        get: {
-            parameters: {
-                query: {
-                    instrumentId: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/calibration-groups/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GET /api/calibration-groups / {id} */
-        get: {
-            parameters: {
-                query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        /** PUT /api/calibration-groups / {id} */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["JsonObject"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/calibration-groups/{id}/readiness": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GET /api/calibration-groups / {id} / readiness */
-        get: {
-            parameters: {
-                query?: {
-                    laboratoryId?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/calibration-groups/{id}/regression-inputs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GET /api/calibration-groups / {id} / regression-inputs */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/calibration-groups/{id}/compute": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** POST /api/calibration-groups / {id} / compute */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/calibration-groups/{id}/analytes/{analyteId}/regression-debug": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GET /api/calibration-groups / {id} / analytes / {analyteId} / regression-debug */
-        get: {
-            parameters: {
-                query?: {
-                    laboratoryId?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                    analyteId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/calibration-groups/{id}/internal-standard-summaries": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** GET /api/calibration-groups / {id} / internal-standard-summaries */
-        get: {
-            parameters: {
-                query?: {
-                    laboratoryId?: string;
-                    methodConfigId?: string;
-                    format?: string;
-                };
-                header?: never;
-                path: {
-                    id: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                        "text/csv": string;
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/calibration-groups/{id}/points/{pointId}/exclude": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** POST /api/calibration-groups / {id} / points / {pointId} / exclude */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    pointId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["JsonObject"];
-                };
-            };
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
-        /** DELETE /api/calibration-groups / {id} / points / {pointId} / exclude */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    id: string;
-                    pointId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-            };
-        };
         options?: never;
         head?: never;
         patch?: never;
@@ -8046,14 +6136,23 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** GET /api/Users */
+        /**
+         * Lists users in the caller's effective scope.
+         * @description Requires `perm.users.manage_lab`. Platform operators can list all users,
+         *     or pass `laboratoryId` to scope the list to one laboratory.
+         *     Each item includes identity `firstName`, `lastName`, and `laboratoryName` when available.
+         */
         get: {
             parameters: {
                 query?: {
-                    page?: number;
-                    pageSize?: number;
-                    sort?: string;
+                    /** @description When platform operator, optional filter to one laboratory. */
                     laboratoryId?: string;
+                    /** @description 1-based page index (default 1). */
+                    page?: number;
+                    /** @description Page size, capped (default 25, max 100). */
+                    pageSize?: number;
+                    /** @description Sort field and direction, e.g. `email:asc`, `laboratoryId:desc`. */
+                    sort?: string;
                 };
                 header?: never;
                 path?: never;
@@ -8067,24 +6166,8 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["JsonObject"];
+                        "application/json": components["schemas"]["PagedResultOfUserSummaryDto"];
                     };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
                 };
                 /** @description Bad Request */
                 400: {
@@ -8093,7 +6176,72 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/Users/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns user administration detail including assigned roles for a single Identity user.
+         * @description Requires `perm.users.manage_lab`. Lab admins are scoped to their JWT laboratory.
+         *     Platform operators may pass optional `laboratoryId` to assert membership; when omitted, any user id may be loaded.
+         *     Returns <strong>404</strong> when the user does not exist or is outside the caller's scope (IDOR-safe).
+         *     Role assignment changes still require `perm.roles.manage_lab` on `/api/Roles/assignments`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Platform operators: optional laboratory membership assert. */
+                    laboratoryId?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Target Identity user id. */
+                    userId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["UserDetailDto"];
                     };
                 };
                 /** @description Unauthorized */
@@ -8116,24 +6264,6 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -8159,40 +6289,30 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** PUT /api/Users / {userId} / deactivate */
+        /**
+         * Deactivates a lab user account, immediately blocking login and revoking all refresh tokens.
+         * @description Sets Identity lockout to `DateTimeOffset.MaxValue`, marks the linked `LabTechnician` as inactive,
+         *     and revokes all active refresh tokens for the user. The user's current access token continues to work
+         *     until it expires naturally (up to the configured token lifetime), but no new sessions can be established.
+         *
+         *     Returns <strong>400</strong> when:
+         *     <list type="bullet"><item><description>The caller attempts to deactivate themselves (self-lockout prevention).</description></item><item><description>A platform operator omits the required `laboratoryId` query parameter.</description></item><item><description>The user is not found in the specified laboratory.</description></item></list>
+         */
         put: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Required for platform operators; specifies the target laboratory. Lab admins use their own lab automatically. */
+                    laboratoryId?: string;
+                };
                 header?: never;
                 path: {
+                    /** @description Target Identity user id. */
                     userId: string;
                 };
                 cookie?: never;
             };
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["JsonObject"];
-                };
-            };
+            requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -8207,7 +6327,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -8221,33 +6340,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -8272,40 +6364,30 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** PUT /api/Users / {userId} / reactivate */
+        /**
+         * Reactivates a previously deactivated lab user account, restoring login access.
+         * @description Clears the Identity lockout end date and restores the linked `LabTechnician` to active.
+         *     The user must obtain a fresh access token via `POST /api/Auth/login` — existing refresh tokens
+         *     were revoked at deactivation time and cannot be reused.
+         *
+         *     Returns <strong>400</strong> when:
+         *     <list type="bullet"><item><description>A platform operator omits the required `laboratoryId` query parameter.</description></item><item><description>The user is not found in the specified laboratory.</description></item></list>
+         */
         put: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Required for platform operators; specifies the target laboratory. Lab admins use their own lab automatically. */
+                    laboratoryId?: string;
+                };
                 header?: never;
                 path: {
+                    /** @description Target Identity user id. */
                     userId: string;
                 };
                 cookie?: never;
             };
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["JsonObject"];
-                };
-            };
+            requestBody?: never;
             responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
                 /** @description No Content */
                 204: {
                     headers: {
@@ -8320,7 +6402,6 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Unauthorized */
@@ -8334,33 +6415,6 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -8384,7 +6438,6 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Host metadata (plain text). */
         get: {
             parameters: {
                 query?: never;
@@ -8403,77 +6456,6 @@ export interface paths {
                         "text/plain": string;
                     };
                 };
-                /** @description Created */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["JsonObject"];
-                    };
-                };
-                /** @description No Content */
-                204: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description Bad Request */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                        "application/problem+json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Unauthorized */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Forbidden */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Conflict */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
-                /** @description Too Many Requests */
-                429: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["ProblemDetails"];
-                    };
-                };
             };
         };
         put?: never;
@@ -8488,9 +6470,1249 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        JsonObject: {
-            [key: string]: unknown;
+        /** @description Alias mapping for a canonical analyte. */
+        AnalyteAliasItemDto: {
+            /** Format: uuid */
+            id?: string;
+            aliasName?: string | null;
         };
+        /**
+         * Format: int32
+         * @enum {integer}
+         */
+        AnalyteCalStatus: 0 | 1;
+        /** @description Canonical analyte with its alias mappings. */
+        AnalyteDetailDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            casNumber?: string | null;
+            /** Format: uuid */
+            defaultInternalStandardId?: string | null;
+            aliases?: components["schemas"]["AnalyteAliasItemDto"][] | null;
+        };
+        /** @description Summary row for laboratory analyte list views. */
+        AnalyteListItemDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            casNumber?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        /**
+         * Format: int32
+         * @description Scope for applying a one-off analyte assignment when not saving an alias.
+         * @enum {integer}
+         */
+        AnalyteMappingApplyScope: 0 | 1;
+        /** @description One ranked canonical analyte candidate for fuzzy matching raw compound text. */
+        AnalyteSuggestionItemDto: {
+            /**
+             * Format: uuid
+             * @description Canonical analyte id.
+             */
+            analyteId?: string;
+            /** @description Display name. */
+            name?: string | null;
+            /**
+             * Format: double
+             * @description Higher means a closer match (implementation-defined scale).
+             */
+            score?: number;
+        };
+        /** @description Payload for invitation acceptance. */
+        AuthController_AcceptInviteRequest: {
+            /** @description Raw one-time invitation token provided to the invitee. */
+            token?: string | null;
+            /** @description Password chosen by the invitee. */
+            password?: string | null;
+        };
+        /** @description Payload for self-service password change. */
+        AuthController_ChangePasswordRequest: {
+            /** @description The user's current password for verification. */
+            currentPassword?: string | null;
+            /** @description The new password to set. */
+            newPassword?: string | null;
+        };
+        /** @description Payload for forgot-password requests. */
+        AuthController_ForgotPasswordRequest: {
+            /** @description Email address for account recovery. */
+            email?: string | null;
+        };
+        /** @description Payload for user login. */
+        AuthController_LoginRequest: {
+            /** @description Email address of the user account. */
+            email?: string | null;
+            /** @description User password. */
+            password?: string | null;
+        };
+        /** @description Authentication token response. */
+        AuthController_LoginResponse: {
+            /** @description JWT access token for bearer authentication. */
+            accessToken?: string | null;
+            /** @description Opaque refresh token used to rotate the session. */
+            refreshToken?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC timestamp when the access token expires.
+             */
+            accessTokenExpiresAtUtc?: string;
+        };
+        /** @description Current-user identity and profile response. */
+        AuthController_MeResponse: {
+            /** @description Authenticated Identity user id. */
+            userId?: string | null;
+            /** @description User email address. */
+            email?: string | null;
+            /** @description Technician first name when available. */
+            firstName?: string | null;
+            /** @description Technician last name when available. */
+            lastName?: string | null;
+            /** @description User laboratory id; null for platform users without lab scope. */
+            laboratoryId?: string | null;
+            /** @description Technician qualifications when available. */
+            qualifications?: string | null;
+            /**
+             * Format: date-time
+             * @description Technician hire date when available.
+             */
+            hireDate?: string | null;
+            /** @description Assigned role display names. */
+            roleNames?: string[] | null;
+            /** @description Effective permission claim values. */
+            permissions?: string[] | null;
+            /**
+             * Format: byte
+             * @description Concurrency token for the technician profile; null when no technician profile exists.
+             */
+            rowVersion?: string | null;
+        };
+        /** @description Payload containing a refresh token. */
+        AuthController_RefreshRequest: {
+            /** @description Opaque refresh token previously issued by the API. */
+            refreshToken?: string | null;
+        };
+        /** @description Payload for password reset completion. */
+        AuthController_ResetPasswordRequest: {
+            /** @description Identity user id from the one-time reset link. */
+            userId?: string | null;
+            /** @description One-time reset token from the reset link. */
+            token?: string | null;
+            /** @description New password to set. */
+            newPassword?: string | null;
+        };
+        /** @description Payload for authenticated self-profile updates. */
+        AuthController_UpdateMeRequest: {
+            /** @description First name for the linked technician profile. */
+            firstName?: string | null;
+            /** @description Last name for the linked technician profile. */
+            lastName?: string | null;
+            /** @description Optional qualifications string. */
+            qualifications?: string | null;
+            /**
+             * Format: date-time
+             * @description Optional hire date.
+             */
+            hireDate?: string | null;
+            /**
+             * Format: byte
+             * @description Concurrency token from the last GET me response.
+             */
+            rowVersion?: string | null;
+        };
+        /**
+         * @description Plotly.js figure specification returned by `GET /api/calibration-groups/{id}/analytes/{analyteId}/chart`.
+         *     Pass Wltr.Api.Models.CalibrationCurveChartResponse.Data and Wltr.Api.Models.CalibrationCurveChartResponse.Layout directly to `Plotly.react(element, data, layout)`
+         *     or `<Plot data={data} layout={layout} />` with `react-plotly.js`.
+         */
+        CalibrationCurveChartResponse: {
+            /**
+             * @description Array of Plotly.js trace objects. Up to three traces are present:
+             *     <em>Calibration Points</em> (included scatter), <em>Excluded Points</em> (excluded scatter),
+             *     and <em>Fitted Curve</em> (line evaluated from the regression equation at 100 evenly-spaced
+             *     X values). The fitted curve is omitted for the `Average` regression type or when fewer
+             *     than two included points exist.
+             */
+            data?: unknown[] | null;
+            /**
+             * @description Plotly.js layout object. Includes axis titles (<em>True Concentration</em> for X,
+             *     <em>Response Ratio</em> for Y) and default legend settings.
+             */
+            layout?: unknown;
+            /** @description Plotly.js config object containing rendering options. */
+            config?: unknown;
+        };
+        /** @description Full detail of a calibration group returned by `GET /api/calibration-groups/{id}`. */
+        CalibrationGroupDetailResponse: {
+            /**
+             * Format: uuid
+             * @description Calibration group identifier.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Instrument all runs in this group were acquired on.
+             */
+            instrumentId?: string;
+            status?: components["schemas"]["CalibrationGroupStatus"];
+            /**
+             * Format: uuid
+             * @description Live method configuration selected at group creation.
+             */
+            methodConfigId?: string;
+            /**
+             * Format: uuid
+             * @description Snapshot of the method config frozen at compute time; `null` for Draft groups.
+             */
+            methodConfigSnapshotId?: string | null;
+            /**
+             * Format: uuid
+             * @description Optional ICV run linked to this group; `null` when no ICV was provided.
+             */
+            icvRunId?: string | null;
+            /** @description Ordered list of CAL run ids that make up this group. */
+            calRunIds?: string[] | null;
+            /**
+             * Format: date-time
+             * @description UTC timestamp when regression was last run; `null` for Draft groups.
+             */
+            computedAt?: string | null;
+            /** @description Regression engine or application build version used at compute time; `null` for Draft groups. */
+            computationVersion?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC creation timestamp.
+             */
+            createdAt?: string;
+            /** @description Identity user id who created the group. */
+            createdBy?: string | null;
+            /**
+             * @description True when analyte exclusion list or point include/exclude changes have been made after the last compute.
+             *     The group must be recomputed before it can be approved.
+             */
+            isComputationStale?: boolean;
+        };
+        /** @description Summary row returned by `GET /api/calibration-groups`. */
+        CalibrationGroupListItemResponse: {
+            /**
+             * Format: uuid
+             * @description Calibration group identifier.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Instrument all runs in this group were acquired on.
+             */
+            instrumentId?: string;
+            status?: components["schemas"]["CalibrationGroupStatus"];
+            /**
+             * Format: uuid
+             * @description Live method configuration selected at group creation.
+             */
+            methodConfigId?: string;
+            /**
+             * Format: uuid
+             * @description Snapshot of the method config frozen at compute time; `null` for Draft groups.
+             */
+            methodConfigSnapshotId?: string | null;
+            /**
+             * Format: uuid
+             * @description Optional ICV run linked to this group; `null` when none was provided.
+             */
+            icvRunId?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC timestamp when regression was last run; `null` for Draft groups.
+             */
+            computedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC creation timestamp.
+             */
+            createdAt?: string;
+        };
+        /** @description Regression readiness payload for `GET /api/calibration-groups/{id}/readiness` (`application/json`). */
+        CalibrationGroupReadinessResponse: {
+            /**
+             * Format: uuid
+             * @description Group id; mirrors the route `{id}`.
+             */
+            calibrationGroupId?: string;
+            /**
+             * @description `true` only when BlockingIssues is empty; `false` if any blocking condition exists
+             *                 (insufficient levels, level mapping, invalid runs, unmapped analytes, IS/ratio problems, etc.).
+             */
+            isReady?: boolean;
+            /**
+             * Format: int32
+             * @description Effective minimum number of CAL runs/levels: from `MethodConfigSnapshot.minPointsRequired` when the group has
+             *     `methodConfigSnapshotId`, otherwise from the live `MethodConfig` tied to `methodConfigId`.
+             */
+            minPointsRequired?: number;
+            /**
+             * Format: int32
+             * @description Current count of CAL runs linked to the group.
+             */
+            calibrationLevelCount?: number;
+            /** @description Issues that must be resolved before regression/compute. */
+            blockingIssues?: components["schemas"]["RunValidationIssueResponse"][] | null;
+            /** @description Non-blocking measurement or parser findings (may be empty). */
+            warnings?: components["schemas"]["RunValidationIssueResponse"][] | null;
+        };
+        /**
+         * Format: int32
+         * @enum {integer}
+         */
+        CalibrationGroupStatus: 0 | 1 | 2 | 3;
+        /** @description Full detail projection for a single calibration level. */
+        CalibrationLevelDetailDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            laboratoryId?: string;
+            levelName?: string | null;
+            /** Format: double */
+            trueConcentration?: number;
+            /** Format: int32 */
+            sortOrder?: number;
+        };
+        /** @description Lightweight projection for calibration level list responses. */
+        CalibrationLevelListItemDto: {
+            /** Format: uuid */
+            id?: string;
+            levelName?: string | null;
+            /** Format: double */
+            trueConcentration?: number;
+            /** Format: int32 */
+            sortOrder?: number;
+        };
+        /** @description One parsed compound row with analyte resolution and optional internal-standard normalization for review UIs and regression prep. */
+        CalibrationMeasurementListItemDto: {
+            /**
+             * Format: uuid
+             * @description Measurement primary key.
+             */
+            id?: string;
+            /** @description Compound name as parsed from the instrument export. */
+            rawCompoundName?: string | null;
+            /**
+             * Format: uuid
+             * @description Canonical analyte when matched; null when unresolved.
+             */
+            analyteId?: string | null;
+            /** @description Display name of the matched analyte when resolved. */
+            canonicalAnalyteName?: string | null;
+            /** @description True when AnalyteId is set. */
+            isResolved?: boolean;
+            /**
+             * Format: double
+             * @description IS response used for normalization when computed; null otherwise.
+             */
+            internalStandardResponse?: number | null;
+            /**
+             * Format: double
+             * @description Analyte response divided by IS response when both are valid; null otherwise.
+             */
+            responseRatio?: number | null;
+        };
+        /** @description Row from `GET /api/runs`. */
+        CalibrationRunListItemResponse: {
+            /**
+             * Format: uuid
+             * @description Run id.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Instrument this run was acquired on.
+             */
+            instrumentId?: string;
+            runType?: components["schemas"]["RunType"];
+            /**
+             * Format: date-time
+             * @description Client-supplied run date.
+             */
+            runDate?: string;
+            status?: components["schemas"]["RunStatus"];
+            /**
+             * Format: uuid
+             * @description Resolved calibration level for CAL runs, if any.
+             */
+            calibrationLevelId?: string | null;
+            /** @description User-supplied display label; defaults to `"{RunType} {RunDate:yyyy-MM-dd}"` when not provided at upload. */
+            name?: string | null;
+        };
+        /** @description Request body for adding a raw compound alias under an analyte. */
+        CreateAnalyteAliasRequest: {
+            /** @description Raw text that should map to the parent analyte (unique per laboratory after normalization). */
+            aliasName?: string | null;
+        };
+        /** @description Response for successful analyte alias creation. */
+        CreateAnalyteAliasResponse: {
+            /** Format: uuid */
+            id?: string;
+        };
+        /** @description Request body for creating a laboratory-scoped canonical analyte. */
+        CreateAnalyteRequest: {
+            /** @description Display name (unique per laboratory after normalization). */
+            name?: string | null;
+            /** @description Optional CAS registry number. */
+            casNumber?: string | null;
+            /**
+             * Format: uuid
+             * @description Optional default internal standard for methods that use IS normalization.
+             */
+            defaultInternalStandardId?: string | null;
+        };
+        /** @description Response for successful analyte creation. */
+        CreateAnalyteResponse: {
+            /** Format: uuid */
+            id?: string;
+        };
+        /** @description Request body for creating a draft calibration group from CAL runs and an optional ICV run. */
+        CreateCalibrationGroupRequest: {
+            /**
+             * Format: uuid
+             * @description Primary key of the instrument. Must belong to the caller’s laboratory; all Wltr.Api.Models.CreateCalibrationGroupRequest.CalRunIds and optional Wltr.Api.Models.CreateCalibrationGroupRequest.IcvRunId must target this instrument.
+             */
+            instrumentId?: string;
+            /**
+             * Format: uuid
+             * @description Primary key of a lab-scoped `MethodConfig`. Must belong to the same laboratory as the instrument.
+             */
+            methodConfigId?: string;
+            /**
+             * @description One or more <strong>CAL</strong> run ids. Each id must be unique in this array, refer to a CAL run on Wltr.Api.Models.CreateCalibrationGroupRequest.InstrumentId,
+             *     have a resolved calibration level, and <strong>pairwise distinct</strong>`calibrationLevelId` values across the set.
+             */
+            calRunIds?: string[] | null;
+            /**
+             * Format: uuid
+             * @description Optional <strong>ICV</strong> run id (same instrument). Omitted or `null` if no ICV is attached. Must not match any
+             *     Wltr.Api.Models.CreateCalibrationGroupRequest.CalRunIds entry.
+             */
+            icvRunId?: string | null;
+        };
+        /** @description Response body when a draft calibration group is created successfully. */
+        CreateCalibrationGroupResponse: {
+            /**
+             * Format: uuid
+             * @description Newly created `CalibrationGroup` primary key (UUID).
+             */
+            id?: string;
+        };
+        /** @description Request body for creating a laboratory-scoped calibration level. */
+        CreateCalibrationLevelRequest: {
+            /** @description Human-readable level name (e.g. Cal_1ppb). Unique per laboratory after normalization. */
+            levelName?: string | null;
+            /**
+             * Format: double
+             * @description Known concentration of this calibration standard (curve X-axis value).
+             */
+            trueConcentration?: number;
+            /**
+             * Format: int32
+             * @description Display ordering hint.
+             */
+            sortOrder?: number;
+        };
+        /** @description Response body for `POST /api/calibration-levels` on success. */
+        CreateCalibrationLevelResponse: {
+            /**
+             * Format: uuid
+             * @description Identifier of the created calibration level.
+             */
+            id?: string;
+        };
+        /** @description Request body for creating an instrument in the caller's laboratory. */
+        CreateInstrumentRequest: {
+            /** @description Instrument display name (e.g. MS4). */
+            name?: string | null;
+            /** @description Optional instrument class (e.g. ICP-MS). */
+            instrumentType?: string | null;
+            /** @description Manufacturer name. */
+            manufacturer?: string | null;
+            /** @description Model designation. */
+            model?: string | null;
+            /** @description Serial number or asset identifier. */
+            serialNumber?: string | null;
+            /** @description Optional free-text notes. */
+            description?: string | null;
+            /** @description Active flag; when omitted, the instrument is created active. */
+            isActive?: boolean | null;
+        };
+        /** @description Response body for `POST /api/instruments` on success. */
+        CreateInstrumentResponse: {
+            /**
+             * Format: uuid
+             * @description New instrument identifier.
+             */
+            id?: string;
+        };
+        /** @description Request body for creating a laboratory-scoped internal standard. */
+        CreateInternalStandardRequest: {
+            /** @description Display name; unique per laboratory after normalization (same rules as analytes). */
+            name?: string | null;
+            /** @description Optional CAS registry number. */
+            casNumber?: string | null;
+        };
+        /** @description Response body after creating an internal standard. */
+        CreateInternalStandardResponse: {
+            /**
+             * Format: uuid
+             * @description New internal standard primary key.
+             */
+            id?: string;
+        };
+        /** @description POST body for `POST /api/labtechnicians`. */
+        CreateLabTechnicianRequest: {
+            /** @description ASP.NET Core Identity user ID to link as a technician. */
+            identityUserId?: string | null;
+            /**
+             * Format: uuid
+             * @description Target laboratory. Optional for lab admins (defaults to their own lab); required for platform operators.
+             */
+            laboratoryId?: string | null;
+            /** @description Technician's given name. */
+            firstName?: string | null;
+            /** @description Technician's family name. */
+            lastName?: string | null;
+            /** @description Optional professional qualifications or certifications. */
+            qualifications?: string | null;
+            /**
+             * Format: date-time
+             * @description Date the technician was hired, if known.
+             */
+            hireDate?: string | null;
+        };
+        /** @description Response body for `POST /api/labtechnicians` on success. */
+        CreateLabTechnicianResponse: {
+            /**
+             * Format: uuid
+             * @description Identifier of the created lab technician.
+             */
+            id?: string;
+        };
+        /** @description POST body for `POST /api/laboratories` (platform-only). */
+        CreateLaboratoryRequest: {
+            /** @description Display name of the laboratory. */
+            name?: string | null;
+            /** @description Street address. */
+            address?: string | null;
+            /** @description City. */
+            city?: string | null;
+            /** @description State or province. */
+            state?: string | null;
+            /** @description Postal / ZIP code. */
+            zipCode?: string | null;
+            /** @description Regulatory or accreditation identifier (e.g. NELAP number). */
+            accreditationId?: string | null;
+            /** @description Primary contact person's name. */
+            contactName?: string | null;
+            /** @description Primary contact email address. */
+            contactEmail?: string | null;
+            /** @description Primary contact phone number. */
+            contactPhone?: string | null;
+        };
+        /** @description Response body for `POST /api/laboratories` on success. */
+        CreateLaboratoryResponse: {
+            /**
+             * Format: uuid
+             * @description Identifier of the created laboratory.
+             */
+            id?: string;
+        };
+        /** @description Request body for creating a laboratory-scoped method configuration (version 1 and initial snapshot). */
+        CreateMethodConfigRequest: {
+            /** @description Display name; unique per laboratory (trimmed). */
+            name?: string | null;
+            defaultRegressionType?: components["schemas"]["RegressionType"];
+            defaultWeightingMode?: components["schemas"]["WeightingMode"];
+            /** @description When true, regression is constrained through the origin (intercept = 0). */
+            forceZeroIntercept?: boolean;
+            labelMode?: components["schemas"]["LabelMode"];
+            /**
+             * Format: double
+             * @description Minimum acceptable correlation coefficient (0–1).
+             */
+            minCorrelation?: number;
+            /**
+             * Format: double
+             * @description Maximum acceptable relative standard error (RSE), method-specific scale.
+             */
+            maxRSE?: number;
+            /**
+             * Format: double
+             * @description Lower bound for acceptable percent difference vs. true concentration (negative allowed).
+             */
+            pctDiffLowBound?: number;
+            /**
+             * Format: double
+             * @description Upper bound for acceptable percent difference vs. true concentration.
+             */
+            pctDiffHighBound?: number;
+            /**
+             * Format: int32
+             * @description Minimum number of calibration points required for acceptance.
+             */
+            minPointsRequired?: number;
+            /**
+             * Format: int32
+             * @description Maximum number of missed points allowed before analyte/method failure.
+             */
+            maxMissedPoints?: number;
+            /**
+             * Format: double
+             * @description ICV verification limit as a percentage (method-specific).
+             */
+            icvLimitPercent?: number;
+            /**
+             * Format: double
+             * @description Optional inclusive lower bound for mean IS response (summary warnings).
+             */
+            internalStandardResponseMin?: number | null;
+            /**
+             * Format: double
+             * @description Optional inclusive upper bound for mean IS response (summary warnings).
+             */
+            internalStandardResponseMax?: number | null;
+        };
+        /** @description Response body for `POST /api/method-configs` on success. */
+        CreateMethodConfigResponse: {
+            /**
+             * Format: uuid
+             * @description Identifier of the created method config.
+             */
+            id?: string;
+        };
+        /** @description Request body for creating a calibration or ICV run from raw instrument output. */
+        CreateRunRequest: {
+            runType?: components["schemas"]["RunType"];
+            /** @description Calibration level label for Wltr.Domain.Enums.RunType.CAL (e.g. `Cal_10ppb`); ignored for ICV. */
+            level?: string | null;
+            /**
+             * Format: uuid
+             * @description Target instrument; must belong to the caller's laboratory.
+             */
+            instrumentId?: string;
+            /**
+             * Format: date-time
+             * @description Acquisition or upload timestamp for the run (UTC recommended).
+             */
+            runDate?: string;
+            /** @description Full instrument export text (e.g. MassHunter-style block including compound table when present). */
+            rawText?: string | null;
+            /**
+             * @description Optional human-readable label for the run. Defaults to `"{RunType} {RunDate:yyyy-MM-dd}"` when omitted.
+             *     Maximum 256 characters.
+             */
+            name?: string | null;
+        };
+        /** @description Response body for `POST /api/runs` on success. */
+        CreateRunResponse: {
+            /**
+             * Format: uuid
+             * @description Identifier of the created run (pass to GET run-by-id).
+             */
+            id?: string;
+            /** @description Human-readable metadata parse warnings (non-fatal). Empty when every expected header line was found or empty. */
+            warnings?: string[] | null;
+            /**
+             * Format: int32
+             * @description Number of compound measurements stored.
+             */
+            measurementCount?: number;
+            /**
+             * @description Flattened per-row messages after parse and measurement validation (parser warnings, missing mapping, missing or invalid
+             *     internal-standard normalization, non-positive responses, malformed concentration). Prefer `GET /api/runs/{id}/validation`
+             *     for structured `code` and `measurementId` per issue.
+             */
+            measurementWarnings?: string[] | null;
+        };
+        /** @description Request body for excluding an analyte from a calibration group's regression computation. */
+        ExcludeAnalyteRequest: {
+            /**
+             * Format: uuid
+             * @description Canonical analyte identifier to exclude.
+             */
+            analyteId?: string;
+            /** @description Optional analyst note explaining why the analyte is excluded. */
+            note?: string | null;
+        };
+        /** @description Request body for manually excluding a calibration point from regression. */
+        ExcludeCalibrationPointRequest: {
+            reason?: components["schemas"]["ExclusionReason"];
+            /** @description Non-empty analyst note explaining the exclusion; required for audit compliance. */
+            note?: string | null;
+        };
+        /** @description Represents a single analyte excluded from regression computation for a calibration group. */
+        ExcludedAnalyteDto: {
+            /**
+             * Format: uuid
+             * @description Unique identifier of the exclusion record.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Canonical analyte that is excluded from regression.
+             */
+            analyteId?: string;
+            /** @description Human-readable name of the excluded analyte. */
+            analyteName?: string | null;
+            /** @description Optional analyst note explaining the exclusion reason. */
+            note?: string | null;
+            /** @description Identity user id who added the exclusion. */
+            excludedByUserId?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC timestamp when the exclusion was recorded.
+             */
+            excludedAt?: string;
+        };
+        /**
+         * Format: int32
+         * @enum {integer}
+         */
+        ExclusionReason: 0 | 1 | 2 | 3 | 4 | 5;
+        /** @description One run in the candidates response. */
+        GroupCandidateRunResponse: {
+            /**
+             * Format: uuid
+             * @description Run id.
+             */
+            id?: string;
+            runType?: components["schemas"]["RunType"];
+            /**
+             * Format: date-time
+             * @description Client-supplied run date.
+             */
+            runDate?: string;
+            status?: components["schemas"]["RunStatus"];
+            /**
+             * Format: uuid
+             * @description Resolved calibration level for CAL runs, if any.
+             */
+            calibrationLevelId?: string | null;
+            /** @description User-supplied display label; defaults to `"{RunType} {RunDate:yyyy-MM-dd}"` when not provided at upload. */
+            name?: string | null;
+            /** @description Whether this run can be selected as a CAL in a new group. */
+            isEligibleAsCal?: boolean;
+            /** @description Whether this run can be selected as the ICV in a new group. */
+            isEligibleAsIcv?: boolean;
+            /** @description Human-readable reason when not eligible for the row's type. */
+            ineligibilityReason?: string | null;
+        };
+        /** @description Response for `GET /api/calibration-groups/candidates`. */
+        GroupCandidatesResponse: {
+            /** @description CAL runs on the instrument, newest first. */
+            calRuns?: components["schemas"]["GroupCandidateRunResponse"][] | null;
+            /** @description ICV runs on the instrument, newest first. */
+            icvRuns?: components["schemas"]["GroupCandidateRunResponse"][] | null;
+        };
+        /** @description Detail from `GET /api/instruments/{id}`. */
+        InstrumentDetailResponse: {
+            /**
+             * Format: uuid
+             * @description Instrument id.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Laboratory this instrument belongs to.
+             */
+            laboratoryId?: string;
+            /** @description Display name. */
+            name?: string | null;
+            /** @description Optional instrument class (e.g. GC/MS). */
+            instrumentType?: string | null;
+            /** @description Manufacturer, if set. */
+            manufacturer?: string | null;
+            /** @description Model, if set. */
+            model?: string | null;
+            /** @description Serial number, if set. */
+            serialNumber?: string | null;
+            /** @description Optional free-text notes. */
+            description?: string | null;
+            /** @description Whether the instrument is active for new runs. */
+            isActive?: boolean;
+            /**
+             * Format: byte
+             * @description Optimistic concurrency token for `PUT`.
+             */
+            rowVersion?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC created timestamp.
+             */
+            createdAt?: string;
+            /** @description Identity user id of creator. */
+            createdBy?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC last update, if any.
+             */
+            updatedAt?: string | null;
+            /** @description Identity user id of last updater, if any. */
+            updatedBy?: string | null;
+        };
+        /** @description Row from `GET /api/instruments`. */
+        InstrumentListItemResponse: {
+            /**
+             * Format: uuid
+             * @description Instrument id.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Laboratory this instrument belongs to.
+             */
+            laboratoryId?: string;
+            /** @description Display name. */
+            name?: string | null;
+            /** @description Optional instrument class (e.g. GC/MS). */
+            instrumentType?: string | null;
+            /** @description Whether the instrument is active for new runs. */
+            isActive?: boolean;
+        };
+        /** @description Full detail for a single internal standard row. */
+        InternalStandardDetailDto: {
+            /**
+             * Format: uuid
+             * @description Primary key.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Owning laboratory.
+             */
+            laboratoryId?: string;
+            /** @description Display name used in exports and UI. */
+            name?: string | null;
+            /** @description Optional CAS registry number. */
+            casNumber?: string | null;
+        };
+        /** @description One internal-standard catalog row returned when listing standards for analyte configuration. */
+        InternalStandardListItemDto: {
+            /**
+             * Format: uuid
+             * @description Primary key; use as `defaultInternalStandardId` on analytes.
+             */
+            id?: string;
+            /** @description Display name; also used to match internal-standard compound rows in uploaded runs. */
+            name?: string | null;
+            /** @description Optional CAS registry number when recorded. */
+            casNumber?: string | null;
+        };
+        /** @description Aggregated internal-standard response statistics for one normalized compound name in scope. */
+        InternalStandardSummaryDto: {
+            normalizedKey?: string | null;
+            rawCompoundName?: string | null;
+            /** Format: double */
+            min?: number;
+            /** Format: double */
+            max?: number;
+            /** Format: double */
+            mean?: number;
+            /** Format: int32 */
+            count?: number;
+            /** Format: int32 */
+            distinctCalibrationRunCount?: number | null;
+            /** Format: double */
+            thresholdMin?: number | null;
+            /** Format: double */
+            thresholdMax?: number | null;
+            isWarning?: boolean;
+            warningMessages?: string[] | null;
+        };
+        /** @description Response payload for invitation creation. */
+        InvitationsController_InviteCreatedResponse: {
+            /**
+             * Format: uuid
+             * @description Identifier of the created invitation row.
+             */
+            invitationId?: string;
+            /** @description One-time raw invitation token shown once to the caller. */
+            rawToken?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC expiration timestamp for the invitation token.
+             */
+            expiresAtUtc?: string;
+        };
+        /** @description Request payload for creating a laboratory invitation. */
+        InvitationsController_InviteRequest: {
+            /** @description Email address for the invited user. */
+            email?: string | null;
+            /**
+             * Format: uuid
+             * @description Optional laboratory id. Required for platform operators without a laboratory claim.
+             */
+            laboratoryId?: string | null;
+            /**
+             * Format: int32
+             * @description Optional invitation validity in days (1-365). Defaults to 7.
+             */
+            expiresInDays?: number | null;
+            /** @description Optional role id to assign on acceptance instead of Viewer. */
+            initialRoleId?: string | null;
+        };
+        /** @description Full lab technician profile returned from detail endpoints. */
+        LabTechnicianDetailDto: {
+            /** Format: uuid */
+            id?: string;
+            identityUserId?: string | null;
+            /** Format: uuid */
+            laboratoryId?: string;
+            firstName?: string | null;
+            lastName?: string | null;
+            qualifications?: string | null;
+            /** Format: date-time */
+            hireDate?: string | null;
+            isActive?: boolean;
+        };
+        /**
+         * Format: int32
+         * @enum {integer}
+         */
+        LabelMode: 0 | 1;
+        /** @description Full laboratory details returned from detail endpoints. */
+        LaboratoryDetailDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            address?: string | null;
+            city?: string | null;
+            state?: string | null;
+            zipCode?: string | null;
+            accreditationId?: string | null;
+            contactName?: string | null;
+            contactEmail?: string | null;
+            contactPhone?: string | null;
+            isActive?: boolean;
+        };
+        /** @description Laboratory summary returned from list endpoints. */
+        LaboratoryListItemDto: {
+            /**
+             * Format: uuid
+             * @description Entity identifier.
+             */
+            id?: string;
+            /** @description Display name. */
+            name?: string | null;
+            /** @description City or empty string if unset. */
+            city?: string | null;
+            /** @description State or region, if any. */
+            state?: string | null;
+            /** @description Whether the laboratory is active. */
+            isActive?: boolean;
+        };
+        /**
+         * @description Full method-config detail returned from read endpoints.
+         *     `defaultWeightingMode` is the weighted least-squares scheme (0=None, 1=InverseX, 2=InverseXSquared); see OpenAPI <strong>Calibration regression and weighting</strong>.
+         */
+        MethodConfigDetailDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            laboratoryId?: string;
+            name?: string | null;
+            defaultRegressionType?: components["schemas"]["RegressionType"];
+            defaultWeightingMode?: components["schemas"]["WeightingMode"];
+            forceZeroIntercept?: boolean;
+            labelMode?: components["schemas"]["LabelMode"];
+            /** Format: double */
+            minCorrelation?: number;
+            /** Format: double */
+            maxRSE?: number;
+            /** Format: double */
+            pctDiffLowBound?: number;
+            /** Format: double */
+            pctDiffHighBound?: number;
+            /** Format: int32 */
+            minPointsRequired?: number;
+            /** Format: int32 */
+            maxMissedPoints?: number;
+            /** Format: double */
+            icvLimitPercent?: number;
+            /** Format: double */
+            internalStandardResponseMin?: number | null;
+            /** Format: double */
+            internalStandardResponseMax?: number | null;
+            /** Format: int32 */
+            currentVersion?: number;
+        };
+        /** @description Summary item for method-config list endpoints. */
+        MethodConfigListItemDto: {
+            /** Format: uuid */
+            id?: string;
+            name?: string | null;
+            /** Format: int32 */
+            currentVersion?: number;
+        };
+        /**
+         * @description Read-only snapshot detail for history and report endpoints.
+         *     `weightingMode` freezes methodology at snapshot time (same integer enum as `defaultWeightingMode` on the live config); see OpenAPI <strong>Calibration regression and weighting</strong>.
+         */
+        MethodConfigSnapshotDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            methodConfigId?: string;
+            /** Format: int32 */
+            version?: number;
+            /** Format: int32 */
+            configSchemaVersion?: number;
+            regressionType?: components["schemas"]["RegressionType"];
+            weightingMode?: components["schemas"]["WeightingMode"];
+            forceZeroIntercept?: boolean;
+            labelMode?: components["schemas"]["LabelMode"];
+            /** Format: double */
+            minCorrelation?: number;
+            /** Format: double */
+            maxRSE?: number;
+            /** Format: double */
+            pctDiffLowBound?: number;
+            /** Format: double */
+            pctDiffHighBound?: number;
+            /** Format: int32 */
+            minPointsRequired?: number;
+            /** Format: int32 */
+            maxMissedPoints?: number;
+            /** Format: double */
+            icvLimitPercent?: number;
+            /** Format: double */
+            internalStandardResponseMin?: number | null;
+            /** Format: double */
+            internalStandardResponseMax?: number | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfAnalyteListItemDto: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["AnalyteListItemDto"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfCalibrationGroupListItemResponse: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["CalibrationGroupListItemResponse"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfCalibrationLevelListItemDto: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["CalibrationLevelListItemDto"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfCalibrationRunListItemResponse: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["CalibrationRunListItemResponse"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfInstrumentListItemResponse: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["InstrumentListItemResponse"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfLabTechnicianDetailDto: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["LabTechnicianDetailDto"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfLaboratoryListItemDto: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["LaboratoryListItemDto"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfMethodConfigListItemDto: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["MethodConfigListItemDto"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfMethodConfigSnapshotDto: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["MethodConfigSnapshotDto"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfRoleSummaryDto: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["RoleSummaryDto"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
+        PagedResultOfUserSummaryDto: {
+            /** @description Rows for the requested page. */
+            items?: components["schemas"]["UserSummaryDto"][] | null;
+            /**
+             * Format: int32
+             * @description Total rows matching the query before paging.
+             */
+            totalCount?: number;
+            /**
+             * Format: int32
+             * @description 1-based page index.
+             */
+            page?: number;
+            /**
+             * Format: int32
+             * @description Maximum rows per page.
+             */
+            pageSize?: number;
+        };
+        /**
+         * Format: int32
+         * @enum {integer}
+         */
+        PointAcceptance: 0 | 1;
         ProblemDetails: {
             type?: string | null;
             title?: string | null;
@@ -8501,15 +7723,736 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        Paged: {
-            items?: components["schemas"]["JsonObject"][];
-            /** Format: int32 */
-            totalCount?: number;
-            /** Format: int32 */
-            page?: number;
-            /** Format: int32 */
-            pageSize?: number;
+        /** @description Per-point regression debug data as returned by `GET /api/calibration-groups/{groupId}/analytes/{analyteId}/regression-debug`. */
+        RegressionDebugPointResponse: {
+            /**
+             * Format: uuid
+             * @description Calibration point identifier.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Source CAL run for this point.
+             */
+            calibrationRunId?: string;
+            /**
+             * Format: uuid
+             * @description Calibration level that supplied the true concentration; `null` when the run had no level.
+             */
+            calibrationLevelId?: string | null;
+            /**
+             * Format: double
+             * @description True standard concentration (curve X axis).
+             */
+            x?: number;
+            /**
+             * Format: double
+             * @description Response ratio or raw response (curve Y axis) as stored at compute time.
+             */
+            y?: number;
+            /**
+             * Format: double
+             * @description Regression weight applied at fit time; 0 for excluded points.
+             */
+            weight?: number;
+            /**
+             * Format: double
+             * @description Fitted ŷ from the curve equation at this point's X; `null` when the model did not produce a forward prediction.
+             */
+            predictedY?: number | null;
+            /**
+             * Format: double
+             * @description Y − PredictedY; `null` when Wltr.Api.Models.RegressionDebugPointResponse.PredictedY is `null`.
+             */
+            residual?: number | null;
+            /**
+             * Format: double
+             * @description `(CalcConc − TrueConc) / TrueConc × 100`; `null` when inversion was undefined.
+             */
+            percentDiff?: number | null;
+            /** @description Whether this point was included in the regression fit. */
+            isIncluded?: boolean;
+            acceptance?: components["schemas"]["PointAcceptance"];
+            exclusionReason?: components["schemas"]["ExclusionReason"];
+            /** @description Analyst note supplied when the point was manually excluded; `null` for auto-excluded or included points. */
+            exclusionNote?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC timestamp when the point was manually excluded; `null` when not manually excluded.
+             */
+            excludedAt?: string | null;
         };
+        /**
+         * @description Full regression debug snapshot for one analyte curve as returned by
+         *     `GET /api/calibration-groups/{groupId}/analytes/{analyteId}/regression-debug`.
+         */
+        RegressionDebugResponse: {
+            /**
+             * Format: uuid
+             * @description Canonical analyte identifier.
+             */
+            analyteId?: string;
+            /** @description Canonical analyte display name. */
+            analyteName?: string | null;
+            regressionType?: components["schemas"]["RegressionType"];
+            weightingMode?: components["schemas"]["WeightingMode"];
+            /** @description `true` when the intercept was forced to zero. */
+            forcedZero?: boolean;
+            /**
+             * Format: double
+             * @description Σ w — sum of weights over included points.
+             */
+            s0?: number;
+            /**
+             * Format: double
+             * @description Σ (w · x).
+             */
+            sx?: number;
+            /**
+             * Format: double
+             * @description Σ (w · y).
+             */
+            sy?: number;
+            /**
+             * Format: double
+             * @description Σ (w · x²).
+             */
+            sxx?: number;
+            /**
+             * Format: double
+             * @description Σ (w · x · y).
+             */
+            sxy?: number;
+            /**
+             * Format: double
+             * @description Normal-equation denominator (S0·Sxx − Sx² for linear; matrix determinant for quadratic).
+             */
+            denominator?: number;
+            /**
+             * Format: double
+             * @description Fitted slope coefficient.
+             */
+            slope?: number;
+            /**
+             * Format: double
+             * @description Fitted intercept; 0 when Wltr.Api.Models.RegressionDebugResponse.ForcedZero is `true`.
+             */
+            intercept?: number;
+            /**
+             * Format: double
+             * @description Quadratic term a; `null` for non-quadratic models.
+             */
+            quadraticCoefficient?: number | null;
+            /**
+             * Format: double
+             * @description Weighted sum of squared residuals over included points.
+             */
+            sse?: number;
+            /**
+             * Format: double
+             * @description Weighted total sum of squares over included points.
+             */
+            sst?: number;
+            /**
+             * Format: double
+             * @description Residual standard error √(SSE / (n − p)); `null` when degrees of freedom ≤ 0 (degenerate fit — too few points for the model).
+             */
+            rse?: number | null;
+            /**
+             * Format: double
+             * @description Coefficient of determination 1 − SSE/SST.
+             */
+            rSquared?: number;
+            /**
+             * Format: double
+             * @description Pearson r (linear models) or correlation of observed vs. predicted (quadratic); `null` when not computed.
+             */
+            correlationR?: number | null;
+            labelMode?: components["schemas"]["LabelMode"];
+            /**
+             * Format: double
+             * @description Single value the report should display for fit quality: Wltr.Api.Models.RegressionDebugResponse.RSquared when
+             *     Wltr.Api.Models.RegressionDebugResponse.LabelMode is `RSquared`, otherwise `√R²` (clamped at zero to absorb
+             *     floating-point drift).
+             */
+            fitQualityValue?: number;
+            fitQualityLabel?: components["schemas"]["LabelMode"];
+            /**
+             * Format: int32
+             * @description Number of points included in the regression fit.
+             */
+            includedPointCount?: number;
+            /**
+             * Format: int32
+             * @description Number of points excluded from the regression fit.
+             */
+            excludedPointCount?: number;
+            calStatus?: components["schemas"]["AnalyteCalStatus"];
+            /** @description Human-readable failure descriptions when Wltr.Api.Models.RegressionDebugResponse.CalStatus is `Fail`; `null` when passing or not yet evaluated. */
+            failureReasons?: string[] | null;
+            /**
+             * Format: double
+             * @description Known ICV standard concentration; `null` when no ICV run was linked.
+             */
+            icvTrueConcentration?: number | null;
+            /**
+             * Format: double
+             * @description ICV concentration derived by inverting the fitted curve; `null` when no ICV run was linked.
+             */
+            icvCalculatedConcentration?: number | null;
+            /**
+             * Format: double
+             * @description ICV %Diff = (Calc − True) / True × 100; `null` when no ICV run was linked.
+             */
+            icvPercentDiff?: number | null;
+            /** @description `true` when the ICV %Diff is within the configured limit; `null` when no ICV run was linked. */
+            icvPassed?: boolean | null;
+            /** @description Per-point debug data ordered by true concentration ascending. */
+            points?: components["schemas"]["RegressionDebugPointResponse"][] | null;
+        };
+        /**
+         * @description One (X, Y) data point assembled for regression traceability, as returned by
+         *     `GET /api/calibration-groups/{id}/regression-inputs`.
+         */
+        RegressionInputPointResponse: {
+            /**
+             * Format: uuid
+             * @description Calibration run that contributed this point.
+             */
+            sourceRunId?: string;
+            /** @description Display name of the source run. */
+            sourceRunName?: string | null;
+            /**
+             * Format: uuid
+             * @description Calibration level linked to the source run; `null` when the run has no level.
+             */
+            calibrationLevelId?: string | null;
+            /**
+             * Format: double
+             * @description True standard concentration (curve X axis).
+             */
+            x?: number;
+            /**
+             * Format: double
+             * @description Response ratio (analyte / IS response); `null` when the ratio could not be computed.
+             */
+            y?: number | null;
+            /**
+             * Format: double
+             * @description Regression weight derived from the group weighting mode and X; 0 for excluded points.
+             */
+            weight?: number;
+            /** @description Initial inclusion flag; `false` when Y is null or X is non-positive for inverse-weight modes. */
+            isIncluded?: boolean;
+            exclusionReason?: components["schemas"]["ExclusionReason"];
+            /** @description Source measurement was manually integrated on the instrument. */
+            isManualIntegration?: boolean;
+            /** @description Parser or validation warning from the source compound row; `null` when clean. */
+            validationMessage?: string | null;
+            /**
+             * Format: double
+             * @description Fitted ŷ at this point's X from the calibration curve equation; `null` when the group has not been computed
+             *     or the model does not produce a forward prediction (e.g. Average).
+             */
+            predictedY?: number | null;
+            /**
+             * Format: double
+             * @description Observed Y minus fitted ŷ; `null` when Wltr.Api.Models.RegressionInputPointResponse.PredictedY is `null`.
+             */
+            residual?: number | null;
+            /**
+             * Format: double
+             * @description `(CalcConc − TrueConc) / TrueConc × 100` where `CalcConc` is obtained by inverting the fitted
+             *                 curve for the observed response; `null` when inversion is undefined or the group has not been computed.
+             */
+            percentDiff?: number | null;
+        };
+        /**
+         * @description Assembled regression input for one analyte, as returned by
+         *     `GET /api/calibration-groups/{id}/regression-inputs`.
+         */
+        RegressionInputTableResponse: {
+            /**
+             * Format: uuid
+             * @description Canonical analyte identity.
+             */
+            analyteId?: string;
+            /** @description Canonical analyte display name. */
+            analyteName?: string | null;
+            /** @description Per-level, per-run data points sorted by true concentration (X) ascending. */
+            points?: components["schemas"]["RegressionInputPointResponse"][] | null;
+        };
+        /**
+         * Format: int32
+         * @enum {integer}
+         */
+        RegressionType: 0 | 1 | 2 | 3;
+        /** @description Request body for mapping an unresolved raw compound name to a canonical analyte. */
+        ResolveAnalyteMappingRequest: {
+            /** @description Compound text as it appears on parsed measurement rows. */
+            rawCompoundName?: string | null;
+            /**
+             * Format: uuid
+             * @description Target canonical analyte in the run's laboratory.
+             */
+            analyteId?: string;
+            /** @description When true, persist a laboratory alias so future imports resolve automatically. */
+            saveAsAlias?: boolean;
+            applyScope?: components["schemas"]["AnalyteMappingApplyScope"];
+        };
+        /** @description Result of resolving unmatched compound text for a run. */
+        ResolveAnalyteMappingResponse: {
+            /**
+             * Format: int32
+             * @description Measurements updated by remap or direct assignment.
+             */
+            updatedMeasurementCount?: number;
+            /**
+             * Format: uuid
+             * @description When an alias row was created in the same operation; otherwise null.
+             */
+            createdAliasId?: string | null;
+        };
+        /** @description Role summary view. */
+        RoleSummaryDto: {
+            /** @description Identity role id. */
+            roleId?: string | null;
+            /** @description Display role name. */
+            name?: string | null;
+            /** @description True when role is built-in and not custom. */
+            isBuiltIn?: boolean;
+            /** @description Permission claim values. */
+            permissions?: string[] | null;
+        };
+        /** @description Payload for assigning or removing user roles. */
+        RolesController_ChangeUserRolesRequest: {
+            /**
+             * Format: uuid
+             * @description Optional target laboratory id. Required for platform operators without a laboratory claim.
+             */
+            laboratoryId?: string | null;
+            /** @description Identity user id in the same laboratory. */
+            userId?: string | null;
+            /** @description Role ids to assign or remove. At least one required. */
+            roleIds?: string[] | null;
+        };
+        /** @description Payload for custom role creation. */
+        RolesController_CreateRoleRequest: {
+            /**
+             * Format: uuid
+             * @description Optional target laboratory id. Required for platform operators without a laboratory claim.
+             *     Lab-scoped callers use their own `LaboratoryId` claim.
+             */
+            laboratoryId?: string | null;
+            /** @description Display name for the custom role; must be unique within the laboratory (max 128 chars). */
+            name?: string | null;
+            /** @description Permission identifiers to assign to this role. At least one required. Unknown values return 400. */
+            permissions?: string[] | null;
+        };
+        /** @description Payload for renaming a custom role. */
+        RolesController_RenameRoleRequest: {
+            /**
+             * Format: uuid
+             * @description Optional target laboratory id. Required for platform operators without a laboratory claim.
+             */
+            laboratoryId?: string | null;
+            /** @description New display name for the custom role (max 128 chars, unique within laboratory). */
+            name?: string | null;
+        };
+        /** @description Payload for replacing all permission claims on a custom role. */
+        RolesController_UpdateRolePermissionsRequest: {
+            /**
+             * Format: uuid
+             * @description Optional target laboratory id. Required for platform operators without a laboratory claim.
+             */
+            laboratoryId?: string | null;
+            /**
+             * @description Full replacement set of permission identifiers. This list entirely replaces the existing permissions.
+             *     At least one value required.
+             */
+            permissions?: string[] | null;
+        };
+        /** @description Run detail for GET responses; omits raw text and hash for API clarity. */
+        RunDetailResponse: {
+            /**
+             * Format: uuid
+             * @description Run identifier.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Instrument this run was acquired on.
+             */
+            instrumentId?: string;
+            runType?: components["schemas"]["RunType"];
+            /**
+             * Format: date-time
+             * @description Run date supplied at upload.
+             */
+            runDate?: string;
+            status?: components["schemas"]["RunStatus"];
+            /** @description User-supplied display label; defaults to `"{RunType} {RunDate:yyyy-MM-dd}"` when not provided at upload. */
+            name?: string | null;
+            /** @description Parsed data directory path from raw text, when present. */
+            dataPath?: string | null;
+            /** @description Parsed data file name from raw text, when present. */
+            dataFile?: string | null;
+            /** @description Parsed acquisition timestamp string from raw text, when present. */
+            acquiredOn?: string | null;
+            /** @description Parsed operator from raw text, when present. */
+            operator?: string | null;
+            /** @description Parsed method or quant method path from raw text, when present. */
+            methodName?: string | null;
+            /** @description Parsed sample name from raw text, when present. */
+            sampleName?: string | null;
+            /** @description Same warnings persisted with the run; empty when none. */
+            metadataParseWarnings?: string[] | null;
+            /**
+             * Format: int32
+             * @description Number of compound measurements stored for this run.
+             */
+            measurementCount?: number;
+        };
+        /**
+         * Format: int32
+         * @enum {integer}
+         */
+        RunStatus: 0 | 1 | 2 | 3;
+        /**
+         * Format: int32
+         * @enum {integer}
+         */
+        RunType: 0 | 1;
+        /**
+         * Format: int32
+         * @description Identifies the kind of validation issue on a calibration measurement row or group-level readiness finding.
+         * @enum {integer}
+         */
+        RunValidationIssueCode: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+        /**
+         * @description One validation finding: `GET /api/runs/{id}/validation` (errors/warnings) or
+         *     `GET /api/calibration-groups/{id}/readiness` (`blockingIssues`/`warnings`).
+         */
+        RunValidationIssueResponse: {
+            code?: components["schemas"]["RunValidationIssueCode"];
+            /** @description When true, the issue is treated as a blocking error for the affected row. */
+            isError?: boolean;
+            /** @description Human-readable explanation. */
+            message?: string | null;
+            /**
+             * Format: uuid
+             * @description Persisted measurement id when the finding applies to a row.
+             */
+            measurementId?: string | null;
+            /** @description Compound name from the instrument export when applicable. */
+            rawCompoundName?: string | null;
+            /**
+             * Format: int32
+             * @description Line in raw text when the parser recorded it.
+             */
+            sourceLineNumber?: number | null;
+            /**
+             * Format: uuid
+             * @description CAL run id when the finding applies to a whole run.
+             */
+            calibrationRunId?: string | null;
+        };
+        /** @description Structured measurement validation for a calibration run. */
+        RunValidationResponse: {
+            /**
+             * Format: uuid
+             * @description Calibration run identifier.
+             */
+            runId?: string;
+            /** @description Aggregate status: `Valid`, `ValidWithWarnings`, or `Invalid` (string names of `RunStatus`). */
+            status?: string | null;
+            /** @description Blocking issues (`isError: true`) — e.g. non-positive response or internal-standard response. */
+            errors?: components["schemas"]["RunValidationIssueResponse"][] | null;
+            /** @description Non-fatal issues (`isError: false`) — e.g. missing analyte mapping, missing response ratio when IS rows exist. */
+            warnings?: components["schemas"]["RunValidationIssueResponse"][] | null;
+        };
+        /** @description Request body for suppressing an analyte on an instrument. */
+        SuppressAnalyteRequest: {
+            /**
+             * Format: uuid
+             * @description Canonical analyte identifier to suppress.
+             */
+            analyteId?: string;
+            /** @description Optional analyst note explaining why the analyte is suppressed. */
+            note?: string | null;
+        };
+        /** @description Represents a single analyte suppressed on an instrument. */
+        SuppressedAnalyteDto: {
+            /**
+             * Format: uuid
+             * @description Unique identifier of the suppression record.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Canonical analyte that is suppressed.
+             */
+            analyteId?: string;
+            /** @description Human-readable name of the suppressed analyte. */
+            analyteName?: string | null;
+            /** @description Optional analyst note explaining the suppression reason. */
+            note?: string | null;
+            /** @description Identity user id who added the suppression. */
+            suppressedByUserId?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC timestamp when the suppression was recorded.
+             */
+            suppressedAt?: string;
+        };
+        /** @description Aggregated raw compound text that has not yet mapped to a canonical analyte. */
+        UnresolvedAnalyteNameDto: {
+            /** @description As stored on measurements (exact string from the export). */
+            rawCompoundName?: string | null;
+            /**
+             * Format: int32
+             * @description Number of measurement rows with this raw name and no analyte.
+             */
+            measurementCount?: number;
+            /**
+             * Format: int32
+             * @description Distinct calibration runs containing at least one such row.
+             */
+            affectedRunCount?: number;
+        };
+        /** @description Request body for renaming an analyte alias. */
+        UpdateAnalyteAliasRequest: {
+            /** @description Replacement raw text for the alias. */
+            aliasName?: string | null;
+        };
+        /** @description Request body for updating a canonical analyte. */
+        UpdateAnalyteRequest: {
+            /** @description Display name (unique per laboratory after normalization). */
+            name?: string | null;
+            /** @description Optional CAS registry number. */
+            casNumber?: string | null;
+            /**
+             * Format: uuid
+             * @description Optional default internal standard.
+             */
+            defaultInternalStandardId?: string | null;
+        };
+        /** @description Request body for updating a draft or computed (will reset) calibration group. */
+        UpdateCalibrationGroupRequest: {
+            /**
+             * Format: uuid
+             * @description Method configuration for the group (lab-scoped, same as create).
+             */
+            methodConfigId?: string;
+            /** @description CAL run ids; must be on the same instrument as the group. */
+            calRunIds?: string[] | null;
+            /**
+             * Format: uuid
+             * @description Optional ICV run id on the same instrument.
+             */
+            icvRunId?: string | null;
+        };
+        /** @description Request body for updating a calibration level. Edits apply to future work only. */
+        UpdateCalibrationLevelRequest: {
+            /** @description Human-readable level name. Unique per laboratory after normalization. */
+            levelName?: string | null;
+            /**
+             * Format: double
+             * @description Known concentration of this calibration standard.
+             */
+            trueConcentration?: number;
+            /**
+             * Format: int32
+             * @description Display ordering hint.
+             */
+            sortOrder?: number;
+        };
+        /** @description Request body for replacing mutable fields on an instrument. */
+        UpdateInstrumentRequest: {
+            /** @description Instrument display name. */
+            name?: string | null;
+            /** @description Optional instrument class (e.g. ICP-MS). */
+            instrumentType?: string | null;
+            /** @description Manufacturer name. */
+            manufacturer?: string | null;
+            /** @description Model designation. */
+            model?: string | null;
+            /** @description Serial number or asset identifier. */
+            serialNumber?: string | null;
+            /** @description Optional free-text notes. */
+            description?: string | null;
+            /** @description Whether the instrument is active for new runs. */
+            isActive?: boolean;
+            /**
+             * Format: byte
+             * @description Concurrency token from `GET /api/instruments/{id}`.
+             */
+            rowVersion?: string | null;
+        };
+        /** @description Request body for updating a laboratory-scoped internal standard. */
+        UpdateInternalStandardRequest: {
+            /** @description Display name; unique per laboratory after normalization. */
+            name?: string | null;
+            /** @description Optional CAS registry number. */
+            casNumber?: string | null;
+        };
+        /** @description PUT body for `PUT /api/labtechnicians/{id}`. */
+        UpdateLabTechnicianRequest: {
+            /** @description Technician's given name. */
+            firstName?: string | null;
+            /** @description Technician's family name. */
+            lastName?: string | null;
+            /** @description Optional professional qualifications or certifications. */
+            qualifications?: string | null;
+            /**
+             * Format: date-time
+             * @description Date the technician was hired, if known.
+             */
+            hireDate?: string | null;
+            /** @description When false, the technician is deactivated and cannot upload runs. */
+            isActive?: boolean;
+        };
+        /** @description PUT body for `PUT /api/laboratories/{id}`. */
+        UpdateLaboratoryRequest: {
+            /** @description Display name of the laboratory. */
+            name?: string | null;
+            /** @description Street address. */
+            address?: string | null;
+            /** @description City. */
+            city?: string | null;
+            /** @description State or province. */
+            state?: string | null;
+            /** @description Postal / ZIP code. */
+            zipCode?: string | null;
+            /** @description Regulatory or accreditation identifier (e.g. NELAP number). */
+            accreditationId?: string | null;
+            /** @description Primary contact person's name. */
+            contactName?: string | null;
+            /** @description Primary contact email address. */
+            contactEmail?: string | null;
+            /** @description Primary contact phone number. */
+            contactPhone?: string | null;
+            /** @description When false, the laboratory is deactivated and excluded from active queries. */
+            isActive?: boolean;
+        };
+        /** @description Request body for updating a method configuration. Material changes bump the version and append a new snapshot. */
+        UpdateMethodConfigRequest: {
+            /** @description Display name; unique per laboratory (trimmed). */
+            name?: string | null;
+            defaultRegressionType?: components["schemas"]["RegressionType"];
+            defaultWeightingMode?: components["schemas"]["WeightingMode"];
+            /** @description When true, regression is constrained through the origin. */
+            forceZeroIntercept?: boolean;
+            labelMode?: components["schemas"]["LabelMode"];
+            /**
+             * Format: double
+             * @description Minimum acceptable correlation (0–1).
+             */
+            minCorrelation?: number;
+            /**
+             * Format: double
+             * @description Maximum acceptable RSE.
+             */
+            maxRSE?: number;
+            /**
+             * Format: double
+             * @description Lower bound for acceptable percent difference.
+             */
+            pctDiffLowBound?: number;
+            /**
+             * Format: double
+             * @description Upper bound for acceptable percent difference.
+             */
+            pctDiffHighBound?: number;
+            /**
+             * Format: int32
+             * @description Minimum calibration points required.
+             */
+            minPointsRequired?: number;
+            /**
+             * Format: int32
+             * @description Maximum missed points allowed.
+             */
+            maxMissedPoints?: number;
+            /**
+             * Format: double
+             * @description ICV limit percent.
+             */
+            icvLimitPercent?: number;
+            /**
+             * Format: double
+             * @description Optional inclusive lower bound for mean IS response (summary warnings).
+             */
+            internalStandardResponseMin?: number | null;
+            /**
+             * Format: double
+             * @description Optional inclusive upper bound for mean IS response (summary warnings).
+             */
+            internalStandardResponseMax?: number | null;
+        };
+        /** @description Response body for `PUT /api/method-configs/{id}`. */
+        UpdateMethodConfigResponse: {
+            /**
+             * Format: int32
+             * @description Monotonic version number after the update. Unchanged when no tracked field was modified.
+             */
+            currentVersion?: number;
+        };
+        /** @description Role assignment row on user administration detail. */
+        UserAssignedRoleDto: {
+            /** @description Identity role id. */
+            roleId?: string | null;
+            /** @description Display role name. */
+            name?: string | null;
+            /** @description True when the role is built-in. */
+            isBuiltIn?: boolean;
+        };
+        /** @description Full user administration detail for lab user-management and role assignment UIs. */
+        UserDetailDto: {
+            id?: string | null;
+            email?: string | null;
+            /** Format: uuid */
+            laboratoryId?: string | null;
+            firstName?: string | null;
+            lastName?: string | null;
+            laboratoryName?: string | null;
+            /** Format: uuid */
+            labTechnicianId?: string | null;
+            qualifications?: string | null;
+            /** Format: date-time */
+            hireDate?: string | null;
+            /** Format: byte */
+            rowVersion?: string | null;
+            isActive?: boolean;
+            roles?: components["schemas"]["UserAssignedRoleDto"][] | null;
+        };
+        /** @description User list row. */
+        UserSummaryDto: {
+            /** @description Identity user id. */
+            id?: string | null;
+            /** @description User email. */
+            email?: string | null;
+            /**
+             * Format: uuid
+             * @description Assigned laboratory id; null for platform-only operators.
+             */
+            laboratoryId?: string | null;
+            /** @description Display first name from identity user. */
+            firstName?: string | null;
+            /** @description Display last name from identity user. */
+            lastName?: string | null;
+            /**
+             * @description Wltr.Domain.Entities.Laboratory display name when a matching row is returned (subject to EF global filters, e.g. soft-delete);
+             *                 null when LaboratoryId is null, when no laboratory matches, or when the row is filtered out.
+             */
+            laboratoryName?: string | null;
+        };
+        /**
+         * Format: int32
+         * @description **Weighted least-squares** mode for calibration curves. JSON integers: **0** = None (w=1 for each included point), **1** = InverseX (w=1/X), **2** = InverseXSquared (w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**.
+         * @enum {integer}
+         */
+        WeightingMode: 0 | 1 | 2;
     };
     responses: never;
     parameters: never;

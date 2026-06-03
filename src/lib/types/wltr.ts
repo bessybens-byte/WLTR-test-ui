@@ -17,11 +17,10 @@ export type RunStatus = (typeof RunStatus)[keyof typeof RunStatus];
 
 /** Match `Wltr.Domain.Enums.RegressionType`; weighting is separate (`WeightingMode`). */
 export const RegressionType = {
-  Linear: 0,
-  Quadratic: 1,
-  Average: 2,
-  /** Backend-specific / reserved fourth member — confirm naming in Swagger. */
-  Type3: 3,
+  Average: 0,
+  Linear: 1,
+  LinearForcedZero: 2,
+  Quadratic: 3,
 } as const;
 
 /** API integers: 0 = None, 1 = InverseX (1/X), 2 = InverseXSquared (1/X²). */
@@ -64,10 +63,17 @@ export const RUN_TYPE_LABEL: Record<number, string> = {
 
 /** Display strings for method config `defaultRegressionType` / snapshot `regressionType` integers. */
 export const REGRESSION_TYPE_LABEL: Record<number, string> = {
-  0: "Linear",
-  1: "Quadratic",
-  2: "Average",
-  3: "Type 3",
+  0: "Average",
+  1: "Linear",
+  2: "Linear (forced zero)",
+  3: "Quadratic",
+};
+
+/** Per-variant weighting labels from API `WeightingMode`. */
+export const WEIGHTING_MODE_LABEL: Record<number, string> = {
+  0: "None",
+  1: "1/x",
+  2: "1/x²",
 };
 
 export const GROUP_STATUS_LABEL: Record<number, string> = {
@@ -139,3 +145,27 @@ export const PERMS = {
 export function hasPermission(me: MeResponse | null | undefined, p: string): boolean {
   return !!me?.permissions?.includes(p);
 }
+
+export function isPlatformOperator(me: MeResponse | null | undefined): boolean {
+  return me != null && !me.laboratoryId;
+}
+
+export function displayName(me: MeResponse | null | undefined): string {
+  const parts = [me?.firstName, me?.lastName].filter(Boolean);
+  if (parts.length) return parts.join(" ");
+  return me?.email ?? "User";
+}
+
+/** Full permission catalog for role administration UIs (matches OpenAPI permissions reference). */
+export const ALL_PERMISSIONS = [
+  PERMS.view,
+  PERMS.runsUpload,
+  PERMS.runsDelete,
+  PERMS.groupsApprove,
+  PERMS.configEdit,
+  PERMS.usersManageLab,
+  PERMS.rolesManageLab,
+  PERMS.laboratoriesManage,
+  PERMS.laboratoriesCreate,
+  PERMS.platformManage,
+] as const;

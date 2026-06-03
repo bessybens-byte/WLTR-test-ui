@@ -1,8 +1,9 @@
 "use client";
 
-import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
-import { createInstrument, listInstruments } from "@/lib/api/wltr-api";
-import { pushRecentInstrument } from "@/lib/client-recent";
+import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
+import { listInstruments } from "@/lib/api/wltr-api";
+import { hasPermission, PERMS } from "@/lib/types/wltr";
+import { useAuth } from "@/providers/auth-provider";
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -19,16 +20,22 @@ type InstrumentRow = {
 };
 
 export default function InstrumentsPage() {
-  const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [createdId, setCreatedId] = useState<string | null>(null);
+  const { me } = useAuth();
+  const canEdit = hasPermission(me, PERMS.configEdit);
   const [page, setPage] = useState(1);
+  const [isActiveFilter, setIsActiveFilter] = useState<"" | "true" | "false">("");
+  const [instrumentTypeFilter, setInstrumentTypeFilter] = useState("");
 
   const instrumentsQuery = useQuery({
-    queryKey: ["instruments", "list", page],
+    queryKey: ["instruments", "list", page, isActiveFilter, instrumentTypeFilter],
     queryFn: async () => {
-      const res = await listInstruments({ page, pageSize: 25, sort: "name:asc" });
+      const res = await listInstruments({
+        page,
+        pageSize: 25,
+        sort: "name:asc",
+        isActive: isActiveFilter === "" ? undefined : isActiveFilter === "true",
+        instrumentType: instrumentTypeFilter.trim() || undefined,
+      });
       return res;
     },
   });
@@ -44,57 +51,71 @@ export default function InstrumentsPage() {
   const pageSize = instrumentsQuery.data?.pageSize ?? 25;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
-  async function onSubmit() {
-    setBusy(true);
-    setError(null);
-    setCreatedId(null);
-    try {
-      const res = await createInstrument({ name });
-      const id = s((res as { id?: unknown }).id);
-      setCreatedId(id);
-      pushRecentInstrument(id);
-      setName("");
-      void instrumentsQuery.refetch();
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <div className="space-y-6">
       <PageHeader
         title="Instruments"
         description="Instruments registered in your laboratory."
         actions={
-          <Link href="/runs/upload">
-            <Button variant="secondary" type="button">Upload run</Button>
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            {canEdit ? (
+              <Link href="/instruments/new">
+                <Button type="button">New instrument</Button>
+              </Link>
+            ) : null}
+            <Link href="/runs/upload">
+              <Button variant="secondary" type="button">
+                Upload run
+              </Button>
+            </Link>
+          </div>
         }
       />
 
       <Card>
-        <div className="mb-4 text-sm font-medium">Register new instrument</div>
-        <form className="flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={(e) => { e.preventDefault(); void onSubmit(); }}>
-          <div className="flex-1">
-            <Label htmlFor="name">Instrument name</Label>
-            <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required className="mt-1" />
+        <div className="mb-4 text-sm font-medium">Filters</div>
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+          <div>
+            <Label htmlFor="filter-active">Active status</Label>
+            <Select
+              id="filter-active"
+              value={isActiveFilter}
+              onChange={(e) => {
+                setIsActiveFilter(e.target.value as "" | "true" | "false");
+                setPage(1);
+              }}
+            >
+              <option value="">All</option>
+              <option value="true">Active only</option>
+              <option value="false">Inactive only</option>
+            </Select>
           </div>
-          <Button type="submit" disabled={busy || !name.trim()}>
-            {busy ? "Registering…" : "Register"}
-          </Button>
-        </form>
-        {error ? <div className="mt-3 text-sm text-red-600">{error}</div> : null}
-        {createdId ? (
-          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm dark:border-emerald-900 dark:bg-emerald-950">
-            Created: <span className="font-mono">{createdId}</span>
-            {" — "}
-            <Link className="underline" href={`/runs/upload?instrumentId=${encodeURIComponent(createdId)}`}>
-              Upload run for this instrument
-            </Link>
+          <div>
+            <Label htmlFor="filter-type">Instrument type</Label>
+            <Input
+              id="filter-type"
+              placeholder="e.g. GC/MS"
+              value={instrumentTypeFilter}
+              onChange={(e) => {
+                setInstrumentTypeFilter(e.target.value);
+                setPage(1);
+              }}
+            />
           </div>
-        ) : null}
+          <div className="flex items-end">
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                setIsActiveFilter("");
+                setInstrumentTypeFilter("");
+                setPage(1);
+              }}
+            >
+              Clear filters
+            </Button>
+          </div>
+        </div>
       </Card>
 
       <Card>
@@ -108,11 +129,11 @@ export default function InstrumentsPage() {
         </div>
 
         {instrumentsQuery.isError ? (
-          <div className="text-sm text-red-600">Failed to load instruments.</div>
+          <div className="text-sm text-red-600">{(instrumentsQuery.error as Error).message}</div>
         ) : null}
 
         {items.length === 0 && instrumentsQuery.isSuccess ? (
-          <div className="text-sm text-neutral-500">No instruments registered yet.</div>
+          <div className="text-sm text-neutral-500">No instruments match these filters.</div>
         ) : null}
 
         {items.length > 0 ? (
@@ -130,7 +151,11 @@ export default function InstrumentsPage() {
               <tbody className="divide-y divide-neutral-100 dark:divide-neutral-900">
                 {items.map((row) => (
                   <tr key={row.id}>
-                    <td className="py-2 pr-4 font-medium">{row.name}</td>
+                    <td className="py-2 pr-4 font-medium">
+                      <Link className="text-blue-600 underline dark:text-blue-400" href={`/instruments/${row.id}`}>
+                        {row.name}
+                      </Link>
+                    </td>
                     <td className="py-2 pr-4 text-neutral-600 dark:text-neutral-400">{row.instrumentType ?? "—"}</td>
                     <td className="py-2 pr-4">
                       <span
@@ -147,19 +172,24 @@ export default function InstrumentsPage() {
                       {row.id.slice(0, 8)}…
                     </td>
                     <td className="py-2">
-                      <div className="flex gap-3">
+                      <div className="flex flex-wrap gap-3">
+                        <Link className="text-blue-600 underline dark:text-blue-400" href={`/instruments/${row.id}`}>
+                          Details
+                        </Link>
                         <Link
                           className="text-blue-600 underline dark:text-blue-400"
                           href={`/runs?instrumentId=${encodeURIComponent(row.id)}`}
                         >
-                          View runs
+                          Runs
                         </Link>
-                        <Link
-                          className="text-blue-600 underline dark:text-blue-400"
-                          href={`/runs/upload?instrumentId=${encodeURIComponent(row.id)}`}
-                        >
-                          Upload run
-                        </Link>
+                        {hasPermission(me, PERMS.runsUpload) ? (
+                          <Link
+                            className="text-blue-600 underline dark:text-blue-400"
+                            href={`/runs/upload?instrumentId=${encodeURIComponent(row.id)}`}
+                          >
+                            Upload
+                          </Link>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
