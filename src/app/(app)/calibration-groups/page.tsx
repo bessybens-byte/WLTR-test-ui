@@ -126,18 +126,23 @@ export default function CalibrationGroupsPage() {
     queryFn: () => listCalibrationGroups({ page: groupsPage, pageSize: 25, sort: "createdAt:desc" }),
   });
 
-  const groups = (groupsQuery.data?.items ?? []).map((r) => ({
-    id: s(r.id),
-    instrumentId: s(r.instrumentId),
-    status: typeof r.status === "number" ? r.status : 0,
-    methodConfigId: s(r.methodConfigId),
-    createdAt: s(r.createdAt),
-  }));
+  const groups = (groupsQuery.data?.items ?? []).map((r) => {
+    const nm = typeof r.name === "string" ? r.name.trim() : "";
+    return {
+      id: s(r.id),
+      name: nm || null,
+      instrumentId: s(r.instrumentId),
+      status: typeof r.status === "number" ? r.status : 0,
+      methodConfigId: s(r.methodConfigId),
+      createdAt: s(r.createdAt),
+    };
+  });
   const groupsTotal = groupsQuery.data?.totalCount ?? 0;
   const groupsTotalPages = Math.max(1, Math.ceil(groupsTotal / (groupsQuery.data?.pageSize ?? 25)));
 
   /* ── Create form state ── */
   const [selectedInstrumentId, setSelectedInstrumentId] = useState("");
+  const [groupName, setGroupName] = useState("");
   const [methodConfigId, setMethodConfigId] = useState("");
   const [selectedCalIds, setSelectedCalIds] = useState<Set<string>>(new Set());
   const [icvRunId, setIcvRunId] = useState("");
@@ -207,6 +212,7 @@ export default function CalibrationGroupsPage() {
         methodConfigId: methodConfigId.trim(),
         calRunIds: [...selectedCalIds],
         icvRunId: icvRunId.trim() || null,
+        ...(groupName.trim() ? { name: groupName.trim() } : {}),
       });
       const newId = s((res as { id?: unknown }).id);
       if (newId === "") throw new Error("API did not return a group id.");
@@ -251,6 +257,7 @@ export default function CalibrationGroupsPage() {
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-800">
                   <th className="pb-2 text-left font-medium">Status</th>
+                  <th className="pb-2 text-left font-medium">Name</th>
                   <th className="pb-2 text-left font-medium">Instrument</th>
                   <th className="pb-2 text-left font-medium">Method config</th>
                   <th className="pb-2 text-left font-medium">Created</th>
@@ -265,6 +272,9 @@ export default function CalibrationGroupsPage() {
                       <Badge tone={groupStatusTone(row.status)}>
                         {GROUP_STATUS_LABEL[row.status] ?? String(row.status)}
                       </Badge>
+                    </td>
+                    <td className="py-2 pr-4 max-w-[200px] truncate" title={row.name ?? undefined}>
+                      {row.name ?? "—"}
                     </td>
                     <td className="py-2 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
                       {row.instrumentId.slice(0, 8)}…
@@ -318,11 +328,23 @@ export default function CalibrationGroupsPage() {
         <Card>
           <div className="mb-1 text-sm font-medium">Create draft group</div>
           <p className="mb-4 text-xs text-neutral-600 dark:text-neutral-400">
-            Requires{" "}
+            Assign an optional <span className="font-medium">group name</span>, pick CAL runs (with run labels when the
+            API provides them), and optional ICV. Requires{" "}
             <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">perm.runs.upload</code> and an active lab
             technician profile.
           </p>
           <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); void onCreateDraft(); }}>
+            <div>
+              <Label htmlFor="cgName">Group name (optional)</Label>
+              <Input
+                id="cgName"
+                className="mt-1"
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="e.g. MS4 March 2026 calibration"
+              />
+            </div>
+
             <div>
               <Label htmlFor="cgInstrument">Instrument</Label>
               <Select

@@ -55,6 +55,9 @@ export default function InternalStandardDetailPage() {
 
   const displayName = q.isSuccess ? String((q.data as Record<string, unknown>).name ?? "").trim() : "";
   const title = q.isSuccess && displayName ? displayName : "Internal standard";
+  const linkedAnalytes = (
+    (q.data as { analytes?: { id?: string; name?: string | null }[] } | undefined)?.analytes ?? []
+  ).filter((a): a is { id: string; name?: string | null } => typeof a.id === "string" && a.id.length > 0);
 
   return (
     <div className="space-y-6">
@@ -119,6 +122,31 @@ export default function InternalStandardDetailPage() {
           </form>
         ) : null}
       </Card>
+
+      {q.isSuccess ? (
+        <Card>
+          <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Analytes using this standard</div>
+          <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+            Canonical analytes in this laboratory with this internal standard as their default assignment.
+          </p>
+          {linkedAnalytes.length ? (
+            <ul className="mt-4 space-y-2">
+              {linkedAnalytes.map((a) => (
+                <li key={a.id}>
+                  <Link
+                    className="text-sm font-medium text-neutral-900 underline underline-offset-2 dark:text-neutral-100"
+                    href={`/analytes/${a.id}`}
+                  >
+                    {a.name?.trim() || a.id}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-4 text-sm text-neutral-500">No analytes currently use this internal standard.</p>
+          )}
+        </Card>
+      ) : null}
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { ViewOnlyNotice } from "@/components/view-only-notice";
 import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import { deleteMethodConfig, getMethodConfig, updateMethodConfig } from "@/lib/api/wltr-api";
-import { hasPermission, PERMS, REGRESSION_TYPE_LABEL } from "@/lib/types/wltr";
+import { hasPermission, PERMS, QUANTITATION_MODE_LABEL } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -22,10 +22,8 @@ export default function MethodConfigDetailPage() {
   });
   const [form, setForm] = useState({
     name: "",
-    defaultRegressionType: 0,
-    defaultWeightingMode: 0,
-    forceZeroIntercept: false,
     labelMode: 0,
+    quantitationMode: 0,
     minCorrelation: 0,
     maxRSE: 0,
     pctDiffLowBound: 0,
@@ -43,10 +41,8 @@ export default function MethodConfigDetailPage() {
     const d = q.data as Record<string, unknown>;
     setForm({
       name: String(d.name ?? ""),
-      defaultRegressionType: Number(d.defaultRegressionType ?? 0),
-      defaultWeightingMode: Number(d.defaultWeightingMode ?? 0),
-      forceZeroIntercept: Boolean(d.forceZeroIntercept ?? false),
       labelMode: Number(d.labelMode ?? 0),
+      quantitationMode: Number(d.quantitationMode ?? 0),
       minCorrelation: Number(d.minCorrelation ?? 0),
       maxRSE: Number(d.maxRSE ?? 0),
       pctDiffLowBound: Number(d.pctDiffLowBound ?? 0),
@@ -112,35 +108,13 @@ export default function MethodConfigDetailPage() {
               <Label htmlFor="name">Name</Label>
               <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={!canEdit} />
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <Label htmlFor="reg">Regression type</Label>
-                <Select
-                  id="reg"
-                  value={String(form.defaultRegressionType)}
-                  onChange={(e) => setForm({ ...form, defaultRegressionType: Number(e.target.value) })}
-                  disabled={!canEdit}
-                >
-                  {[0, 1, 2, 3].map((v) => (
-                    <option key={v} value={v}>
-                      {v} — {REGRESSION_TYPE_LABEL[v]}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="wm">Weighting mode</Label>
-                <Select
-                  id="wm"
-                  value={String(form.defaultWeightingMode)}
-                  onChange={(e) => setForm({ ...form, defaultWeightingMode: Number(e.target.value) })}
-                  disabled={!canEdit}
-                >
-                  <option value={0}>0 — None (w = 1)</option>
-                  <option value={1}>1 — Inverse X (w = 1/X)</option>
-                  <option value={2}>2 — Inverse X² (w = 1/X²)</option>
-                </Select>
-              </div>
+            <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
+              <div className="mb-3 text-sm font-medium">Methodology</div>
+              <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
+                Regression type and weighting are no longer stored on the method config — every variant is computed on
+                each calibration group, then QA selects the best model on the report card.
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <Label htmlFor="lm">Label mode</Label>
                 <Select
@@ -153,15 +127,21 @@ export default function MethodConfigDetailPage() {
                   <option value={1}>1</option>
                 </Select>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  id="fzi"
-                  type="checkbox"
-                  checked={form.forceZeroIntercept}
-                  onChange={(e) => setForm({ ...form, forceZeroIntercept: e.target.checked })}
+              <div>
+                <Label htmlFor="qm">Quantitation mode</Label>
+                <Select
+                  id="qm"
+                  value={String(form.quantitationMode)}
+                  onChange={(e) => setForm({ ...form, quantitationMode: Number(e.target.value) })}
                   disabled={!canEdit}
-                />
-                <Label htmlFor="fzi">Force zero intercept</Label>
+                >
+                  {[0, 1].map((v) => (
+                    <option key={v} value={v}>
+                      {v} — {QUANTITATION_MODE_LABEL[v]}
+                    </option>
+                  ))}
+                </Select>
+              </div>
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2">

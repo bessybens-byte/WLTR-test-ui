@@ -1,11 +1,22 @@
 "use client";
 
-import { Badge, Button, Card, Label, Select, Textarea } from "@/components/ui";
+import { Badge, Button, Card, Input, Label, Select, Textarea } from "@/components/ui";
 import {
   excludeCalibrationPoint,
   getCalibrationGroupRegressionInputs,
+  getCalibrationGroupReportCard,
   reinstateCalibrationPoint,
 } from "@/lib/api/wltr-api";
+import {
+  buildCurveQueryParams,
+  hasGroupSelectedModel,
+  modelVariantLabel,
+  parseVariantKey,
+  pickActiveVariantKey,
+  resolveVariantOptions,
+  variantKey,
+} from "@/lib/calibration-variant-utils";
+import type { MeResponse } from "@/lib/types/wltr";
 import { EXCLUSION_REASON_LABEL, ExclusionReason } from "@/lib/types/wltr";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -23,12 +34,10 @@ function formatNum(v: unknown): string {
   return cellStr(v) || "—";
 }
 
-function pointIdFromRow(p: Record<string, unknown>): string {
-  return (
-    cellStr(p.calibrationPointId) ||
-    cellStr(p.pointId) ||
-    cellStr(p.id) // some API builds may expose the persisted `CalibrationPoint` id here
-  );
+function exclusionKeyFromRow(p: Record<string, unknown>, analyteId: string): string | null {
+  const runId = cellStr(p.sourceRunId);
+  if (!analyteId || !runId) return null;
+  return `${analyteId}:${runId}`;
 }
 
 type ParsedRegressionTable = Readonly<{
@@ -82,8 +91,8 @@ function RegressionPointsTable({
   };
 
   const excludeMut = useMutation({
-    mutationFn: (args: { pointId: string; reason: number; note: string }) =>
-      excludeCalibrationPoint(groupId, args.pointId, { reason: args.reason, note: args.note }),
+    mutationFn: (args: { analyteId: string; calRunId: string; reason: number; note: string }) =>
+      excludeCalibrationPoint(groupId, args),
     onSuccess: async () => {
       setExcludeFor(null);
       setNote("");
@@ -92,13 +101,14 @@ function RegressionPointsTable({
   });
 
   const includeMut = useMutation({
-    mutationFn: (pointId: string) => reinstateCalibrationPoint(groupId, pointId),
+    mutationFn: (args: { analyteId: string; calRunId: string }) =>
+      reinstateCalibrationPoint(groupId, args.analyteId, args.calRunId),
     onSuccess: invalidate,
   });
 
-  const anyPersistedPoint = useMemo(
-    () => points.some((p) => Boolean(pointIdFromRow(p))),
-    [points],
+  const anyExcludablePoint = useMemo(
+    () => points.some((p) => Boolean(exclusionKeyFromRow(p, analyteId))),
+    [points, analyteId],
   );
 
   return (
@@ -108,17 +118,16 @@ function RegressionPointsTable({
         {analyteId ? <span className="ml-2 font-mono text-[10px] text-neutral-500">{analyteId}</span> : null}
         <span className="ml-2 text-neutral-500">({points.length} point{points.length === 1 ? "" : "s"})</span>
       </div>
-      {canManagePoints && !anyPersistedPoint ? (
+      {canManagePoints && !anyExcludablePoint ? (
         <p className="border-b border-neutral-200 px-3 py-2 text-[11px] text-amber-800 dark:border-neutral-800 dark:text-amber-200">
-          API did not return a persisted point id (<code className="rounded bg-amber-100 px-1 dark:bg-amber-950">id</code>,
-          <code className="rounded bg-amber-100 px-1 dark:bg-amber-950">calibrationPointId</code>, or{" "}
-          <code className="rounded bg-amber-100 px-1 dark:bg-amber-950">pointId</code>) — exclude/re-include is available
-          when the server exposes one of these on each row after compute.
+          Each row needs <code className="rounded bg-amber-100 px-1 dark:bg-amber-950">sourceRunId</code> and a
+          canonical analyte id to exclude or re-include via{" "}
+          <code className="rounded bg-amber-100 px-1 dark:bg-amber-950">POST …/point-exclusions</code>.
         </p>
       ) : null}
       {excludeFor ? (
         <div className="space-y-3 border-b border-neutral-200 bg-neutral-50/80 px-3 py-3 dark:border-neutral-800 dark:bg-neutral-900/30">
-          <div className="text-xs font-medium">Exclude point {excludeFor.slice(0, 8)}…</div>
+          <div className="text-xs font-medium">Exclude measurement {excludeFor.replace(":", " @ run ")}</div>
           <div>
             <Label htmlFor={`excl-reason-${excludeFor}`}>Reason</Label>
             <Select
@@ -145,13 +154,16 @@ function RegressionPointsTable({
             <Button
               type="button"
               disabled={!note.trim() || excludeMut.isPending}
-              onClick={() =>
+              onClick={() => {
+                const [exAnalyteId, calRunId] = excludeFor.split(":");
+                if (!exAnalyteId || !calRunId) return;
                 void excludeMut.mutateAsync({
-                  pointId: excludeFor,
+                  analyteId: exAnalyteId,
+                  calRunId,
                   reason,
                   note: note.trim(),
-                })
-              }
+                });
+              }}
             >
               Confirm exclude
             </Button>
@@ -204,7 +216,7 @@ function RegressionPointsTable({
                 const runId = cellStr(p.sourceRunId);
                 const runName = cellStr(p.sourceRunName);
                 const included = Boolean(p.isIncluded);
-                const pid = pointIdFromRow(p);
+                const exclusionKey = exclusionKeyFromRow(p, analyteId);
                 const busy = excludeMut.isPending || includeMut.isPending;
                 return (
                   <tr
@@ -213,19 +225,19 @@ function RegressionPointsTable({
                   >
                     {canManagePoints ? (
                       <td className="whitespace-nowrap px-2 py-1.5 align-top">
-                        {pid ? (
+                        {exclusionKey ? (
                           <div className="flex flex-col gap-1">
                             {included ? (
-                              excludeFor === pid ? (
+                              excludeFor === exclusionKey ? (
                                 <span className="text-[10px] text-neutral-500">Pending…</span>
                               ) : (
                                 <Button
                                   type="button"
                                   variant="secondary"
                                   className="!px-2 !py-1 !text-[10px]"
-                                  disabled={busy || Boolean(excludeFor && excludeFor !== pid)}
+                                  disabled={busy || Boolean(excludeFor && excludeFor !== exclusionKey)}
                                   onClick={() => {
-                                    setExcludeFor(pid);
+                                    setExcludeFor(exclusionKey);
                                     setReason(ExclusionReason.ManualExclude);
                                     setNote("");
                                   }}
@@ -239,7 +251,11 @@ function RegressionPointsTable({
                                 variant="secondary"
                                 className="!px-2 !py-1 !text-[10px]"
                                 disabled={busy}
-                                onClick={() => void includeMut.mutateAsync(pid)}
+                                onClick={() => {
+                                  const [exAnalyteId, calRunId] = exclusionKey.split(":");
+                                  if (!exAnalyteId || !calRunId) return;
+                                  void includeMut.mutateAsync({ analyteId: exAnalyteId, calRunId });
+                                }}
                               >
                                 Re-include
                               </Button>
@@ -297,33 +313,121 @@ function RegressionPointsTable({
 
 export function CalibrationGroupRegressionInputsPanel({
   groupId,
+  me,
   canManagePoints = false,
+  selectedRegressionType,
+  selectedWeightingMode,
 }: {
   readonly groupId: string;
+  readonly me: MeResponse | null | undefined;
   readonly canManagePoints?: boolean;
+  readonly selectedRegressionType?: number | null;
+  readonly selectedWeightingMode?: number | null;
 }) {
+  const labInJwt = me?.laboratoryId;
+  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
   /** `null` = follow first analyte in the latest payload; otherwise user-picked `key`. */
   const [userPickedKey, setUserPickedKey] = useState<string | null>(null);
+  const [userPickedVariantKey, setUserPickedVariantKey] = useState<string | null>(null);
+  const needPlatformLab = !labInJwt;
+  const effectiveLaboratoryId = labInJwt || laboratoryIdOverride.trim() || undefined;
+  const scopeParams = useMemo(
+    () => (effectiveLaboratoryId ? { laboratoryId: effectiveLaboratoryId } : undefined),
+    [effectiveLaboratoryId],
+  );
 
-  const q = useQuery({
-    queryKey: ["calibration-group-regression-inputs", groupId],
-    queryFn: () => getCalibrationGroupRegressionInputs(groupId),
-    enabled: Boolean(groupId),
+  const groupSelectedModel = hasGroupSelectedModel({
+    regressionType: selectedRegressionType ?? null,
+    weightingMode: selectedWeightingMode ?? null,
   });
 
-  const tableRows = useMemo(() => parseRegressionTables(q.data), [q.data]);
+  const listParams = useMemo(
+    () => buildCurveQueryParams(scopeParams, { groupSelectedModel, activeVariant: null }),
+    [scopeParams, groupSelectedModel],
+  );
+
+  const analyteListQ = useQuery({
+    queryKey: ["calibration-group-regression-inputs", groupId, effectiveLaboratoryId ?? "", "__list", listParams.regressionType ?? "", listParams.weightingMode ?? ""],
+    queryFn: () => getCalibrationGroupRegressionInputs(groupId, listParams),
+    enabled: Boolean(groupId && effectiveLaboratoryId),
+  });
+
+  const analyteRows = useMemo(() => parseRegressionTables(analyteListQ.data), [analyteListQ.data]);
+
+  const hasComputedOutputs = useMemo(() => {
+    for (let i = 0; i < analyteRows.length; i++) {
+      const points = analyteRows[i].points;
+      for (let j = 0; j < points.length; j++) {
+        const p = points[j];
+        if (p.predictedY != null || p.predictedYValue != null) return true;
+      }
+    }
+    return false;
+  }, [analyteRows]);
 
   useEffect(() => {
     setUserPickedKey(null);
+    setUserPickedVariantKey(null);
   }, [groupId]);
 
   const effectiveKey = useMemo(() => {
-    if (!tableRows.length) return "";
-    if (userPickedKey && tableRows.some((t) => t.key === userPickedKey)) return userPickedKey;
-    return tableRows[0].key;
-  }, [tableRows, userPickedKey]);
+    if (!analyteRows.length) return "";
+    if (userPickedKey && analyteRows.some((t) => t.key === userPickedKey)) return userPickedKey;
+    return analyteRows[0].key;
+  }, [analyteRows, userPickedKey]);
 
-  const selected = tableRows.find((t) => t.key === effectiveKey) ?? null;
+  const selectedAnalyte = analyteRows.find((t) => t.key === effectiveKey) ?? null;
+
+  useEffect(() => setUserPickedVariantKey(null), [selectedAnalyte?.analyteId]);
+
+  const reportCardQ = useQuery({
+    queryKey: ["calibration-group-report-card", groupId, effectiveLaboratoryId ?? ""],
+    queryFn: () => getCalibrationGroupReportCard(groupId, scopeParams),
+    enabled: Boolean(groupId && effectiveLaboratoryId),
+    retry: false,
+  });
+
+  const { variants: variantOptions, fromReportCard } = useMemo(
+    () =>
+      resolveVariantOptions(reportCardQ.data as Record<string, unknown> | undefined, selectedAnalyte?.analyteId ?? "", {
+        allowFallback: !groupSelectedModel || analyteRows.length > 0,
+      }),
+    [reportCardQ.data, selectedAnalyte?.analyteId, analyteRows.length, groupSelectedModel],
+  );
+
+  const effectiveVariantKey = useMemo(
+    () =>
+      pickActiveVariantKey(variantOptions, {
+        userPickedKey: userPickedVariantKey,
+        preferred: {
+          regressionType: selectedRegressionType ?? null,
+          weightingMode: selectedWeightingMode ?? null,
+        },
+      }),
+    [variantOptions, userPickedVariantKey, selectedRegressionType, selectedWeightingMode],
+  );
+
+  const activeVariant = parseVariantKey(effectiveVariantKey);
+
+  const curveParams = useMemo(
+    () => buildCurveQueryParams(scopeParams, { groupSelectedModel, activeVariant }),
+    [scopeParams, groupSelectedModel, activeVariant],
+  );
+
+  const q = useQuery({
+    queryKey: [
+      "calibration-group-regression-inputs",
+      groupId,
+      effectiveLaboratoryId ?? "",
+      curveParams.regressionType ?? "",
+      curveParams.weightingMode ?? "",
+    ],
+    queryFn: () => getCalibrationGroupRegressionInputs(groupId, curveParams),
+    enabled: Boolean(groupId && effectiveLaboratoryId),
+  });
+
+  const tableRows = useMemo(() => parseRegressionTables(q.data), [q.data]);
+  const selected = tableRows.find((t) => t.key === effectiveKey) ?? selectedAnalyte;
 
   return (
     <Card>
@@ -332,25 +436,42 @@ export function CalibrationGroupRegressionInputsPanel({
         Per-analyte <strong>X</strong> (true concentration from calibration level), <strong>Y</strong> (response ratio
         when available), and <strong>weight</strong> from the group&apos;s weighting rules. After{" "}
         <code className="rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">POST …/compute</code>, persisted{" "}
-        <strong>ŷ</strong>, residual, and %diff appear when returned by the API. Manual exclude/re-include needs a row{" "}
-        <code className="rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">pointId</code> (or{" "}
-        <code className="rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">calibrationPointId</code>),
-        typically after compute — requires{" "}
+        <strong>ŷ</strong>, residual, and %diff appear when returned by the API. Manual exclude/re-include keys on{" "}
+        <code className="rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">analyteId</code> +{" "}
+        <code className="rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">sourceRunId</code> via{" "}
+        <code className="rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">point-exclusions</code> — requires{" "}
         <code className="rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">perm.runs.upload</code> and a Draft
         or Computed group. Recomputing clears prior manual include/exclude until set again after compute.
       </p>
+      {needPlatformLab ? (
+        <div className="mt-4">
+          <Label htmlFor="regressionInputsLab">Laboratory ID (required for platform users)</Label>
+          <Input
+            id="regressionInputsLab"
+            value={laboratoryIdOverride}
+            onChange={(e) => setLaboratoryIdOverride(e.target.value)}
+            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+            className="mt-1 font-mono text-xs"
+          />
+        </div>
+      ) : (
+        <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">
+          Scoped to your laboratory from the access token.
+        </p>
+      )}
 
       <div className="mt-4 flex flex-wrap items-end gap-4">
-        {tableRows.length > 0 ? (
+        {analyteRows.length > 0 ? (
           <div className="min-w-[14rem] flex-1">
             <Label htmlFor="regressionAnalyte">Analyte</Label>
             <Select
               id="regressionAnalyte"
               className="mt-1"
               value={effectiveKey}
+              disabled={analyteListQ.isLoading}
               onChange={(e) => setUserPickedKey(e.target.value)}
             >
-              {tableRows.map((t) => (
+              {analyteRows.map((t) => (
                 <option key={t.key} value={t.key}>
                   {t.analyteName}
                   {t.analyteId ? ` · ${t.analyteId.slice(0, 8)}…` : ""} ({t.points.length} pt{t.points.length === 1 ? "" : "s"})
@@ -359,17 +480,71 @@ export function CalibrationGroupRegressionInputsPanel({
             </Select>
           </div>
         ) : null}
-        <Button type="button" variant="secondary" disabled={!groupId || q.isFetching} onClick={() => void q.refetch()}>
+        {variantOptions.length > 0 && selectedAnalyte?.analyteId ? (
+          <div className="min-w-[14rem] flex-1">
+            <Label htmlFor="regressionInputsVariant">Model variant</Label>
+            <Select
+              id="regressionInputsVariant"
+              className="mt-1"
+              value={effectiveVariantKey}
+              onChange={(e) => setUserPickedVariantKey(e.target.value || null)}
+            >
+              {groupSelectedModel ? (
+                <option value="">Default (group-selected curve)</option>
+              ) : null}
+              {variantOptions.map((v) => {
+                const key = variantKey(v.regressionType, v.weightingMode);
+                const score =
+                  typeof v.passCount === "number"
+                    ? `${v.passCount} passes`
+                    : typeof v.reportCardScore === "number"
+                      ? `score ${v.reportCardScore}`
+                      : "";
+                return (
+                  <option key={key} value={key}>
+                    {modelVariantLabel(v.regressionType, v.weightingMode)}
+                    {score ? ` · ${score}` : ""}
+                  </option>
+                );
+              })}
+            </Select>
+            {!fromReportCard && reportCardQ.isError ? (
+              <p className="mt-1 text-[11px] text-neutral-500">
+                Report card unavailable — showing all standard regression and weighting combinations.
+              </p>
+            ) : null}
+          </div>
+        ) : !hasComputedOutputs && selectedAnalyte?.analyteId ? (
+          <p className="pb-1 text-xs text-neutral-500">Run compute to compare regression variants.</p>
+        ) : null}
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={!groupId || !effectiveLaboratoryId || q.isFetching}
+          onClick={() => void q.refetch()}
+        >
           Refresh
         </Button>
       </div>
 
+      {activeVariant ? (
+        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
+          Showing inputs for{" "}
+          <strong>{modelVariantLabel(activeVariant.regressionType, activeVariant.weightingMode)}</strong>.
+        </p>
+      ) : groupSelectedModel ? (
+        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
+          Showing inputs for the group-selected model (
+          {modelVariantLabel(selectedRegressionType!, selectedWeightingMode!)}).
+        </p>
+      ) : null}
+
       <div className="mt-4 space-y-4">
-        {q.isLoading ? <div className="text-sm text-neutral-500">Loading…</div> : null}
+        {analyteListQ.isLoading || q.isLoading ? <div className="text-sm text-neutral-500">Loading…</div> : null}
         {q.isError ? (
           <div className="text-sm text-red-600">{(q.error as Error).message}</div>
         ) : null}
-        {q.isSuccess && tableRows.length === 0 ? (
+        {q.isSuccess && tableRows.length === 0 && analyteRows.length === 0 ? (
           <p className="text-sm text-neutral-500">
             No tables returned — the group may have no linked CAL runs with resolved analyte measurements yet.
           </p>

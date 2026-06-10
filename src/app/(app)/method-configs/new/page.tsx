@@ -2,7 +2,7 @@
 
 import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import { createMethodConfig } from "@/lib/api/wltr-api";
-import { REGRESSION_TYPE_LABEL } from "@/lib/types/wltr";
+import { QUANTITATION_MODE_LABEL } from "@/lib/types/wltr";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -12,10 +12,8 @@ export default function NewMethodConfigPage() {
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
-    defaultRegressionType: 0,
-    defaultWeightingMode: 0,
-    forceZeroIntercept: false,
     labelMode: 0,
+    quantitationMode: 0,
     minCorrelation: 0.99,
     maxRSE: 0,
     pctDiffLowBound: -20,
@@ -57,33 +55,13 @@ export default function NewMethodConfigPage() {
             <Label htmlFor="name">Name</Label>
             <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <Label htmlFor="reg">Regression type</Label>
-              <Select
-                id="reg"
-                value={String(form.defaultRegressionType)}
-                onChange={(e) => setForm({ ...form, defaultRegressionType: Number(e.target.value) })}
-              >
-                {[0, 1, 2, 3].map((v) => (
-                  <option key={v} value={v}>
-                    {v} — {REGRESSION_TYPE_LABEL[v]}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="wm">Weighting mode</Label>
-              <Select
-                id="wm"
-                value={String(form.defaultWeightingMode)}
-                onChange={(e) => setForm({ ...form, defaultWeightingMode: Number(e.target.value) })}
-              >
-                <option value={0}>0 — None (w = 1)</option>
-                <option value={1}>1 — Inverse X (w = 1/X)</option>
-                <option value={2}>2 — Inverse X² (w = 1/X²)</option>
-              </Select>
-            </div>
+          <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
+            <div className="mb-3 text-sm font-medium">Methodology</div>
+            <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
+              Regression variants are computed per calibration group; this config stores quantitation mode (curve Y
+              source), label mode, and acceptance thresholds only.
+            </p>
+            <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label htmlFor="lm">Label mode (0–1)</Label>
               <Select
@@ -95,14 +73,20 @@ export default function NewMethodConfigPage() {
                 <option value={1}>1</option>
               </Select>
             </div>
-            <div className="flex items-center gap-2">
-              <input
-                id="fzi"
-                type="checkbox"
-                checked={form.forceZeroIntercept}
-                onChange={(e) => setForm({ ...form, forceZeroIntercept: e.target.checked })}
-              />
-              <Label htmlFor="fzi">Force zero intercept</Label>
+            <div>
+              <Label htmlFor="qm">Quantitation mode</Label>
+              <Select
+                id="qm"
+                value={String(form.quantitationMode)}
+                onChange={(e) => setForm({ ...form, quantitationMode: Number(e.target.value) })}
+              >
+                {[0, 1].map((v) => (
+                  <option key={v} value={v}>
+                    {v} — {QUANTITATION_MODE_LABEL[v]}
+                  </option>
+                ))}
+              </Select>
+            </div>
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">

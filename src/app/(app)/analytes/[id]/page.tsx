@@ -89,6 +89,11 @@ export default function AnalyteDetailPage() {
   const aliases = ((q.data as { aliases?: { id: string; aliasName?: string | null }[] } | undefined)?.aliases ?? []).filter(
     Boolean,
   );
+  const defaultInternalStandardName =
+    typeof (q.data as { defaultInternalStandardName?: unknown } | undefined)?.defaultInternalStandardName === "string"
+      ? (q.data as { defaultInternalStandardName: string }).defaultInternalStandardName
+      : null;
+  const defaultInternalStandardId = form.defaultInternalStandardId.trim();
 
   return (
     <div className="space-y-6">
@@ -133,11 +138,25 @@ export default function AnalyteDetailPage() {
               <AnalyteInternalStandardSelect
                 label="Default internal standard"
                 value={form.defaultInternalStandardId}
+                resolvedName={defaultInternalStandardName}
                 onChange={(internalStandardId) =>
                   setForm({ ...form, defaultInternalStandardId: internalStandardId })
                 }
                 disabled={!canEdit}
               />
+              {defaultInternalStandardId ? (
+                <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                  Assigned:{" "}
+                  <Link
+                    className="font-medium text-neutral-900 underline underline-offset-2 dark:text-neutral-100"
+                    href={`/internal-standards/${defaultInternalStandardId}`}
+                  >
+                    {defaultInternalStandardName?.trim() || defaultInternalStandardId}
+                  </Link>
+                </p>
+              ) : (
+                <p className="text-xs text-neutral-600 dark:text-neutral-400">No default internal standard assigned.</p>
+              )}
             </div>
             {save.isError ? <div className="text-sm text-red-600">{(save.error as Error).message}</div> : null}
             {canEdit ? (

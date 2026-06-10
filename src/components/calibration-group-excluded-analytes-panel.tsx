@@ -7,6 +7,7 @@ import {
   listAnalytes,
   listExcludedGroupAnalytes,
   removeExcludedGroupAnalyte,
+  replaceExcludedGroupAnalytes,
 } from "@/lib/api/wltr-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -103,6 +104,16 @@ export function CalibrationGroupExcludedAnalytesPanel({
     },
   });
 
+  const clearAll = useMutation({
+    mutationFn: async () => replaceExcludedGroupAnalytes(groupId, { analyteIds: [] }),
+    onSuccess: async () => {
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["calibration-group-excluded-analytes", groupId] }),
+        qc.invalidateQueries({ queryKey: ["calibration-groups", groupId] }),
+      ]);
+    },
+  });
+
   return (
     <Card>
       <div className="text-sm font-medium">Excluded analytes (regression)</div>
@@ -119,6 +130,20 @@ export function CalibrationGroupExcludedAnalytesPanel({
 
       {excludedQuery.isSuccess ? (
         excluded.length ? (
+          <>
+          {canEdit ? (
+            <div className="mt-4 flex justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                className="text-xs"
+                disabled={clearAll.isPending}
+                onClick={() => clearAll.mutate()}
+              >
+                {clearAll.isPending ? "Clearing…" : "Clear all exclusions"}
+              </Button>
+            </div>
+          ) : null}
           <ul className="mt-4 space-y-2">
             {excluded.map((row) => (
               <li
@@ -155,6 +180,7 @@ export function CalibrationGroupExcludedAnalytesPanel({
               </li>
             ))}
           </ul>
+          </>
         ) : (
           <p className="mt-4 text-sm text-neutral-500">No analytes excluded from this group.</p>
         )
@@ -195,8 +221,10 @@ export function CalibrationGroupExcludedAnalytesPanel({
               placeholder="Why this analyte is excluded from regression"
             />
           </div>
-          {(add.isError || remove.isError) && (
-            <div className="text-sm text-red-600">{((add.error ?? remove.error) as Error).message}</div>
+          {(add.isError || remove.isError || clearAll.isError) && (
+            <div className="text-sm text-red-600">
+              {((add.error ?? remove.error ?? clearAll.error) as Error).message}
+            </div>
           )}
           <Button type="submit" disabled={add.isPending || !analyteId}>
             {add.isPending ? "Excluding…" : "Exclude analyte"}

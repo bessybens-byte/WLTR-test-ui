@@ -35,6 +35,17 @@ export const LabelMode = {
   Relative: 1,
 } as const;
 
+/** Method config `quantitationMode` — `InternalStandard = 0`, `ExternalStandard = 1`. */
+export const QuantitationMode = {
+  InternalStandard: 0,
+  ExternalStandard: 1,
+} as const;
+
+export const QUANTITATION_MODE_LABEL: Record<number, string> = {
+  0: "Internal standard (ISTD)",
+  1: "External standard (ESTD)",
+};
+
 export const AnalyteMappingApplyScope = {
   RunOnly: 0,
   Laboratory: 1,

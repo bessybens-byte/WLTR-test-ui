@@ -6,7 +6,17 @@ import {
   getCalibrationGroupChart,
   getCalibrationGroupRegressionDebug,
   getCalibrationGroupRegressionInputs,
+  getCalibrationGroupReportCard,
 } from "@/lib/api/wltr-api";
+import {
+  buildCurveQueryParams,
+  hasGroupSelectedModel,
+  modelVariantLabel,
+  parseVariantKey,
+  pickActiveVariantKey,
+  resolveVariantOptions,
+  variantKey,
+} from "@/lib/calibration-variant-utils";
 import type { MeResponse } from "@/lib/types/wltr";
 import { REGRESSION_TYPE_LABEL, WEIGHTING_MODE_LABEL } from "@/lib/types/wltr";
 import { useQuery } from "@tanstack/react-query";
@@ -151,14 +161,19 @@ export function CalibrationGroupRegressionResultsPanel({
   groupId,
   me,
   canSummarizeFromDebug,
+  selectedRegressionType,
+  selectedWeightingMode,
 }: Readonly<{
   groupId: string;
   me: MeResponse | null | undefined;
   canSummarizeFromDebug: boolean;
+  selectedRegressionType?: number | null;
+  selectedWeightingMode?: number | null;
 }>) {
   const labInJwt = me?.laboratoryId;
   const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
   const [userPickedKey, setUserPickedKey] = useState<string | null>(null);
+  const [userPickedVariantKey, setUserPickedVariantKey] = useState<string | null>(null);
   const needPlatformLab = !labInJwt;
 
   const effectiveLaboratoryId = labInJwt || laboratoryIdOverride.trim() || undefined;
@@ -168,31 +183,113 @@ export function CalibrationGroupRegressionResultsPanel({
     [effectiveLaboratoryId],
   );
 
+  const groupSelectedModel = hasGroupSelectedModel({
+    regressionType: selectedRegressionType ?? null,
+    weightingMode: selectedWeightingMode ?? null,
+  });
+
+  const listParams = useMemo(
+    () => buildCurveQueryParams(platformParams, { groupSelectedModel, activeVariant: null }),
+    [platformParams, groupSelectedModel],
+  );
+
+  const analyteListQ = useQuery({
+    queryKey: ["calibration-group-regression-inputs", groupId, effectiveLaboratoryId ?? "", "__list", listParams.regressionType ?? "", listParams.weightingMode ?? ""],
+    queryFn: () => getCalibrationGroupRegressionInputs(groupId, listParams),
+    enabled: !!groupId && (!needPlatformLab || !!laboratoryIdOverride.trim()),
+  });
+
+  const reportCardQ = useQuery({
+    queryKey: ["calibration-group-report-card", groupId, effectiveLaboratoryId ?? ""],
+    queryFn: () => getCalibrationGroupReportCard(groupId, platformParams),
+    enabled: !!groupId && (!needPlatformLab || !!laboratoryIdOverride.trim()),
+    retry: false,
+  });
+
+  const tableRowsForPicker = useMemo(() => parseAnalyteRows(analyteListQ.data), [analyteListQ.data]);
+
+  const hasComputedOutputs = useMemo(() => {
+    for (let i = 0; i < tableRowsForPicker.length; i++) {
+      const points = tableRowsForPicker[i].points;
+      for (let j = 0; j < points.length; j++) {
+        const p = points[j];
+        if (p.predictedY != null || p.predictedYValue != null) return true;
+      }
+    }
+    return false;
+  }, [tableRowsForPicker]);
+
+  useEffect(() => {
+    setUserPickedKey(null);
+    setUserPickedVariantKey(null);
+  }, [groupId]);
+
+  const effectiveKey = useMemo(() => {
+    if (!tableRowsForPicker.length) return "";
+    if (userPickedKey && tableRowsForPicker.some((t) => t.key === userPickedKey)) return userPickedKey;
+    return tableRowsForPicker[0].key;
+  }, [tableRowsForPicker, userPickedKey]);
+
+  const selected = tableRowsForPicker.find((t) => t.key === effectiveKey) ?? null;
+
+  const { variants: variantOptions, fromReportCard } = useMemo(
+    () =>
+      resolveVariantOptions(reportCardQ.data as Record<string, unknown> | undefined, selected?.analyteId ?? "", {
+        allowFallback: !groupSelectedModel || hasComputedOutputs,
+      }),
+    [reportCardQ.data, selected?.analyteId, hasComputedOutputs, groupSelectedModel],
+  );
+
+  useEffect(() => setUserPickedVariantKey(null), [selected?.analyteId]);
+
+  const effectiveVariantKey = useMemo(
+    () =>
+      pickActiveVariantKey(variantOptions, {
+        userPickedKey: userPickedVariantKey,
+        preferred: {
+          regressionType: selectedRegressionType ?? null,
+          weightingMode: selectedWeightingMode ?? null,
+        },
+      }),
+    [variantOptions, userPickedVariantKey, selectedRegressionType, selectedWeightingMode],
+  );
+
+  const activeVariant = parseVariantKey(effectiveVariantKey);
+
+  const curveParams = useMemo(
+    () => buildCurveQueryParams(platformParams, { groupSelectedModel, activeVariant }),
+    [platformParams, groupSelectedModel, activeVariant],
+  );
+
   const inputsQ = useQuery({
-    queryKey: ["calibration-group-regression-inputs", groupId],
-    queryFn: () => getCalibrationGroupRegressionInputs(groupId),
-    enabled: !!groupId,
+    queryKey: [
+      "calibration-group-regression-inputs",
+      groupId,
+      effectiveLaboratoryId ?? "",
+      curveParams.regressionType ?? "",
+      curveParams.weightingMode ?? "",
+    ],
+    queryFn: () => getCalibrationGroupRegressionInputs(groupId, curveParams),
+    enabled: !!groupId && (!needPlatformLab || !!laboratoryIdOverride.trim()),
   });
 
   const tableRows = useMemo(() => parseAnalyteRows(inputsQ.data), [inputsQ.data]);
-
-  useEffect(() => setUserPickedKey(null), [groupId]);
-
-  const effectiveKey = useMemo(() => {
-    if (!tableRows.length) return "";
-    if (userPickedKey && tableRows.some((t) => t.key === userPickedKey)) return userPickedKey;
-    return tableRows[0].key;
-  }, [tableRows, userPickedKey]);
-
-  const selected = tableRows.find((t) => t.key === effectiveKey) ?? null;
+  const selectedForDisplay = tableRows.find((t) => t.key === effectiveKey) ?? selected;
 
   const canFetchPlatforms = !needPlatformLab || !!laboratoryIdOverride.trim();
   const canFetchChart =
     !!groupId && !!selected?.analyteId && (!needPlatformLab || !!laboratoryIdOverride.trim());
 
   const chartQ = useQuery({
-    queryKey: ["calibration-group-chart", groupId, selected?.analyteId ?? "", effectiveLaboratoryId ?? ""],
-    queryFn: () => getCalibrationGroupChart(groupId, selected!.analyteId, platformParams),
+    queryKey: [
+      "calibration-group-chart",
+      groupId,
+      selected?.analyteId ?? "",
+      effectiveLaboratoryId ?? "",
+      curveParams.regressionType ?? "",
+      curveParams.weightingMode ?? "",
+    ],
+    queryFn: () => getCalibrationGroupChart(groupId, selected!.analyteId, curveParams),
     enabled: canFetchChart,
   });
 
@@ -202,14 +299,16 @@ export function CalibrationGroupRegressionResultsPanel({
       groupId,
       selected?.analyteId ?? "",
       effectiveLaboratoryId ?? "",
+      curveParams.regressionType ?? "",
+      curveParams.weightingMode ?? "",
     ],
-    queryFn: () => getCalibrationGroupRegressionDebug(groupId, selected!.analyteId, platformParams),
+    queryFn: () => getCalibrationGroupRegressionDebug(groupId, selected!.analyteId, curveParams),
     enabled: canSummarizeFromDebug && canFetchChart,
   });
 
   const summaryFromInputs = useMemo(
-    () => (selected ? summarizePointsFromInputs(selected.points) : null),
-    [selected],
+    () => (selectedForDisplay ? summarizePointsFromInputs(selectedForDisplay.points) : null),
+    [selectedForDisplay],
   );
 
   const debugMetricsRows = useMemo(() => {
@@ -316,16 +415,17 @@ export function CalibrationGroupRegressionResultsPanel({
         ) : null}
 
         <div className="flex flex-wrap items-end gap-4">
-          {tableRows.length > 0 ? (
+          {tableRowsForPicker.length > 0 ? (
             <div className="min-w-[14rem] flex-1">
               <Label htmlFor="regressionResultsAnalyte">Analyte</Label>
               <Select
                 id="regressionResultsAnalyte"
                 className="mt-1"
                 value={effectiveKey}
+                disabled={analyteListQ.isLoading}
                 onChange={(e) => setUserPickedKey(e.target.value)}
               >
-                {tableRows.map((t) => (
+                {tableRowsForPicker.map((t) => (
                   <option key={t.key} value={t.key}>
                     {t.analyteName}
                     {t.analyteId ? ` · ${t.analyteId.slice(0, 8)}…` : ""} ({t.points.length} pt
@@ -334,6 +434,43 @@ export function CalibrationGroupRegressionResultsPanel({
                 ))}
               </Select>
             </div>
+          ) : null}
+          {variantOptions.length > 0 && selected?.analyteId ? (
+            <div className="min-w-[14rem] flex-1">
+              <Label htmlFor="regressionResultsVariant">Model variant</Label>
+              <Select
+                id="regressionResultsVariant"
+                className="mt-1"
+                value={effectiveVariantKey}
+                onChange={(e) => setUserPickedVariantKey(e.target.value || null)}
+              >
+                {groupSelectedModel ? (
+                  <option value="">Default (group-selected curve)</option>
+                ) : null}
+                {variantOptions.map((v) => {
+                  const key = variantKey(v.regressionType, v.weightingMode);
+                  const score =
+                    typeof v.passCount === "number"
+                      ? `${v.passCount} passes`
+                      : typeof v.reportCardScore === "number"
+                        ? `score ${v.reportCardScore}`
+                        : "";
+                  return (
+                    <option key={key} value={key}>
+                      {modelVariantLabel(v.regressionType, v.weightingMode)}
+                      {score ? ` · ${score}` : ""}
+                    </option>
+                  );
+                })}
+              </Select>
+              {!fromReportCard && reportCardQ.isError ? (
+                <p className="mt-1 text-[11px] text-neutral-500">
+                  Report card unavailable — showing all standard variant filters for debugging.
+                </p>
+              ) : null}
+            </div>
+          ) : !hasComputedOutputs && selected?.analyteId ? (
+            <p className="text-xs text-neutral-500">Run compute to compare regression variants.</p>
           ) : null}
           <Button
             type="button"
@@ -413,6 +550,15 @@ export function CalibrationGroupRegressionResultsPanel({
             <div>
               <h3 className="mb-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">
                 Calibration curve
+                <span className="ml-2 text-xs font-normal text-neutral-500">
+                  (
+                  {activeVariant
+                    ? modelVariantLabel(activeVariant.regressionType, activeVariant.weightingMode)
+                    : groupSelectedModel
+                      ? "group-selected default"
+                      : "—"}
+                  )
+                </span>
               </h3>
               {!canFetchPlatforms ? (
                 <p className="text-xs text-neutral-500">Enter a laboratory ID to load the chart.</p>

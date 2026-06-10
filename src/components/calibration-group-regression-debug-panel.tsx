@@ -5,10 +5,20 @@ import { Button, Card, Input, Label, Select } from "@/components/ui";
 import {
   getCalibrationGroupRegressionDebug,
   getCalibrationGroupRegressionInputs,
+  getCalibrationGroupReportCard,
 } from "@/lib/api/wltr-api";
+import {
+  buildCurveQueryParams,
+  hasGroupSelectedModel,
+  modelVariantLabel,
+  parseVariantKey,
+  pickActiveVariantKey,
+  resolveVariantOptions,
+  variantKey,
+} from "@/lib/calibration-variant-utils";
 import type { MeResponse } from "@/lib/types/wltr";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 
 function cellStr(v: unknown): string {
   if (v == null) return "";
@@ -19,29 +29,69 @@ function cellStr(v: unknown): string {
 export function CalibrationGroupRegressionDebugPanel({
   groupId,
   me,
+  selectedRegressionType,
+  selectedWeightingMode,
 }: {
   readonly groupId: string;
   readonly me: MeResponse | null | undefined;
+  readonly selectedRegressionType?: number | null;
+  readonly selectedWeightingMode?: number | null;
 }) {
   const labInJwt = me?.laboratoryId;
   const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
   const [selectedAnalyteId, setSelectedAnalyteId] = useState("");
+  const [userPickedVariantKey, setUserPickedVariantKey] = useState<string | null>(null);
   const needPlatformLab = !labInJwt;
 
   const effectiveLaboratoryId = labInJwt || laboratoryIdOverride.trim() || undefined;
-  const debugParams = useMemo(
+  const scopeParams = useMemo(
     () => (effectiveLaboratoryId ? { laboratoryId: effectiveLaboratoryId } : undefined),
     [effectiveLaboratoryId],
   );
 
-  const inputsQ = useQuery({
-    queryKey: ["calibration-group-regression-inputs", groupId],
-    queryFn: () => getCalibrationGroupRegressionInputs(groupId),
-    enabled: !!groupId,
+  const groupSelectedModel = hasGroupSelectedModel({
+    regressionType: selectedRegressionType ?? null,
+    weightingMode: selectedWeightingMode ?? null,
   });
 
+  const listParams = useMemo(
+    () => buildCurveQueryParams(scopeParams, { groupSelectedModel, activeVariant: null }),
+    [scopeParams, groupSelectedModel],
+  );
+
+  const analyteListQ = useQuery({
+    queryKey: ["calibration-group-regression-inputs", groupId, effectiveLaboratoryId ?? "", "__list", listParams.regressionType ?? "", listParams.weightingMode ?? ""],
+    queryFn: () => getCalibrationGroupRegressionInputs(groupId, listParams),
+    enabled: !!groupId && (!needPlatformLab || !!laboratoryIdOverride.trim()),
+  });
+
+  const reportCardQ = useQuery({
+    queryKey: ["calibration-group-report-card", groupId, effectiveLaboratoryId ?? ""],
+    queryFn: () => getCalibrationGroupReportCard(groupId, scopeParams),
+    enabled: !!groupId && (!needPlatformLab || !!laboratoryIdOverride.trim()),
+    retry: false,
+  });
+
+  const hasComputedOutputs = useMemo(() => {
+    const rows = Array.isArray(analyteListQ.data) ? analyteListQ.data : [];
+    for (let i = 0; i < rows.length; i++) {
+      const raw = rows[i];
+      if (typeof raw !== "object" || raw === null) continue;
+      const points = Array.isArray((raw as Record<string, unknown>).points)
+        ? ((raw as Record<string, unknown>).points as unknown[])
+        : [];
+      for (let j = 0; j < points.length; j++) {
+        const p = points[j];
+        if (typeof p !== "object" || p === null) continue;
+        const pt = p as Record<string, unknown>;
+        if (pt.predictedY != null || pt.predictedYValue != null) return true;
+      }
+    }
+    return false;
+  }, [analyteListQ.data]);
+
   const analyteChoices = useMemo(() => {
-    const rows = Array.isArray(inputsQ.data) ? inputsQ.data : [];
+    const rows = Array.isArray(analyteListQ.data) ? analyteListQ.data : [];
     const out: { analyteId: string; label: string }[] = [];
     for (let i = 0; i < rows.length; i++) {
       const raw = rows[i];
@@ -53,16 +103,66 @@ export function CalibrationGroupRegressionDebugPanel({
       out.push({ analyteId: aid, label: `${name} · ${aid.slice(0, 8)}…` });
     }
     return out;
-  }, [inputsQ.data]);
+  }, [analyteListQ.data]);
 
-  const debugMut = useMutation({
-    mutationFn: (analyteId: string) => getCalibrationGroupRegressionDebug(groupId, analyteId, debugParams),
+  useEffect(() => setUserPickedVariantKey(null), [selectedAnalyteId]);
+
+  const { variants: variantOptions, fromReportCard } = useMemo(
+    () =>
+      resolveVariantOptions(reportCardQ.data as Record<string, unknown> | undefined, selectedAnalyteId, {
+        allowFallback: !groupSelectedModel || hasComputedOutputs,
+      }),
+    [reportCardQ.data, selectedAnalyteId, hasComputedOutputs, groupSelectedModel],
+  );
+
+  const effectiveVariantKey = useMemo(
+    () =>
+      pickActiveVariantKey(variantOptions, {
+        userPickedKey: userPickedVariantKey,
+        preferred: {
+          regressionType: selectedRegressionType ?? null,
+          weightingMode: selectedWeightingMode ?? null,
+        },
+      }),
+    [variantOptions, userPickedVariantKey, selectedRegressionType, selectedWeightingMode],
+  );
+
+  const activeVariant = parseVariantKey(effectiveVariantKey);
+
+  const curveParams = useMemo(
+    () => buildCurveQueryParams(scopeParams, { groupSelectedModel, activeVariant }),
+    [scopeParams, groupSelectedModel, activeVariant],
+  );
+
+  const inputsQ = useQuery({
+    queryKey: [
+      "calibration-group-regression-inputs",
+      groupId,
+      effectiveLaboratoryId ?? "",
+      curveParams.regressionType ?? "",
+      curveParams.weightingMode ?? "",
+    ],
+    queryFn: () => getCalibrationGroupRegressionInputs(groupId, curveParams),
+    enabled: !!groupId && (!needPlatformLab || !!laboratoryIdOverride.trim()),
   });
 
   const canLoad =
     !!groupId &&
     !!selectedAnalyteId &&
     (!needPlatformLab || !!laboratoryIdOverride.trim());
+
+  const debugQ = useQuery({
+    queryKey: [
+      "calibration-group-regression-debug",
+      groupId,
+      selectedAnalyteId,
+      effectiveLaboratoryId ?? "",
+      curveParams.regressionType ?? "",
+      curveParams.weightingMode ?? "",
+    ],
+    queryFn: () => getCalibrationGroupRegressionDebug(groupId, selectedAnalyteId, curveParams),
+    enabled: canLoad,
+  });
 
   return (
     <Card className="overflow-hidden p-0 shadow-sm ring-1 ring-black/[0.03] dark:ring-white/[0.04]">
@@ -83,7 +183,7 @@ export function CalibrationGroupRegressionDebugPanel({
               <code className="rounded-md bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] dark:bg-neutral-800">
                 perm.groups.approve
               </code>
-              . Requires a computed curve — expect{" "}
+              . Use the variant filter to compare any computed model — expect{" "}
               <span className="font-medium text-neutral-800 dark:text-neutral-200">404</span> before compute.
             </p>
           </div>
@@ -109,18 +209,18 @@ export function CalibrationGroupRegressionDebugPanel({
           </div>
         )}
 
-        <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div>
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-[14rem] flex-1">
             <Label htmlFor="rdAnalyte">Analyte</Label>
             <Select
               id="rdAnalyte"
               className="mt-1"
               value={selectedAnalyteId}
-              disabled={inputsQ.isLoading || analyteChoices.length === 0}
+              disabled={analyteListQ.isLoading || analyteChoices.length === 0}
               onChange={(e) => setSelectedAnalyteId(e.target.value)}
             >
               <option value="">
-                {inputsQ.isLoading ? "Loading…" : analyteChoices.length ? "Select analyte…" : "No analytes"}
+                {analyteListQ.isLoading ? "Loading…" : analyteChoices.length ? "Select analyte…" : "No analytes"}
               </option>
               {analyteChoices.map((c) => (
                 <option key={c.analyteId} value={c.analyteId}>
@@ -129,7 +229,45 @@ export function CalibrationGroupRegressionDebugPanel({
               ))}
             </Select>
           </div>
-          <div className="flex flex-wrap gap-2 sm:justify-end">
+          {variantOptions.length > 0 && selectedAnalyteId ? (
+            <div className="min-w-[14rem] flex-1">
+              <Label htmlFor="rdVariant">Model variant</Label>
+              <Select
+                id="rdVariant"
+                className="mt-1"
+                value={effectiveVariantKey}
+                disabled={!selectedAnalyteId}
+                onChange={(e) => setUserPickedVariantKey(e.target.value || null)}
+              >
+                {groupSelectedModel ? (
+                  <option value="">Default (group-selected curve)</option>
+                ) : null}
+                {variantOptions.map((v) => {
+                  const key = variantKey(v.regressionType, v.weightingMode);
+                  const score =
+                    typeof v.passCount === "number"
+                      ? `${v.passCount} passes`
+                      : typeof v.reportCardScore === "number"
+                        ? `score ${v.reportCardScore}`
+                        : "";
+                  return (
+                    <option key={key} value={key}>
+                      {modelVariantLabel(v.regressionType, v.weightingMode)}
+                      {score ? ` · ${score}` : ""}
+                    </option>
+                  );
+                })}
+              </Select>
+              {!fromReportCard && reportCardQ.isError ? (
+                <p className="mt-1 text-[11px] text-neutral-500">
+                  Report card unavailable — showing all standard variant filters for debugging.
+                </p>
+              ) : null}
+            </div>
+          ) : !hasComputedOutputs && selectedAnalyteId ? (
+            <p className="pb-1 text-xs text-neutral-500">Run compute to list variants.</p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="secondary"
@@ -140,27 +278,41 @@ export function CalibrationGroupRegressionDebugPanel({
             </Button>
             <Button
               type="button"
-              disabled={!canLoad || debugMut.isPending}
-              onClick={() => selectedAnalyteId && void debugMut.mutateAsync(selectedAnalyteId)}
+              variant="secondary"
+              disabled={!canLoad || debugQ.isFetching}
+              onClick={() => void debugQ.refetch()}
             >
-              {debugMut.isPending ? "Loading…" : "Load snapshot"}
+              {debugQ.isFetching ? "Loading…" : "Reload snapshot"}
             </Button>
           </div>
         </div>
 
-        {debugMut.isError ? (
+        {debugQ.isError ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
-            {(debugMut.error as Error).message}
+            {(debugQ.error as Error).message}
           </div>
         ) : null}
 
-        {debugMut.isSuccess && debugMut.data ? (
+        {debugQ.isLoading && canLoad ? (
+          <div className="text-sm text-neutral-500">Loading regression snapshot…</div>
+        ) : null}
+
+        {debugQ.isSuccess && debugQ.data ? (
           <JsonPrettyView
-            value={debugMut.data}
+            value={debugQ.data}
             title="Regression snapshot"
             subtitle={
               <span className="font-mono text-[11px] text-neutral-500 dark:text-neutral-400">
                 Analyte <span className="text-neutral-700 dark:text-neutral-300">{selectedAnalyteId}</span>
+                {activeVariant ? (
+                  <>
+                    {" "}
+                    ·{" "}
+                    <span className="text-neutral-700 dark:text-neutral-300">
+                      {modelVariantLabel(activeVariant.regressionType, activeVariant.weightingMode)}
+                    </span>
+                  </>
+                ) : null}
               </span>
             }
           />

@@ -8,6 +8,8 @@ import { useMemo } from "react";
 export type AnalyteInternalStandardSelectProps = {
   value: string;
   onChange: (internalStandardId: string) => void;
+  /** Resolved catalog name from `AnalyteDetailDto.defaultInternalStandardName` when the id is not in the picker list. */
+  resolvedName?: string | null;
   disabled?: boolean;
   id?: string;
   label?: string;
@@ -19,6 +21,7 @@ export type AnalyteInternalStandardSelectProps = {
 export function AnalyteInternalStandardSelect({
   value,
   onChange,
+  resolvedName,
   disabled,
   id = "defaultInternalStandardId",
   label = "Default internal standard",
@@ -61,7 +64,9 @@ export function AnalyteInternalStandardSelect({
           >
             <option value="">None (no default IS)</option>
             {orphan ? (
-              <option value={value}>Keep current (not in catalog): {value}</option>
+              <option value={value}>
+                Keep current (not in catalog): {resolvedName?.trim() || value}
+              </option>
             ) : null}
             {items.map((a) => (
               <option key={a.id} value={a.id}>
