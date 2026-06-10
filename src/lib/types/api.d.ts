@@ -1745,6 +1745,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/calibration-groups/{id}/target-analytes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns the distinct target analytes resolved in the group's linked CAL runs, each annotated with its current exclusion state.
+         * @description Only `Target`-category measurements with a resolved `AnalyteId` are included — IS compound rows are not returned.
+         *     Results are sorted by analyte name ascending. Analytes already on the group's exclusion list have `isExcluded = true`.
+         *     Works for all group statuses (Draft, Computed, Approved, Rejected).
+         *     Permission: `perm.view`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Required for platform operators; ignored for laboratory users. */
+                    laboratoryId?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["GroupTargetAnalyteDto"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calibration-groups/{id}/readiness": {
         parameters: {
             query?: never;
@@ -1864,7 +1948,11 @@ export interface paths {
          */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    regressionType?: components["schemas"]["RegressionType"];
+                    /** @description **Weighted least-squares** mode for calibration curves. JSON integers: **0** = None (w=1 for each included point), **1** = InverseX (w=1/X), **2** = InverseXSquared (w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**. */
+                    weightingMode?: components["schemas"]["WeightingMode"];
+                };
                 header?: never;
                 path: {
                     /** @description Calibration group identifier (UUID). */
@@ -1946,6 +2034,9 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
+                    regressionType?: components["schemas"]["RegressionType"];
+                    /** @description **Weighted least-squares** mode for calibration curves. JSON integers: **0** = None (w=1 for each included point), **1** = InverseX (w=1/X), **2** = InverseXSquared (w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**. */
+                    weightingMode?: components["schemas"]["WeightingMode"];
                     /** @description Required for platform operators; ignored for lab users. */
                     laboratoryId?: string;
                 };
@@ -2029,8 +2120,9 @@ export interface paths {
          *
          *     Three traces are included: <em>Calibration Points</em> (included scatter), <em>Excluded Points</em> (excluded scatter
          *                 with X markers), and <em>Fitted Curve</em> (line evaluated from the regression coefficients at 100 evenly-spaced
-         *                 X values). The fitted curve trace is omitted when the regression type is `Average` or fewer than two
-         *                 included points are present.
+         *                 X values). The fitted curve trace is omitted when fewer than two included points are present.
+         *                 The variant is chosen by `regressionType`/`weightingMode` query params, falling back to the
+         *                 group's selected model.
          *
          *     <strong>Prerequisite:</strong> the group must have been computed (i.e. `POST .../compute` must have run
          *                 successfully for this group). Returns <strong>404</strong> when no `CalibrationCurve` exists for this analyte
@@ -2046,6 +2138,9 @@ export interface paths {
         get: {
             parameters: {
                 query?: {
+                    regressionType?: components["schemas"]["RegressionType"];
+                    /** @description **Weighted least-squares** mode for calibration curves. JSON integers: **0** = None (w=1 for each included point), **1** = InverseX (w=1/X), **2** = InverseXSquared (w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**. */
+                    weightingMode?: components["schemas"]["WeightingMode"];
                     /** @description Required for platform operators; ignored for lab users. */
                     laboratoryId?: string;
                 };
@@ -2131,8 +2226,9 @@ export interface paths {
          *
          *     <strong>Idempotent recompute:</strong> calling this endpoint on an already-`Computed` group clears all
          *                 existing curves and points before rebuilding. Manual include/exclude overrides are <strong>not</strong>
-         *                 preserved; inclusion is re-determined by the pipeline from the current measurement data.
-         *                 To change point exclusion after compute, call `POST .../points/{pointId}/exclude` and then recompute.
+         *                 preserved by curve identity; inclusion is re-determined by the pipeline from the current measurement data
+         *                 and the persisted `CalibrationGroupPointExclusion` list.
+         *                 To change measurement exclusion after compute, call `POST .../point-exclusions` and then recompute.
          *
          *     <strong>Status transitions:</strong>
          *       `Draft` and `Computed` groups may be (re)computed.
@@ -2218,28 +2314,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/calibration-groups/{id}/points/{pointId}/exclude": {
+    "/api/calibration-groups/{id}/point-exclusions": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Returns all measurement exclusions (analyte + run) for the calibration group.
+         * @description <strong>Laboratory scope:</strong> lab users may only read groups whose instrument belongs to their JWT laboratory.
+         *                 Out-of-scope or missing groups return <strong>404</strong>.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PointExclusionDto"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         put?: never;
         /**
-         * Manually excludes a calibration point from regression with a required analyst note.
-         * @description Only `ManualExclude` and `PctDiffOutOfRange` are accepted as exclusion reasons; auto-exclusion codes
-         *                 (`MissingRatio`, `MissingIS`, `InvalidX`) are reserved for the compute pipeline and will return
-         *                 <strong>400</strong> when submitted here.
+         * Excludes a measurement (analyte + CAL run) from regression across all curve variants, with a required analyst note.
+         * @description The exclusion is keyed on `(group, analyte, run)` and is stored independently of computed curves, so it
+         *                 survives recompute and may be added before or after compute. Only `ManualExclude` and `PctDiffOutOfRange`
+         *                 are accepted; auto-exclusion codes (`MissingRatio`, `MissingIS`, `InvalidX`) are reserved for the
+         *                 compute pipeline and return <strong>400</strong>.
          *
-         *     <strong>Group status rules:</strong> exclusion is allowed only when the group is in `Draft` or `Computed`
-         *                 status. `Approved` and `Rejected` groups are immutable — returns <strong>409 Conflict</strong>.
+         *     Marks the group computation-stale when its status is not `Draft`. `Approved` and `Rejected` groups
+         *                 are immutable — returns <strong>409 Conflict</strong>. A duplicate exclusion also returns <strong>409</strong>.
          *
-         *     Returns <strong>409</strong> when the point is already excluded (prevents silent overwrite of the exclusion note).
-         *
-         *     <strong>Laboratory scope:</strong> the point's containing group must belong to the caller's JWT laboratory.
-         *                 Out-of-scope or missing identifiers return <strong>404</strong>.
+         *     <strong>Laboratory scope:</strong> out-of-scope or missing identifiers return <strong>404</strong>.
          */
         post: {
             parameters: {
@@ -2248,12 +2396,10 @@ export interface paths {
                 path: {
                     /** @description Calibration group identifier (UUID). */
                     id: string;
-                    /** @description Calibration point identifier (UUID). */
-                    pointId: string;
                 };
                 cookie?: never;
             };
-            /** @description Exclusion reason and required analyst note. */
+            /** @description Analyte, CAL run, exclusion reason, and required analyst note. */
             requestBody?: {
                 content: {
                     "application/json": components["schemas"]["ExcludeCalibrationPointRequest"];
@@ -2314,15 +2460,27 @@ export interface paths {
                 };
             };
         };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/point-exclusions/{analyteId}/{runId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
         /**
-         * Re-includes a previously excluded calibration point, clearing all exclusion fields.
-         * @description Clears `isIncluded`, `exclusionReason`, `exclusionNote`, `excludedByUserId`, and
-         *                 `excludedAt`. The point will contribute to the next regression computation.
-         *
-         *     <strong>Group status rules:</strong> same as `POST .../exclude` — `Approved` and `Rejected`
-         *                 groups return <strong>409 Conflict</strong>.
-         *
-         *     Returns <strong>409</strong> when the point is already included.
+         * Re-includes a previously excluded measurement, restoring it to the next regression computation.
+         * @description Hard-deletes the `(group, analyte, run)` exclusion entry. Marks the group computation-stale when its status
+         *                 is not `Draft`. `Approved` and `Rejected` groups return <strong>409 Conflict</strong>; an entry that
+         *                 is not excluded returns <strong>409</strong>.
          *
          *     <strong>Laboratory scope:</strong> out-of-scope or missing identifiers return <strong>404</strong>.
          */
@@ -2333,8 +2491,10 @@ export interface paths {
                 path: {
                     /** @description Calibration group identifier (UUID). */
                     id: string;
-                    /** @description Calibration point identifier (UUID). */
-                    pointId: string;
+                    /** @description Canonical analyte of the excluded measurement (UUID). */
+                    analyteId: string;
+                    /** @description CAL run of the excluded measurement (UUID). */
+                    runId: string;
                 };
                 cookie?: never;
             };
@@ -2385,6 +2545,372 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/report-card": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns the ranked Report Card comparing every computed regression variant for the group.
+         * @description Each variant `(regressionType, weightingMode)` carries a `reportCardScore` (count of analytes with
+         *                 `calStatus == Pass`), per-analyte diagnostics, and an `isSuggestedModel` flag set on the top-ranked
+         *                 variant. Variants are ordered by descending score, breaking ties toward the simpler model.
+         *
+         *     Returns <strong>409 Conflict</strong> when the group has not been computed, and <strong>404</strong> when the
+         *                 group is missing or outside the caller's laboratory scope.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CalibrationGroupReportCardDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/select-model": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Selects the regression model variant a QA reviewer will sign off on.
+         * @description Requires the group to be `Computed` and not stale, and the `(regressionType, weightingMode)` pair to
+         *                 exist among the computed curves. Selection is cleared automatically on every recompute. A model must be selected
+         *                 before the group can be approved.
+         *
+         *     <strong>Permissions:</strong>
+         *       `perm.groups.approve`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description The variant to select. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["SelectModelRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Approves a computed calibration group, creating an approval record and locking the group.
+         * @description Requires `Computed` status, a non-stale computation, and a selected model. Creates an `ApprovalRecord`
+         *                 and transitions the group to `Approved`.
+         *
+         *     <strong>Permissions:</strong>
+         *       `perm.groups.approve`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Optional reviewer comment. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ApproveCalibrationGroupRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rejects a computed calibration group with a mandatory reviewer comment (audit-only).
+         * @description Requires `Computed` status and a non-empty comment. No approval record is created; the group transitions to
+         *                 `Rejected` and the reason is recorded in the audit trail.
+         *
+         *     <strong>Permissions:</strong>
+         *       `perm.groups.approve`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Mandatory reviewer comment explaining the rejection. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["RejectCalibrationGroupRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2452,7 +2978,88 @@ export interface paths {
                 };
             };
         };
-        put?: never;
+        /**
+         * Replaces the calibration group's entire analyte exclusion list in a single request.
+         * @description The supplied analyte ids become the complete exclusion list: analytes not currently excluded are added
+         *                 (with the optional shared note), and analytes currently excluded but absent from the list are re-included.
+         *                 Pass an empty array to clear all exclusions. This replaces the need to fire one request per analyte.
+         *
+         *     Marks the group as computation-stale when the resulting set differs from the current one — recompute before approving.
+         *
+         *     <strong>Laboratory scope:</strong> any unknown or out-of-scope analyte rejects the whole request with <strong>404</strong> (IDOR-safe).
+         *                 <strong>Group status rules:</strong>`Approved` and `Rejected` groups are immutable — returns <strong>409 Conflict</strong>.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier. */
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Full set of analytes to exclude and an optional shared note. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["ReplaceExcludedAnalytesRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         /**
          * Adds an analyte to the calibration group's exclusion list; the analyte is skipped during regression computation.
          * @description Any lab-scoped analyte may be added regardless of whether it currently appears in the group's measurements.
@@ -6483,12 +7090,23 @@ export interface components {
         AnalyteCalStatus: 0 | 1;
         /** @description Canonical analyte with its alias mappings. */
         AnalyteDetailDto: {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Primary key.
+             */
             id?: string;
+            /** @description Display name. */
             name?: string | null;
+            /** @description Optional CAS registry number. */
             casNumber?: string | null;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Optional FK to the default internal standard.
+             */
             defaultInternalStandardId?: string | null;
+            /** @description Display name of the default internal standard, or `null` when none is assigned. */
+            defaultInternalStandardName?: string | null;
+            /** @description Raw-name alias mappings for this analyte, sorted by alias name. */
             aliases?: components["schemas"]["AnalyteAliasItemDto"][] | null;
         };
         /** @description Summary row for laboratory analyte list views. */
@@ -6506,6 +7124,18 @@ export interface components {
          * @enum {integer}
          */
         AnalyteMappingApplyScope: 0 | 1;
+        /** @description Minimal analyte reference for embedding within other detail DTOs. */
+        AnalyteRefDto: {
+            /**
+             * Format: uuid
+             * @description Primary key.
+             */
+            id?: string;
+            /** @description Display name. */
+            name?: string | null;
+            /** @description Optional CAS registry number. */
+            casNumber?: string | null;
+        };
         /** @description One ranked canonical analyte candidate for fuzzy matching raw compound text. */
         AnalyteSuggestionItemDto: {
             /**
@@ -6520,6 +7150,25 @@ export interface components {
              * @description Higher means a closer match (implementation-defined scale).
              */
             score?: number;
+        };
+        /** @description QA sign-off detail for an approved calibration group. */
+        ApprovalRecordResponse: {
+            /** @description Identity user id of the reviewer who approved the group. */
+            reviewerUserId?: string | null;
+            /** @description Display name of the reviewer at approval time. */
+            reviewerName?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC timestamp of the approval.
+             */
+            approvedAt?: string;
+            /** @description Optional reviewer comment. */
+            comment?: string | null;
+        };
+        /** @description Request body for approving a calibration group. */
+        ApproveCalibrationGroupRequest: {
+            /** @description Optional reviewer comment recorded on the approval record. */
+            comment?: string | null;
         };
         /** @description Payload for invitation acceptance. */
         AuthController_AcceptInviteRequest: {
@@ -6650,6 +7299,8 @@ export interface components {
              * @description Calibration group identifier.
              */
             id?: string;
+            /** @description User-assigned display name. */
+            name?: string | null;
             /**
              * Format: uuid
              * @description Instrument all runs in this group were acquired on.
@@ -6692,6 +7343,9 @@ export interface components {
              *     The group must be recomputed before it can be approved.
              */
             isComputationStale?: boolean;
+            selectedRegressionType?: components["schemas"]["RegressionType"];
+            selectedWeightingMode?: components["schemas"]["WeightingMode"];
+            approval?: components["schemas"]["ApprovalRecordResponse"];
         };
         /** @description Summary row returned by `GET /api/calibration-groups`. */
         CalibrationGroupListItemResponse: {
@@ -6700,6 +7354,8 @@ export interface components {
              * @description Calibration group identifier.
              */
             id?: string;
+            /** @description User-assigned display name. */
+            name?: string | null;
             /**
              * Format: uuid
              * @description Instrument all runs in this group were acquired on.
@@ -6759,6 +7415,15 @@ export interface components {
             blockingIssues?: components["schemas"]["RunValidationIssueResponse"][] | null;
             /** @description Non-blocking measurement or parser findings (may be empty). */
             warnings?: components["schemas"]["RunValidationIssueResponse"][] | null;
+        };
+        /** @description Ranked comparison of every successfully computed regression variant for a calibration group. */
+        CalibrationGroupReportCardDto: {
+            /** @description True when calibration data changed after the last compute; the card may be out of date. */
+            isComputationStale?: boolean;
+            selectedRegressionType?: components["schemas"]["RegressionType"];
+            selectedWeightingMode?: components["schemas"]["WeightingMode"];
+            /** @description Variants ordered by rank (descending score, simplest-model tie-break). */
+            variants?: components["schemas"]["ReportCardVariantDto"][] | null;
         };
         /**
          * Format: int32
@@ -6872,9 +7537,11 @@ export interface components {
         };
         /** @description Request body for creating a draft calibration group from CAL runs and an optional ICV run. */
         CreateCalibrationGroupRequest: {
+            /** @description User-assigned display name for the group. */
+            name?: string | null;
             /**
              * Format: uuid
-             * @description Primary key of the instrument. Must belong to the caller’s laboratory; all Wltr.Api.Models.CreateCalibrationGroupRequest.CalRunIds and optional Wltr.Api.Models.CreateCalibrationGroupRequest.IcvRunId must target this instrument.
+             * @description Primary key of the instrument. Must belong to the caller's laboratory; all Wltr.Api.Models.CreateCalibrationGroupRequest.CalRunIds and optional Wltr.Api.Models.CreateCalibrationGroupRequest.IcvRunId must target this instrument.
              */
             instrumentId?: string;
             /**
@@ -7027,11 +7694,8 @@ export interface components {
         CreateMethodConfigRequest: {
             /** @description Display name; unique per laboratory (trimmed). */
             name?: string | null;
-            defaultRegressionType?: components["schemas"]["RegressionType"];
-            defaultWeightingMode?: components["schemas"]["WeightingMode"];
-            /** @description When true, regression is constrained through the origin (intercept = 0). */
-            forceZeroIntercept?: boolean;
             labelMode?: components["schemas"]["LabelMode"];
+            quantitationMode?: components["schemas"]["QuantitationMode"];
             /**
              * Format: double
              * @description Minimum acceptable correlation coefficient (0–1).
@@ -7140,8 +7804,18 @@ export interface components {
             /** @description Optional analyst note explaining why the analyte is excluded. */
             note?: string | null;
         };
-        /** @description Request body for manually excluding a calibration point from regression. */
+        /** @description Request body for excluding a measurement — identified by analyte and CAL run — from a calibration group's regression. */
         ExcludeCalibrationPointRequest: {
+            /**
+             * Format: uuid
+             * @description Canonical analyte of the measurement to exclude.
+             */
+            analyteId?: string;
+            /**
+             * Format: uuid
+             * @description CAL run whose measurement for this analyte should be excluded.
+             */
+            calRunId?: string;
             reason?: components["schemas"]["ExclusionReason"];
             /** @description Non-empty analyst note explaining the exclusion; required for audit compliance. */
             note?: string | null;
@@ -7209,6 +7883,18 @@ export interface components {
             calRuns?: components["schemas"]["GroupCandidateRunResponse"][] | null;
             /** @description ICV runs on the instrument, newest first. */
             icvRuns?: components["schemas"]["GroupCandidateRunResponse"][] | null;
+        };
+        /** @description A distinct target analyte resolved in a calibration group's linked CAL runs, with its current exclusion state. */
+        GroupTargetAnalyteDto: {
+            /**
+             * Format: uuid
+             * @description Canonical analyte identifier; use as `analyteId` on exclusion requests.
+             */
+            analyteId?: string;
+            /** @description Human-readable canonical analyte name. */
+            analyteName?: string | null;
+            /** @description True when this analyte is currently on the group's exclusion list. */
+            isExcluded?: boolean;
         };
         /** @description Detail from `GET /api/instruments/{id}`. */
         InstrumentDetailResponse: {
@@ -7291,6 +7977,8 @@ export interface components {
             name?: string | null;
             /** @description Optional CAS registry number. */
             casNumber?: string | null;
+            /** @description Analytes in this laboratory that use this internal standard as their default IS, sorted by name. */
+            analytes?: components["schemas"]["AnalyteRefDto"][] | null;
         };
         /** @description One internal-standard catalog row returned when listing standards for analyte configuration. */
         InternalStandardListItemDto: {
@@ -7408,8 +8096,8 @@ export interface components {
             isActive?: boolean;
         };
         /**
-         * @description Full method-config detail returned from read endpoints.
-         *     `defaultWeightingMode` is the weighted least-squares scheme (0=None, 1=InverseX, 2=InverseXSquared); see OpenAPI <strong>Calibration regression and weighting</strong>.
+         * @description Full method-config detail returned from read endpoints. Regression type and weighting mode are no
+         *     longer config-scoped — every variant is computed for each calibration group.
          */
         MethodConfigDetailDto: {
             /** Format: uuid */
@@ -7417,10 +8105,8 @@ export interface components {
             /** Format: uuid */
             laboratoryId?: string;
             name?: string | null;
-            defaultRegressionType?: components["schemas"]["RegressionType"];
-            defaultWeightingMode?: components["schemas"]["WeightingMode"];
-            forceZeroIntercept?: boolean;
             labelMode?: components["schemas"]["LabelMode"];
+            quantitationMode?: components["schemas"]["QuantitationMode"];
             /** Format: double */
             minCorrelation?: number;
             /** Format: double */
@@ -7451,8 +8137,8 @@ export interface components {
             currentVersion?: number;
         };
         /**
-         * @description Read-only snapshot detail for history and report endpoints.
-         *     `weightingMode` freezes methodology at snapshot time (same integer enum as `defaultWeightingMode` on the live config); see OpenAPI <strong>Calibration regression and weighting</strong>.
+         * @description Read-only snapshot detail for history and report endpoints. Schema version 2 dropped per-config
+         *     regression type, weighting mode, and force-zero flag.
          */
         MethodConfigSnapshotDto: {
             /** Format: uuid */
@@ -7463,10 +8149,8 @@ export interface components {
             version?: number;
             /** Format: int32 */
             configSchemaVersion?: number;
-            regressionType?: components["schemas"]["RegressionType"];
-            weightingMode?: components["schemas"]["WeightingMode"];
-            forceZeroIntercept?: boolean;
             labelMode?: components["schemas"]["LabelMode"];
+            quantitationMode?: components["schemas"]["QuantitationMode"];
             /** Format: double */
             minCorrelation?: number;
             /** Format: double */
@@ -7713,6 +8397,38 @@ export interface components {
          * @enum {integer}
          */
         PointAcceptance: 0 | 1;
+        /** @description A single measurement excluded from regression for a calibration group, keyed on analyte and run. */
+        PointExclusionDto: {
+            /**
+             * Format: uuid
+             * @description Unique identifier of the exclusion record.
+             */
+            id?: string;
+            /**
+             * Format: uuid
+             * @description Canonical analyte of the excluded measurement.
+             */
+            analyteId?: string;
+            /** @description Human-readable analyte name. */
+            analyteName?: string | null;
+            /**
+             * Format: uuid
+             * @description CAL run whose measurement for this analyte is excluded.
+             */
+            calibrationRunId?: string;
+            /** @description Display name of the source run. */
+            runName?: string | null;
+            exclusionReason?: components["schemas"]["ExclusionReason"];
+            /** @description Required analyst note explaining the exclusion. */
+            exclusionNote?: string | null;
+            /** @description Identity user id who added the exclusion. */
+            excludedByUserId?: string | null;
+            /**
+             * Format: date-time
+             * @description UTC timestamp when the exclusion was recorded.
+             */
+            excludedAt?: string;
+        };
         ProblemDetails: {
             type?: string | null;
             title?: string | null;
@@ -7723,6 +8439,12 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /**
+         * Format: int32
+         * @description **Quantitation strategy** for calibration curves. JSON integers: **0** = InternalStandard (ISTD — curve **Y** = analyte response / IS response), **1** = ExternalStandard (ESTD — curve **Y** = raw analyte response). Frozen on each <c>MethodConfigSnapshot</c> at compute. Full narrative: OpenAPI description sections **Method configuration versioning** and **Calibration regression and weighting**.
+         * @enum {integer}
+         */
+        QuantitationMode: 0 | 1;
         /** @description Per-point regression debug data as returned by `GET /api/calibration-groups/{groupId}/analytes/{analyteId}/regression-debug`. */
         RegressionDebugPointResponse: {
             /**
@@ -7987,6 +8709,58 @@ export interface components {
          * @enum {integer}
          */
         RegressionType: 0 | 1 | 2 | 3;
+        /** @description Request body for rejecting a calibration group; the comment is mandatory. */
+        RejectCalibrationGroupRequest: {
+            /** @description Mandatory reviewer comment explaining the rejection. */
+            comment?: string | null;
+        };
+        /** @description Request body for replacing a calibration group's entire analyte exclusion list in one call. */
+        ReplaceExcludedAnalytesRequest: {
+            /** @description Canonical analyte identifiers that should comprise the group's full exclusion list. */
+            analyteIds?: string[] | null;
+            /** @description Optional note applied to every analyte newly added to the exclusion list by this request. */
+            note?: string | null;
+        };
+        /** @description Per-analyte acceptance summary for a single Report Card variant. */
+        ReportCardAnalyteDto: {
+            /** Format: uuid */
+            analyteId?: string;
+            analyteName?: string | null;
+            calStatus?: components["schemas"]["AnalyteCalStatus"];
+            failureReasons?: string[] | null;
+            /** Format: double */
+            rSquared?: number | null;
+            /** Format: double */
+            correlationR?: number | null;
+            /** Format: double */
+            rse?: number | null;
+            /** Format: int32 */
+            includedPointCount?: number;
+            /**
+             * Format: int32
+             * @description Included points with Wltr.Domain.Enums.PointAcceptance.Rejected.
+             */
+            missedPointCount?: number;
+            icvPassed?: boolean | null;
+        };
+        /** @description One regression variant on the Report Card with its per-analyte breakdown and aggregate score. */
+        ReportCardVariantDto: {
+            regressionType?: components["schemas"]["RegressionType"];
+            weightingMode?: components["schemas"]["WeightingMode"];
+            /**
+             * Format: int32
+             * @description Count of analytes in this variant where Wltr.Domain.Enums.AnalyteCalStatus.Pass.
+             */
+            reportCardScore?: number;
+            /**
+             * Format: int32
+             * @description Number of analytes that produced a curve for this variant.
+             */
+            totalAnalytes?: number;
+            /** @description True only on the top-ranked variant. */
+            isSuggestedModel?: boolean;
+            analytes?: components["schemas"]["ReportCardAnalyteDto"][] | null;
+        };
         /** @description Request body for mapping an unresolved raw compound name to a canonical analyte. */
         ResolveAnalyteMappingRequest: {
             /** @description Compound text as it appears on parsed measurement rows. */
@@ -8171,6 +8945,11 @@ export interface components {
             /** @description Non-fatal issues (`isError: false`) — e.g. missing analyte mapping, missing response ratio when IS rows exist. */
             warnings?: components["schemas"]["RunValidationIssueResponse"][] | null;
         };
+        /** @description Request body for selecting the regression model variant a QA reviewer will sign off on. */
+        SelectModelRequest: {
+            regressionType?: components["schemas"]["RegressionType"];
+            weightingMode?: components["schemas"]["WeightingMode"];
+        };
         /** @description Request body for suppressing an analyte on an instrument. */
         SuppressAnalyteRequest: {
             /**
@@ -8239,6 +9018,8 @@ export interface components {
         };
         /** @description Request body for updating a draft or computed (will reset) calibration group. */
         UpdateCalibrationGroupRequest: {
+            /** @description User-assigned display name for the group. */
+            name?: string | null;
             /**
              * Format: uuid
              * @description Method configuration for the group (lab-scoped, same as create).
@@ -8339,11 +9120,8 @@ export interface components {
         UpdateMethodConfigRequest: {
             /** @description Display name; unique per laboratory (trimmed). */
             name?: string | null;
-            defaultRegressionType?: components["schemas"]["RegressionType"];
-            defaultWeightingMode?: components["schemas"]["WeightingMode"];
-            /** @description When true, regression is constrained through the origin. */
-            forceZeroIntercept?: boolean;
             labelMode?: components["schemas"]["LabelMode"];
+            quantitationMode?: components["schemas"]["QuantitationMode"];
             /**
              * Format: double
              * @description Minimum acceptable correlation (0–1).

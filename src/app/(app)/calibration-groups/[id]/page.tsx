@@ -1,6 +1,7 @@
 "use client";
 
 import { CalibrationGroupExcludedAnalytesPanel } from "@/components/calibration-group-excluded-analytes-panel";
+import { CalibrationGroupTargetAnalytesPanel } from "@/components/calibration-group-target-analytes-panel";
 import { CalibrationGroupComputePanel } from "@/components/calibration-group-compute-panel";
 import { CalibrationGroupReadinessPanel } from "@/components/calibration-group-readiness-panel";
 import { CalibrationGroupRegressionDebugPanel } from "@/components/calibration-group-regression-debug-panel";
@@ -8,7 +9,7 @@ import { CalibrationGroupRegressionInputsPanel } from "@/components/calibration-
 import { CalibrationGroupRegressionResultsPanel } from "@/components/calibration-group-regression-results-panel";
 import { CalibrationGroupWorkflowPanel } from "@/components/calibration-group-workflow-panel";
 import { InternalStandardSummariesPanel } from "@/components/internal-standard-summaries-panel";
-import { Badge, Button, Card, Label, PageHeader, Select } from "@/components/ui";
+import { Badge, Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import {
   getCalibrationGroup,
   getCalibrationGroupCandidates,
@@ -28,6 +29,7 @@ function s(v: unknown, fallback = ""): string {
 
 type GroupDetail = Readonly<{
   id: string;
+  name: string | null;
   instrumentId: string;
   status: number;
   methodConfigId: string;
@@ -37,11 +39,14 @@ type GroupDetail = Readonly<{
   computedAt: string | null;
   computationVersion: string | null;
   computationStale: boolean;
+  selectedRegressionType: number | null;
+  selectedWeightingMode: number | null;
   createdAt: string;
 }>;
 
 type CandidateRun = Readonly<{
   id: string;
+  name: string | null;
   runDate: string;
   status: number;
   calibrationLevelId: string | null;
@@ -77,8 +82,10 @@ function isEditable(status: number) {
 }
 
 function mapGroupDetail(row: Record<string, unknown>, id: string): GroupDetail {
+  const rawName = typeof row.name === "string" ? row.name.trim() : "";
   return {
     id: s(row.id, id),
+    name: rawName || null,
     instrumentId: s(row.instrumentId),
     status: typeof row.status === "number" ? row.status : 0,
     methodConfigId: s(row.methodConfigId),
@@ -88,13 +95,19 @@ function mapGroupDetail(row: Record<string, unknown>, id: string): GroupDetail {
     computedAt: typeof row.computedAt === "string" ? row.computedAt : null,
     computationVersion: typeof row.computationVersion === "string" ? row.computationVersion : null,
     computationStale: Boolean(row.isComputationStale ?? row.computationStale),
+    selectedRegressionType:
+      typeof row.selectedRegressionType === "number" ? row.selectedRegressionType : null,
+    selectedWeightingMode:
+      typeof row.selectedWeightingMode === "number" ? row.selectedWeightingMode : null,
     createdAt: s(row.createdAt),
   };
 }
 
 function mapCandidate(r: Record<string, unknown>): CandidateRun {
+  const rawName = typeof r.name === "string" ? r.name.trim() : "";
   return {
     id: s(r.id),
+    name: rawName || null,
     runDate: s(r.runDate),
     status: typeof r.status === "number" ? r.status : 0,
     calibrationLevelId: typeof r.calibrationLevelId === "string" ? r.calibrationLevelId : null,
@@ -132,7 +145,15 @@ function EditCalRuns({ isLoading, candidates, selectedIds, onToggle }: EditCalRu
                 onChange={() => onToggle(r.id)}
               />
               <span className="flex-1">
-                <span className="font-mono">{r.id.slice(0, 8)}…</span>
+                {r.name ? (
+                  <>
+                    <span className="font-medium">{r.name}</span>
+                    {" · "}
+                    <span className="font-mono text-neutral-600 dark:text-neutral-400">{r.id.slice(0, 8)}…</span>
+                  </>
+                ) : (
+                  <span className="font-mono">{r.id.slice(0, 8)}…</span>
+                )}
                 {" · "}
                 <span>{formatShortDate(r.runDate)}</span>
                 {" · "}
@@ -159,6 +180,7 @@ function EditCalRuns({ isLoading, candidates, selectedIds, onToggle }: EditCalRu
 function useGroupEdit(groupId: string, group: GroupDetail, onSaved: () => void) {
   const qc = useQueryClient();
 
+  const [groupName, setGroupName] = useState(group.name ?? "");
   const [methodConfigId, setMethodConfigId] = useState(group.methodConfigId);
   const [selectedCalIds, setSelectedCalIds] = useState<ReadonlySet<string>>(new Set(group.calRunIds));
   const [icvRunId, setIcvRunId] = useState(group.icvRunId ?? "");
@@ -204,6 +226,7 @@ function useGroupEdit(groupId: string, group: GroupDetail, onSaved: () => void) 
     try {
       if (selectedCalIds.size === 0) throw new Error("Select at least one CAL run.");
       await updateCalibrationGroup(groupId, {
+        name: groupName.trim() || null,
         methodConfigId: methodConfigId.trim(),
         calRunIds: [...selectedCalIds],
         icvRunId: icvRunId.trim() || null,
@@ -220,6 +243,7 @@ function useGroupEdit(groupId: string, group: GroupDetail, onSaved: () => void) 
   }
 
   return {
+    groupName, setGroupName,
     methodConfigId, setMethodConfigId,
     selectedCalIds, toggleCal,
     icvRunId, setIcvRunId,
@@ -242,6 +266,7 @@ type EditGroupFormProps = Readonly<{
 
 function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps) {
   const {
+    groupName, setGroupName,
     methodConfigId, setMethodConfigId,
     selectedCalIds, toggleCal,
     icvRunId, setIcvRunId,
@@ -259,6 +284,17 @@ function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps
         Computed groups will revert to Draft when saved, clearing all computed results.
       </p>
       <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); void onSave(); }}>
+        <div>
+          <Label htmlFor="editName">Group name</Label>
+          <Input
+            id="editName"
+            className="mt-1"
+            value={groupName}
+            onChange={(e) => setGroupName(e.target.value)}
+            placeholder="Display name for this calibration group"
+          />
+        </div>
+
         <div>
           <Label htmlFor="editMethod">Method configuration</Label>
           <Select
@@ -299,7 +335,7 @@ function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps
               .filter((r) => r.isEligibleAsIcv)
               .map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.id.slice(0, 8)}… · {formatShortDate(r.runDate)}
+                  {r.name ?? `${r.id.slice(0, 8)}…`} · {formatShortDate(r.runDate)}
                 </option>
               ))}
           </Select>
@@ -346,6 +382,9 @@ function GroupDetailCard({ group, showEditButton, onEdit }: GroupDetailCardProps
           {group.computedAt ? (
             <span className="text-xs text-neutral-500">Computed {formatDate(group.computedAt)}</span>
           ) : null}
+          {group.computationStale ? (
+            <Badge tone="warn">Computation stale — recompute</Badge>
+          ) : null}
         </div>
         {showEditButton ? (
           <Button variant="secondary" type="button" onClick={onEdit}>Edit group</Button>
@@ -353,6 +392,16 @@ function GroupDetailCard({ group, showEditButton, onEdit }: GroupDetailCardProps
       </div>
 
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
+        <div className="sm:col-span-2">
+          <dt className="font-medium text-neutral-700 dark:text-neutral-300">Display name</dt>
+          <dd className="mt-0.5">
+            {group.name ?? (
+              <span className="text-neutral-500">
+                Not set — use <span className="font-medium">Edit group</span> to add a name
+              </span>
+            )}
+          </dd>
+        </div>
         <div>
           <dt className="font-medium text-neutral-700 dark:text-neutral-300">Instrument</dt>
           <dd className="mt-0.5 font-mono text-xs">
@@ -440,7 +489,7 @@ export default function CalibrationGroupDetailPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Calibration group"
+        title={group?.name ?? "Calibration group"}
         description={<span className="font-mono text-sm">{id}</span>}
         actions={
           <Link href="/calibration-groups">
@@ -471,19 +520,26 @@ export default function CalibrationGroupDetailPage() {
       ) : null}
 
       <CalibrationGroupReadinessPanel groupId={id} me={me} />
+      <CalibrationGroupTargetAnalytesPanel groupId={id} canEdit={canEdit} />
       <CalibrationGroupExcludedAnalytesPanel groupId={id} canEdit={canEdit} />
       {canCompute && group && isEditable(group.status) ? (
         <CalibrationGroupComputePanel groupId={id} me={me} canCompute />
       ) : null}
       {group && group.status >= CalibrationGroupStatus.Computed ? (
         <CalibrationGroupWorkflowPanel
+          groupId={id}
           groupStatus={group.status}
           computationStale={group.computationStale}
+          selectedRegressionType={group.selectedRegressionType}
+          selectedWeightingMode={group.selectedWeightingMode}
           me={me}
         />
       ) : null}
       <CalibrationGroupRegressionInputsPanel
         groupId={id}
+        me={me}
+        selectedRegressionType={group?.selectedRegressionType}
+        selectedWeightingMode={group?.selectedWeightingMode}
         canManagePoints={Boolean(group && canEdit && isEditable(group.status))}
       />
       {canViewCalibrationChart ? (
@@ -491,9 +547,18 @@ export default function CalibrationGroupDetailPage() {
           groupId={id}
           me={me}
           canSummarizeFromDebug={canViewRegressionDebug}
+          selectedRegressionType={group?.selectedRegressionType}
+          selectedWeightingMode={group?.selectedWeightingMode}
         />
       ) : null}
-      {canViewRegressionDebug ? <CalibrationGroupRegressionDebugPanel groupId={id} me={me} /> : null}
+      {canViewRegressionDebug ? (
+        <CalibrationGroupRegressionDebugPanel
+          groupId={id}
+          me={me}
+          selectedRegressionType={group?.selectedRegressionType}
+          selectedWeightingMode={group?.selectedWeightingMode}
+        />
+      ) : null}
       <InternalStandardSummariesPanel variant="calibrationGroup" resourceId={id} me={me} />
     </div>
   );

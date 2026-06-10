@@ -412,21 +412,48 @@ export async function getCalibrationGroupReadiness(
   return apiJson(`calibration-groups/${groupId}/readiness`, { searchParams: params });
 }
 
-/** Per-analyte assembled X/Y/weight tables; after compute rows include diagnostics from stored points. */
+export type CalibrationCurveQueryParams = {
+  laboratoryId?: string;
+  regressionType?: number;
+  weightingMode?: number;
+};
+
+/** Per-analyte assembled X/Y/weight tables; after compute rows include diagnostics from stored points. Platform operators should pass **`laboratoryId`**. Optional **`regressionType`** / **`weightingMode`** select a computed variant. */
 export async function getCalibrationGroupRegressionInputs(
   groupId: string,
+  params?: CalibrationCurveQueryParams,
 ): Promise<Record<string, unknown>[]> {
-  return apiJson(`calibration-groups/${groupId}/regression-inputs`);
+  return apiJson(`calibration-groups/${groupId}/regression-inputs`, { searchParams: params });
 }
 
-/** Weighted regression for all analytes. Requires `perm.runs.upload`. Returns **204** on success. */
-export async function computeCalibrationGroup(groupId: string): Promise<void> {
-  const res = await apiFetch(`calibration-groups/${groupId}/compute`, { method: "POST" });
+/** Weighted regression for all analytes. Requires `perm.runs.upload`. Returns **204** on success. Platform operators should pass `laboratoryId` when the JWT has no laboratory claim. */
+export async function computeCalibrationGroup(
+  groupId: string,
+  params?: { laboratoryId?: string },
+): Promise<void> {
+  const res = await apiFetch(`calibration-groups/${groupId}/compute`, {
+    method: "POST",
+    body: JSON.stringify({}),
+    searchParams: params,
+  });
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
 export async function listExcludedGroupAnalytes(groupId: string): Promise<Record<string, unknown>[]> {
   return apiJson(`calibration-groups/${groupId}/excluded-analytes`);
+}
+
+/**
+ * Returns distinct resolved target analytes from a group's CAL runs, each annotated with its
+ * current exclusion state (`isExcluded`). Only `Target`-category rows with a resolved analyte
+ * are included; IS compound rows are omitted. Results are sorted by analyte name ascending.
+ * Works for all group statuses. Requires `perm.view`.
+ */
+export async function listTargetGroupAnalytes(
+  groupId: string,
+  params?: { laboratoryId?: string },
+): Promise<Record<string, unknown>[]> {
+  return apiJson(`calibration-groups/${groupId}/target-analytes`, { searchParams: params });
 }
 
 export async function excludeGroupAnalyte(groupId: string, body: unknown): Promise<void> {
@@ -442,6 +469,59 @@ export async function removeExcludedGroupAnalyte(groupId: string, analyteId: str
     `calibration-groups/${groupId}/excluded-analytes/${encodeURIComponent(analyteId)}`,
     { method: "DELETE" },
   );
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Replace the group's full analyte exclusion list in one request (empty array clears all). */
+export async function replaceExcludedGroupAnalytes(groupId: string, body: unknown): Promise<void> {
+  const res = await apiFetch(`calibration-groups/${groupId}/excluded-analytes`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Multi-variant model comparison after compute — ranks variants by pass-count. Requires `perm.view`. Platform operators must pass `laboratoryId`. */
+export async function getCalibrationGroupReportCard(
+  groupId: string,
+  params?: { laboratoryId?: string },
+): Promise<Record<string, unknown>> {
+  return apiJson(`calibration-groups/${groupId}/report-card`, { searchParams: params });
+}
+
+/** Persist the analyst's chosen regression variant for this group. Requires `perm.runs.upload`. */
+export async function selectCalibrationGroupModel(
+  groupId: string,
+  body: { regressionType: number; weightingMode: number },
+): Promise<void> {
+  const res = await apiFetch(`calibration-groups/${groupId}/select-model`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Lock an approved calibration group for reporting. Requires `perm.groups.approve`. */
+export async function approveCalibrationGroup(
+  groupId: string,
+  body?: { comment?: string },
+): Promise<void> {
+  const res = await apiFetch(`calibration-groups/${groupId}/approve`, {
+    method: "POST",
+    body: JSON.stringify(body ?? {}),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Terminal rejection of a computed group. Requires `perm.groups.approve`. */
+export async function rejectCalibrationGroup(
+  groupId: string,
+  body?: { comment?: string },
+): Promise<void> {
+  const res = await apiFetch(`calibration-groups/${groupId}/reject`, {
+    method: "POST",
+    body: JSON.stringify(body ?? {}),
+  });
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
@@ -485,11 +565,11 @@ export async function getUser(
   return apiJson(`Users/${encodeURIComponent(userId)}`, { searchParams: params });
 }
 
-/** Full regression QA snapshot for one analyte after compute — requires **`perm.groups.approve`**. Platform operators must pass **`laboratoryId`**. */
+/** Full regression QA snapshot for one analyte after compute — requires **`perm.groups.approve`**. Platform operators must pass **`laboratoryId`**. Optional **`regressionType`** / **`weightingMode`** select a computed variant. */
 export async function getCalibrationGroupRegressionDebug(
   groupId: string,
   analyteId: string,
-  params?: { laboratoryId?: string },
+  params?: CalibrationCurveQueryParams,
 ): Promise<Record<string, unknown>> {
   return apiJson(
     `calibration-groups/${groupId}/analytes/${encodeURIComponent(analyteId)}/regression-debug`,
@@ -497,34 +577,43 @@ export async function getCalibrationGroupRegressionDebug(
   );
 }
 
-/** Plotly figure (`data`, `layout`, `config`). Requires **`perm.view`** and a **computed** group. Platform operators must pass **`laboratoryId`**. */
+/** Plotly figure (`data`, `layout`, `config`). Requires **`perm.view`** and a **computed** group. Platform operators must pass **`laboratoryId`**. Optional **`regressionType`** / **`weightingMode`** select a computed variant. */
 export async function getCalibrationGroupChart(
   groupId: string,
   analyteId: string,
-  params?: { laboratoryId?: string },
+  params?: CalibrationCurveQueryParams,
 ): Promise<{ data?: unknown; layout?: unknown; config?: unknown } & Record<string, unknown>> {
   return apiJson(`calibration-groups/${groupId}/analytes/${encodeURIComponent(analyteId)}/chart`, {
     searchParams: params,
   });
 }
 
-/** Exclude a persisted calibration point (after compute); requires `perm.runs.upload`; group Draft or Computed. */
+export async function listCalibrationPointExclusions(
+  groupId: string,
+): Promise<Record<string, unknown>[]> {
+  return apiJson(`calibration-groups/${groupId}/point-exclusions`);
+}
+
+/** Exclude a measurement (analyte + CAL run) from regression; requires `perm.runs.upload`. */
 export async function excludeCalibrationPoint(
   groupId: string,
-  pointId: string,
-  body: { reason: number; note: string },
+  body: { analyteId: string; calRunId: string; reason: number; note: string },
 ): Promise<void> {
-  const res = await apiFetch(
-    `calibration-groups/${groupId}/points/${encodeURIComponent(pointId)}/exclude`,
-    { method: "POST", body: JSON.stringify(body) },
-  );
+  const res = await apiFetch(`calibration-groups/${groupId}/point-exclusions`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
-/** Re-include a previously excluded calibration point. */
-export async function reinstateCalibrationPoint(groupId: string, pointId: string): Promise<void> {
+/** Re-include a previously excluded measurement. */
+export async function reinstateCalibrationPoint(
+  groupId: string,
+  analyteId: string,
+  calRunId: string,
+): Promise<void> {
   const res = await apiFetch(
-    `calibration-groups/${groupId}/points/${encodeURIComponent(pointId)}/exclude`,
+    `calibration-groups/${groupId}/point-exclusions/${encodeURIComponent(analyteId)}/${encodeURIComponent(calRunId)}`,
     { method: "DELETE" },
   );
   if (!res.ok) throw await parseErrorResponse(res);
