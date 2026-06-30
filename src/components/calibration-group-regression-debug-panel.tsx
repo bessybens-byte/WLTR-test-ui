@@ -16,6 +16,7 @@ import {
   resolveVariantOptions,
   variantKey,
 } from "@/lib/calibration-variant-utils";
+import { hasComputedRegressionOutputs } from "@/lib/regression-wire";
 import type { MeResponse } from "@/lib/types/wltr";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -34,8 +35,8 @@ export function CalibrationGroupRegressionDebugPanel({
 }: {
   readonly groupId: string;
   readonly me: MeResponse | null | undefined;
-  readonly selectedRegressionType?: number | null;
-  readonly selectedWeightingMode?: number | null;
+  readonly selectedRegressionType?: unknown;
+  readonly selectedWeightingMode?: unknown;
 }) {
   const labInJwt = me?.laboratoryId;
   const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
@@ -78,14 +79,9 @@ export function CalibrationGroupRegressionDebugPanel({
       const raw = rows[i];
       if (typeof raw !== "object" || raw === null) continue;
       const points = Array.isArray((raw as Record<string, unknown>).points)
-        ? ((raw as Record<string, unknown>).points as unknown[])
+        ? ((raw as Record<string, unknown>).points as Record<string, unknown>[])
         : [];
-      for (let j = 0; j < points.length; j++) {
-        const p = points[j];
-        if (typeof p !== "object" || p === null) continue;
-        const pt = p as Record<string, unknown>;
-        if (pt.predictedY != null || pt.predictedYValue != null) return true;
-      }
+      if (hasComputedRegressionOutputs(points)) return true;
     }
     return false;
   }, [analyteListQ.data]);

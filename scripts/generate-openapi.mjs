@@ -78,6 +78,7 @@ const paths = {
   "/api/method-configs/{id}": ["get", "put", "delete"],
   "/api/method-configs/{id}/snapshots": ["get"],
   "/api/method-configs/{id}/snapshots/{version}": ["get"],
+  "/api/method-configs/{id}/analyte-criteria": ["get", "put"],
   "/api/Roles": ["get", "post"],
   "/api/Roles/{roleId}/name": ["put"],
   "/api/Roles/{roleId}/permissions": ["put"],
@@ -96,14 +97,18 @@ const paths = {
   "/api/calibration-groups/{id}/regression-inputs": ["get"],
   "/api/calibration-groups/{id}/compute": ["post"],
   "/api/calibration-groups/{id}/analytes/{analyteId}/regression-debug": ["get"],
+  "/api/calibration-groups/{id}/analytes/{analyteId}/curves": ["get"],
   "/api/calibration-groups/{id}/analytes/{analyteId}/chart": ["get"],
   "/api/calibration-groups/{id}/internal-standard-summaries": ["get"],
   "/api/calibration-groups/{id}/point-exclusions": ["get", "post"],
   "/api/calibration-groups/{id}/point-exclusions/{analyteId}/{runId}": ["delete"],
   "/api/calibration-groups/{id}/report-card": ["get"],
+  "/api/calibration-groups/{id}/report": ["get"],
+  "/api/calibration-groups/{id}/extrapolate": ["post"],
   "/api/calibration-groups/{id}/select-model": ["post"],
   "/api/calibration-groups/{id}/approve": ["post"],
   "/api/calibration-groups/{id}/reject": ["post"],
+  "/api/calibration-groups/{id}/target-analytes": ["get"],
   "/api/calibration-groups/{id}/excluded-analytes": ["get", "post", "put"],
   "/api/calibration-groups/{id}/excluded-analytes/{analyteId}": ["delete"],
   "/api/Users": ["get"],
@@ -241,6 +246,11 @@ function buildQueryParameters(method, routePath) {
   }
 
   if (routePath === "/api/calibration-groups/{id}/analytes/{analyteId}/regression-debug") {
+    parameters.push({ name: "laboratoryId", in: "query", schema: { type: "string", format: "uuid" } });
+    return parameters;
+  }
+
+  if (routePath === "/api/calibration-groups/{id}/analytes/{analyteId}/curves") {
     parameters.push({ name: "laboratoryId", in: "query", schema: { type: "string", format: "uuid" } });
     return parameters;
   }

@@ -9,16 +9,20 @@ import {
 } from "@/lib/api/wltr-api";
 import { suggestedModelFromReportCard } from "@/lib/calibration-variant-utils";
 import {
+  modelVariantLabel,
+  normalizeRegressionType,
+  normalizeWeightingMode,
+  variantKey,
+} from "@/lib/regression-wire";
+import {
   CalibrationGroupStatus,
   GROUP_STATUS_LABEL,
   hasPermission,
   PERMS,
-  REGRESSION_TYPE_LABEL,
-  WEIGHTING_MODE_LABEL,
   type MeResponse,
 } from "@/lib/types/wltr";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 function cell(v: unknown): string {
   if (v == null) return "—";
@@ -27,17 +31,13 @@ function cell(v: unknown): string {
 }
 
 function calStatusTone(v: unknown): "ok" | "bad" | "neutral" {
-  if (v === 1) return "ok";
-  if (v === 0) return "bad";
+  if (v === "Pass" || v === 1) return "ok";
+  if (v === "Fail" || v === 0) return "bad";
   return "neutral";
 }
 
 function modelLabel(regressionType: unknown, weightingMode: unknown): string {
-  const rt =
-    typeof regressionType === "number" ? (REGRESSION_TYPE_LABEL[regressionType] ?? String(regressionType)) : "?";
-  const wm =
-    typeof weightingMode === "number" ? (WEIGHTING_MODE_LABEL[weightingMode] ?? String(weightingMode)) : "?";
-  return `${rt} · ${wm}`;
+  return modelVariantLabel(regressionType, weightingMode);
 }
 
 
@@ -45,20 +45,16 @@ export function CalibrationGroupWorkflowPanel({
   groupId,
   groupStatus,
   computationStale,
-  selectedRegressionType,
-  selectedWeightingMode,
   me,
 }: {
   readonly groupId: string;
   readonly groupStatus: number;
   readonly computationStale?: boolean;
-  readonly selectedRegressionType?: number | null;
-  readonly selectedWeightingMode?: number | null;
   readonly me: MeResponse | null | undefined;
 }) {
   const qc = useQueryClient();
-  const canSelectModel = hasPermission(me, PERMS.runsUpload);
   const canApprove = hasPermission(me, PERMS.groupsApprove);
+  const canSelectModel = canApprove;
   const isComputed = groupStatus === CalibrationGroupStatus.Computed;
   const isTerminal =
     groupStatus === CalibrationGroupStatus.Approved || groupStatus === CalibrationGroupStatus.Rejected;
@@ -69,21 +65,80 @@ export function CalibrationGroupWorkflowPanel({
     queryFn: () => getCalibrationGroupReportCard(groupId, reportCardParams),
     enabled: isComputed || isTerminal,
     retry: false,
+    select: (raw: unknown): Record<string, unknown> => {
+      if (raw && typeof raw === "object") return raw as Record<string, unknown>;
+      return {};
+    },
   });
 
-  const hasSelection =
-    typeof selectedRegressionType === "number" && typeof selectedWeightingMode === "number";
+  const sessionKey = `wltr:sel:${groupId}`;
+
+  function loadSelections(): Map<string, string> {
+    try {
+      const raw = sessionStorage.getItem(sessionKey);
+      if (raw) return new Map(JSON.parse(raw) as [string, string][]);
+    } catch {
+      // ignore parse errors
+    }
+    return new Map();
+  }
+
+  function saveSelections(map: Map<string, string>) {
+    try {
+      sessionStorage.setItem(sessionKey, JSON.stringify([...map]));
+    } catch {
+      // ignore quota errors
+    }
+  }
+
+  /** Per-analyte selection state: analyteId → variantKey ("rt:wm"). Persisted in sessionStorage. */
+  const [selectedByAnalyte, setSelectedByAnalyte] = useState<Map<string, string>>(loadSelections);
+
+  // Clear stale selections whenever the group is recomputed or reverts below Computed.
+  // Without this, old "✓ Selected" indicators would persist after a reject+recompute cycle.
+  useEffect(() => {
+    if (stale || groupStatus < CalibrationGroupStatus.Computed) {
+      try {
+        sessionStorage.removeItem(sessionKey);
+      } catch {
+        // ignore
+      }
+      setSelectedByAnalyte(new Map());
+    }
+  }, [stale, groupStatus, sessionKey]);
 
   const selectModel = useMutation({
-    mutationFn: (body: { regressionType: number; weightingMode: number }) =>
-      selectCalibrationGroupModel(groupId, body),
-    onSuccess: async () => {
+    mutationFn: async (args: { regressionType: string; weightingMode: string; analyteIds: string[] }) => {
+      await Promise.all(
+        args.analyteIds.map((analyteId) =>
+          selectCalibrationGroupModel(groupId, analyteId, {
+            regressionType: args.regressionType,
+            weightingMode: args.weightingMode,
+          }),
+        ),
+      );
+    },
+    onSuccess: async (_, args) => {
+      const key = variantKey(args.regressionType, args.weightingMode);
+      setSelectedByAnalyte((prev) => {
+        const next = new Map(prev);
+        args.analyteIds.forEach((id) => next.set(id, key));
+        saveSelections(next);
+        return next;
+      });
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["calibration-groups", groupId] }),
         qc.invalidateQueries({ queryKey: ["calibration-group-report-card", groupId] }),
+        qc.invalidateQueries({ queryKey: ["calibration-group-summary-report", groupId] }),
       ]);
     },
   });
+
+  const selectOneAnalyte = useCallback(
+    (analyteId: string, regressionType: string, weightingMode: string) =>
+      selectModel.mutate({ regressionType, weightingMode, analyteIds: [analyteId] }),
+    [selectModel],
+  );
 
   const [qaComment, setQaComment] = useState("");
 
@@ -101,22 +156,40 @@ export function CalibrationGroupWorkflowPanel({
     },
   });
 
-  const card = reportCard.data as Record<string, unknown> | undefined;
+  const card = reportCard.data;
   const stale = Boolean(computationStale ?? card?.isComputationStale);
   const suggested = suggestedModelFromReportCard(card);
-  const variants = Array.isArray(card?.variants) ? (card!.variants as Record<string, unknown>[]) : [];
+  const variants = Array.isArray(card?.variants) ? (card.variants as Record<string, unknown>[]) : [];
 
-  const selectedLabel = hasSelection
-    ? modelLabel(selectedRegressionType, selectedWeightingMode)
-    : "Not selected yet";
+  const allReportCardAnalyteIds = useMemo(
+    () =>
+      variants
+        .flatMap((v) =>
+          Array.isArray((v as Record<string, unknown>).analytes)
+            ? ((v as Record<string, unknown>).analytes as Record<string, unknown>[])
+            : [],
+        )
+        .map((a) => (typeof a.analyteId === "string" ? a.analyteId : ""))
+        .filter(Boolean)
+        .filter((id, i, arr) => arr.indexOf(id) === i),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [card],
+  );
+
+  const allAnalytesSelected =
+    allReportCardAnalyteIds.length > 0 && allReportCardAnalyteIds.every((id) => selectedByAnalyte.has(id));
 
   const workflowSteps = useMemo(
     () => [
       { n: 1, label: "Compute regression", done: groupStatus >= CalibrationGroupStatus.Computed },
-      { n: 2, label: "Choose model variant", done: hasSelection && !stale },
+      {
+        n: 2,
+        label: "Choose model per analyte",
+        done: allAnalytesSelected || groupStatus === CalibrationGroupStatus.Approved,
+      },
       { n: 3, label: "QA review & approval", done: groupStatus === CalibrationGroupStatus.Approved },
     ],
-    [groupStatus, hasSelection, stale],
+    [groupStatus, allAnalytesSelected],
   );
 
   if (groupStatus === CalibrationGroupStatus.Draft) {
@@ -137,8 +210,8 @@ export function CalibrationGroupWorkflowPanel({
           <div>
             <div className="text-sm font-medium">Calibration workflow</div>
             <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-              Compare regression variants on the report card, select the best model, then QA approves or rejects the
-              group.
+              Compare regression variants on the report card, select a model for each analyte, then QA approves or
+              rejects the group.
             </p>
           </div>
           <Badge
@@ -176,33 +249,40 @@ export function CalibrationGroupWorkflowPanel({
           </p>
         ) : null}
 
-        <div className="mt-3 text-sm">
-          <span className="text-neutral-600 dark:text-neutral-400">Selected model: </span>
-          <span className="font-medium">{selectedLabel}</span>
-        </div>
+        <p className="mt-3 text-xs text-neutral-600 dark:text-neutral-400">
+          Use the report card below to select a model variant per analyte. Use <strong>Select for all analytes</strong>{" "}
+          on a variant row to apply it in bulk, or hit <strong>Select</strong> on individual analyte rows for
+          fine-grained control.
+        </p>
 
-        {suggested && typeof suggested.regressionType === "number" ? (
-          <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
-            Suggested variant (highest pass-count):{" "}
-            <strong>{modelLabel(suggested.regressionType, suggested.weightingMode)}</strong>
-            {typeof suggested.reportCardScore === "number" ? ` — ${suggested.reportCardScore} passes` : null}
+        {suggested ? (
+          <div className="mt-2 flex items-center justify-between gap-4 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900/50">
+            <p className="text-xs text-neutral-600 dark:text-neutral-400">
+              <span className="font-medium text-neutral-800 dark:text-neutral-200">Suggested variant</span>{" "}
+              (highest pass-count):{" "}
+              <strong>{modelLabel(suggested.regressionType, suggested.weightingMode)}</strong>
+              {typeof suggested.reportCardScore === "number" ? (
+                <span className="ml-1 text-neutral-500">— {suggested.reportCardScore} passes</span>
+              ) : null}
+            </p>
             {canSelectModel && !isTerminal && !stale ? (
               <Button
                 type="button"
                 variant="secondary"
-                className="ml-2 inline-flex py-1 text-xs"
-                disabled={selectModel.isPending}
+                className="shrink-0 py-1 text-xs"
+                disabled={selectModel.isPending || allReportCardAnalyteIds.length === 0}
                 onClick={() =>
                   selectModel.mutate({
                     regressionType: suggested.regressionType,
                     weightingMode: suggested.weightingMode,
+                    analyteIds: allReportCardAnalyteIds,
                   })
                 }
               >
-                Apply suggestion
+                Apply to all analytes
               </Button>
             ) : null}
-          </p>
+          </div>
         ) : null}
       </Card>
 
@@ -226,7 +306,6 @@ export function CalibrationGroupWorkflowPanel({
               {variants.map((v, vi) => {
                 const rt = v.regressionType;
                 const wm = v.weightingMode;
-                const isSelected = hasSelection && rt === selectedRegressionType && wm === selectedWeightingMode;
                 const analyteRows = Array.isArray(v.analytes) ? (v.analytes as Record<string, unknown>[]) : [];
                 return (
                   <div
@@ -254,17 +333,25 @@ export function CalibrationGroupWorkflowPanel({
                         {canSelectModel && !isTerminal && !stale ? (
                           <Button
                             type="button"
-                            variant={isSelected ? "primary" : "secondary"}
+                            variant="secondary"
                             className="py-1 text-xs"
-                            disabled={selectModel.isPending || typeof rt !== "number" || typeof wm !== "number"}
-                            onClick={() =>
-                              selectModel.mutate({
-                                regressionType: rt as number,
-                                weightingMode: wm as number,
-                              })
+                            disabled={
+                              selectModel.isPending ||
+                              !normalizeRegressionType(rt) ||
+                              !normalizeWeightingMode(wm) ||
+                              analyteRows.length === 0
                             }
+                            onClick={() => {
+                              const regressionType = normalizeRegressionType(rt);
+                              const weightingMode = normalizeWeightingMode(wm);
+                              if (!regressionType || !weightingMode) return;
+                              const analyteIds = analyteRows
+                                .map((a) => (typeof a.analyteId === "string" ? a.analyteId : ""))
+                                .filter(Boolean);
+                              selectModel.mutate({ regressionType, weightingMode, analyteIds });
+                            }}
                           >
-                            {isSelected ? "Selected" : "Select model"}
+                            Select for all analytes
                           </Button>
                         ) : null}
                       </div>
@@ -279,26 +366,63 @@ export function CalibrationGroupWorkflowPanel({
                               <th className="px-3 py-2 font-medium">Cal</th>
                               <th className="px-3 py-2 font-medium">ICV</th>
                               <th className="px-3 py-2 font-medium">Missed pts</th>
+                              {canSelectModel && !isTerminal && !stale ? (
+                                <th className="px-3 py-2 font-medium">Model</th>
+                              ) : null}
                             </tr>
                           </thead>
                           <tbody>
-                            {analyteRows.map((a, ai) => (
-                              <tr key={`${cell(a.analyteId)}-${ai}`} className="border-b border-neutral-50 last:border-b-0 dark:border-neutral-900">
-                                <td className="px-3 py-2">{cell(a.analyteName)}</td>
-                                <td className="px-3 py-2 font-mono">
-                                  {typeof a.rSquared === "number" ? a.rSquared.toFixed(4) : "—"}
-                                </td>
-                                <td className="px-3 py-2">
-                                  <Badge tone={calStatusTone(a.calStatus)}>
-                                    {a.calStatus === 1 ? "Pass" : a.calStatus === 0 ? "Fail" : "—"}
-                                  </Badge>
-                                </td>
-                                <td className="px-3 py-2">
-                                  {a.icvPassed === true ? "Pass" : a.icvPassed === false ? "Fail" : "—"}
-                                </td>
-                                <td className="px-3 py-2 font-mono">{cell(a.missedPointCount)}</td>
-                              </tr>
-                            ))}
+                            {analyteRows.map((a, ai) => {
+                              const aId = typeof a.analyteId === "string" ? a.analyteId : "";
+                              const thisKey = variantKey(rt, wm);
+                              const isSelected = !!aId && selectedByAnalyte.get(aId) === thisKey;
+                              const regressionType = normalizeRegressionType(rt);
+                              const weightingMode = normalizeWeightingMode(wm);
+                              return (
+                                <tr
+                                  key={`${cell(a.analyteId)}-${ai}`}
+                                  className={`border-b border-neutral-50 last:border-b-0 dark:border-neutral-900 ${isSelected ? "bg-emerald-50/40 dark:bg-emerald-950/20" : ""}`}
+                                >
+                                  <td className="px-3 py-2">{cell(a.analyteName)}</td>
+                                  <td className="px-3 py-2 font-mono">
+                                    {typeof a.rSquared === "number" ? a.rSquared.toFixed(4) : "—"}
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    <Badge tone={calStatusTone(a.calStatus)}>
+                                      {a.calStatus === 1 ? "Pass" : a.calStatus === 0 ? "Fail" : "—"}
+                                    </Badge>
+                                  </td>
+                                  <td className="px-3 py-2">
+                                    {a.icvPassed === true ? "Pass" : a.icvPassed === false ? "Fail" : "—"}
+                                  </td>
+                                  <td className="px-3 py-2 font-mono">{cell(a.missedPointCount)}</td>
+                                  {canSelectModel && !isTerminal && !stale ? (
+                                    <td className="px-3 py-2">
+                                      {isSelected ? (
+                                        <span className="font-medium text-emerald-700 dark:text-emerald-400">
+                                          ✓ Selected
+                                        </span>
+                                      ) : (
+                                        <Button
+                                          type="button"
+                                          variant="secondary"
+                                          className="!px-2 !py-0.5 !text-[10px]"
+                                          disabled={
+                                            selectModel.isPending || !aId || !regressionType || !weightingMode
+                                          }
+                                          onClick={() => {
+                                            if (!aId || !regressionType || !weightingMode) return;
+                                            selectOneAnalyte(aId, regressionType, weightingMode);
+                                          }}
+                                        >
+                                          Select
+                                        </Button>
+                                      )}
+                                    </td>
+                                  ) : null}
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -338,7 +462,7 @@ export function CalibrationGroupWorkflowPanel({
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
               type="button"
-              disabled={approve.isPending || stale || !hasSelection}
+              disabled={approve.isPending || stale}
               onClick={() => approve.mutate()}
             >
               {approve.isPending ? "Approving…" : "Approve calibration"}
@@ -347,11 +471,6 @@ export function CalibrationGroupWorkflowPanel({
               {reject.isPending ? "Rejecting…" : "Reject"}
             </Button>
           </div>
-          {!hasSelection && !stale ? (
-            <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
-              Select a model variant on the report card before approving.
-            </p>
-          ) : null}
           {(approve.isError || reject.isError) && (
             <div className="mt-2 text-sm text-red-600">{((approve.error ?? reject.error) as Error).message}</div>
           )}

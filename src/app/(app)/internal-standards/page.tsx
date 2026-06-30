@@ -50,6 +50,7 @@ export default function InternalStandardsPage() {
                 <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
                   <th className="py-2 pr-3">Name</th>
                   <th className="py-2 pr-3">CAS</th>
+                  <th className="py-2 pr-3">Concentration</th>
                   <th className="py-2 pr-3" />
                 </tr>
               </thead>
@@ -61,6 +62,9 @@ export default function InternalStandardsPage() {
                     <tr key={id} className="border-b border-neutral-100 dark:border-neutral-900">
                       <td className="py-2 pr-3">{String(r.name ?? "")}</td>
                       <td className="py-2 pr-3">{String(r.casNumber ?? "")}</td>
+                      <td className="py-2 pr-3 font-mono text-xs">
+                        {r.concentration == null ? "—" : String(r.concentration)}
+                      </td>
                       <td className="py-2 pr-3 text-right">
                         <Link className="font-medium text-neutral-900 underline underline-offset-2 dark:text-neutral-100" href={`/internal-standards/${id}`}>
                           Open

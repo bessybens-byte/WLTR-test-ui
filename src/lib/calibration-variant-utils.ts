@@ -1,43 +1,34 @@
-import { RegressionType, REGRESSION_TYPE_LABEL, WEIGHTING_MODE_LABEL, WeightingMode } from "@/lib/types/wltr";
+import {
+  hasSelectedModel as hasGroupSelectedModel,
+  normalizeRegressionType,
+  normalizeWeightingMode,
+  type RegressionTypeWire,
+  type WeightingModeWire,
+  variantKey,
+} from "@/lib/regression-wire";
 
 /** Supported regression × weighting pairs from the compute pipeline (used when report-card is unavailable). */
 export const STANDARD_CALIBRATION_VARIANTS: readonly CalibrationVariant[] = [
-  { regressionType: RegressionType.Average, weightingMode: WeightingMode.None },
-  { regressionType: RegressionType.LinearForcedZero, weightingMode: WeightingMode.InverseX },
-  { regressionType: RegressionType.LinearForcedZero, weightingMode: WeightingMode.InverseXSquared },
-  { regressionType: RegressionType.Linear, weightingMode: WeightingMode.None },
-  { regressionType: RegressionType.Linear, weightingMode: WeightingMode.InverseX },
-  { regressionType: RegressionType.Linear, weightingMode: WeightingMode.InverseXSquared },
-  { regressionType: RegressionType.Quadratic, weightingMode: WeightingMode.None },
-  { regressionType: RegressionType.Quadratic, weightingMode: WeightingMode.InverseX },
-  { regressionType: RegressionType.Quadratic, weightingMode: WeightingMode.InverseXSquared },
+  { regressionType: "Average", weightingMode: "None" },
+  { regressionType: "LinearForcedZero", weightingMode: "InverseX" },
+  { regressionType: "LinearForcedZero", weightingMode: "InverseXSquared" },
+  { regressionType: "Linear", weightingMode: "None" },
+  { regressionType: "Linear", weightingMode: "InverseX" },
+  { regressionType: "Linear", weightingMode: "InverseXSquared" },
+  { regressionType: "Quadratic", weightingMode: "None" },
+  { regressionType: "Quadratic", weightingMode: "InverseX" },
+  { regressionType: "Quadratic", weightingMode: "InverseXSquared" },
 ];
 
 export type CalibrationVariant = Readonly<{
-  regressionType: number;
-  weightingMode: number;
+  regressionType: RegressionTypeWire;
+  weightingMode: WeightingModeWire;
   passCount?: number;
   reportCardScore?: number;
 }>;
 
-export function variantKey(regressionType: number, weightingMode: number): string {
-  return `${regressionType}:${weightingMode}`;
-}
-
-export function parseVariantKey(key: string): CalibrationVariant | null {
-  const parts = key.split(":");
-  if (parts.length !== 2) return null;
-  const regressionType = Number(parts[0]);
-  const weightingMode = Number(parts[1]);
-  if (!Number.isFinite(regressionType) || !Number.isFinite(weightingMode)) return null;
-  return { regressionType, weightingMode };
-}
-
-export function modelVariantLabel(regressionType: number, weightingMode: number): string {
-  const rt = REGRESSION_TYPE_LABEL[regressionType] ?? String(regressionType);
-  const wm = WEIGHTING_MODE_LABEL[weightingMode] ?? String(weightingMode);
-  return `${rt} · ${wm}`;
-}
+export { parseVariantKey, variantKey } from "@/lib/regression-wire";
+export { modelVariantLabel } from "@/lib/regression-wire";
 
 function variantScore(v: CalibrationVariant): number {
   if (typeof v.passCount === "number") return v.passCount;
@@ -46,9 +37,9 @@ function variantScore(v: CalibrationVariant): number {
 }
 
 function parseVariantRow(raw: Record<string, unknown>): CalibrationVariant | null {
-  const regressionType = raw.regressionType;
-  const weightingMode = raw.weightingMode;
-  if (typeof regressionType !== "number" || typeof weightingMode !== "number") return null;
+  const regressionType = normalizeRegressionType(raw.regressionType);
+  const weightingMode = normalizeWeightingMode(raw.weightingMode);
+  if (!regressionType || !weightingMode) return null;
   return {
     regressionType,
     weightingMode,
@@ -127,12 +118,7 @@ export function resolveVariantOptions(
   return { variants: [], fromReportCard: false };
 }
 
-export function hasGroupSelectedModel(preferred?: {
-  regressionType: number | null;
-  weightingMode: number | null;
-}): boolean {
-  return typeof preferred?.regressionType === "number" && typeof preferred?.weightingMode === "number";
-}
+export { hasGroupSelectedModel };
 
 export type CurveQueryScope = Readonly<{
   laboratoryId?: string;
@@ -140,8 +126,8 @@ export type CurveQueryScope = Readonly<{
 
 export type CurveQueryParams = CurveQueryScope &
   Readonly<{
-    regressionType?: number;
-    weightingMode?: number;
+    regressionType?: RegressionTypeWire;
+    weightingMode?: WeightingModeWire;
   }>;
 
 /** First standard variant — bootstraps list/chart requests when the group has no selected model. */
@@ -175,11 +161,13 @@ export function buildCurveQueryParams(
 
 export function pickDefaultVariantKey(
   variants: readonly CalibrationVariant[],
-  preferred?: { regressionType: number | null; weightingMode: number | null },
+  preferred?: { regressionType: unknown; weightingMode: unknown },
 ): string {
   if (!variants.length) return "";
-  if (hasGroupSelectedModel(preferred)) {
-    const key = variantKey(preferred!.regressionType!, preferred!.weightingMode!);
+  const prefRt = normalizeRegressionType(preferred?.regressionType);
+  const prefWm = normalizeWeightingMode(preferred?.weightingMode);
+  if (prefRt && prefWm) {
+    const key = variantKey(prefRt, prefWm);
     if (variants.some((v) => variantKey(v.regressionType, v.weightingMode) === key)) return key;
   }
   const first = variants[0];
@@ -194,7 +182,7 @@ export function pickActiveVariantKey(
   variants: readonly CalibrationVariant[],
   options: Readonly<{
     userPickedKey: string | null;
-    preferred?: { regressionType: number | null; weightingMode: number | null };
+    preferred?: { regressionType: unknown; weightingMode: unknown };
   }>,
 ): string {
   if (!variants.length) {

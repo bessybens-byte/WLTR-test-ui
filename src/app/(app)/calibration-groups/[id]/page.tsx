@@ -7,6 +7,7 @@ import { CalibrationGroupReadinessPanel } from "@/components/calibration-group-r
 import { CalibrationGroupRegressionDebugPanel } from "@/components/calibration-group-regression-debug-panel";
 import { CalibrationGroupRegressionInputsPanel } from "@/components/calibration-group-regression-inputs-panel";
 import { CalibrationGroupRegressionResultsPanel } from "@/components/calibration-group-regression-results-panel";
+import { CalibrationGroupSummaryReportPanel } from "@/components/calibration-group-summary-report-panel";
 import { CalibrationGroupWorkflowPanel } from "@/components/calibration-group-workflow-panel";
 import { InternalStandardSummariesPanel } from "@/components/internal-standard-summaries-panel";
 import { Badge, Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
@@ -27,6 +28,18 @@ function s(v: unknown, fallback = ""): string {
   return typeof v === "string" ? v : fallback;
 }
 
+function normalizeGroupStatus(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  const byName: Record<string, number> = {
+    Draft: CalibrationGroupStatus.Draft,
+    Computed: CalibrationGroupStatus.Computed,
+    Approved: CalibrationGroupStatus.Approved,
+    Rejected: CalibrationGroupStatus.Rejected,
+  };
+  if (typeof v === "string" && v in byName) return byName[v];
+  return CalibrationGroupStatus.Draft;
+}
+
 type GroupDetail = Readonly<{
   id: string;
   name: string | null;
@@ -39,8 +52,6 @@ type GroupDetail = Readonly<{
   computedAt: string | null;
   computationVersion: string | null;
   computationStale: boolean;
-  selectedRegressionType: number | null;
-  selectedWeightingMode: number | null;
   createdAt: string;
 }>;
 
@@ -87,7 +98,7 @@ function mapGroupDetail(row: Record<string, unknown>, id: string): GroupDetail {
     id: s(row.id, id),
     name: rawName || null,
     instrumentId: s(row.instrumentId),
-    status: typeof row.status === "number" ? row.status : 0,
+    status: normalizeGroupStatus(row.status),
     methodConfigId: s(row.methodConfigId),
     methodConfigSnapshotId: typeof row.methodConfigSnapshotId === "string" ? row.methodConfigSnapshotId : null,
     icvRunId: typeof row.icvRunId === "string" ? row.icvRunId : null,
@@ -95,10 +106,6 @@ function mapGroupDetail(row: Record<string, unknown>, id: string): GroupDetail {
     computedAt: typeof row.computedAt === "string" ? row.computedAt : null,
     computationVersion: typeof row.computationVersion === "string" ? row.computationVersion : null,
     computationStale: Boolean(row.isComputationStale ?? row.computationStale),
-    selectedRegressionType:
-      typeof row.selectedRegressionType === "number" ? row.selectedRegressionType : null,
-    selectedWeightingMode:
-      typeof row.selectedWeightingMode === "number" ? row.selectedWeightingMode : null,
     createdAt: s(row.createdAt),
   };
 }
@@ -530,16 +537,19 @@ export default function CalibrationGroupDetailPage() {
           groupId={id}
           groupStatus={group.status}
           computationStale={group.computationStale}
-          selectedRegressionType={group.selectedRegressionType}
-          selectedWeightingMode={group.selectedWeightingMode}
+          me={me}
+        />
+      ) : null}
+      {group && group.status >= CalibrationGroupStatus.Computed ? (
+        <CalibrationGroupSummaryReportPanel
+          groupId={id}
+          groupStatus={group.status}
           me={me}
         />
       ) : null}
       <CalibrationGroupRegressionInputsPanel
         groupId={id}
         me={me}
-        selectedRegressionType={group?.selectedRegressionType}
-        selectedWeightingMode={group?.selectedWeightingMode}
         canManagePoints={Boolean(group && canEdit && isEditable(group.status))}
       />
       {canViewCalibrationChart ? (
@@ -547,16 +557,12 @@ export default function CalibrationGroupDetailPage() {
           groupId={id}
           me={me}
           canSummarizeFromDebug={canViewRegressionDebug}
-          selectedRegressionType={group?.selectedRegressionType}
-          selectedWeightingMode={group?.selectedWeightingMode}
         />
       ) : null}
       {canViewRegressionDebug ? (
         <CalibrationGroupRegressionDebugPanel
           groupId={id}
           me={me}
-          selectedRegressionType={group?.selectedRegressionType}
-          selectedWeightingMode={group?.selectedWeightingMode}
         />
       ) : null}
       <InternalStandardSummariesPanel variant="calibrationGroup" resourceId={id} me={me} />

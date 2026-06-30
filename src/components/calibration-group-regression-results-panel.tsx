@@ -17,8 +17,15 @@ import {
   resolveVariantOptions,
   variantKey,
 } from "@/lib/calibration-variant-utils";
+import {
+  analyteCalStatusLabel,
+  analyteCalStatusTone,
+  hasComputedRegressionOutputs,
+  regressionPointPredictedResponse,
+  regressionTypeLabel,
+  weightingModeLabel,
+} from "@/lib/regression-wire";
 import type { MeResponse } from "@/lib/types/wltr";
-import { REGRESSION_TYPE_LABEL, WEIGHTING_MODE_LABEL } from "@/lib/types/wltr";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
@@ -77,7 +84,7 @@ function summarizePointsFromInputs(points: readonly Record<string, unknown>[]) {
     const p = points[i];
     if (Boolean(p.isIncluded)) includedCt++;
 
-    const pred = p.predictedY ?? p.predictedYValue;
+    const pred = regressionPointPredictedResponse(p);
     if (typeof pred === "number" && Number.isFinite(pred)) withPred++;
 
     const pdRaw = p.percentDiff ?? p.percentDifference;
@@ -130,21 +137,16 @@ function MetricsTable({
   );
 }
 
-function regressionTypeLabel(v: unknown): string {
-  if (typeof v !== "number" || !Number.isFinite(v)) return cellStr(v) || "—";
-  return REGRESSION_TYPE_LABEL[v] ?? String(v);
+function regressionTypeLabelLocal(v: unknown): string {
+  return regressionTypeLabel(v);
 }
 
 function weightingLabel(v: unknown): string {
-  if (typeof v !== "number" || !Number.isFinite(v)) return cellStr(v) || "—";
-  return WEIGHTING_MODE_LABEL[v] ?? String(v);
+  return weightingModeLabel(v);
 }
 
 function calStatusLabel(v: unknown): string {
-  if (typeof v !== "number") return cellStr(v) || "—";
-  if (v === 1) return "Pass";
-  if (v === 0) return "Fail";
-  return String(v);
+  return analyteCalStatusLabel(v);
 }
 
 function boolLabel(v: unknown): string {
@@ -167,8 +169,8 @@ export function CalibrationGroupRegressionResultsPanel({
   groupId: string;
   me: MeResponse | null | undefined;
   canSummarizeFromDebug: boolean;
-  selectedRegressionType?: number | null;
-  selectedWeightingMode?: number | null;
+  selectedRegressionType?: unknown;
+  selectedWeightingMode?: unknown;
 }>) {
   const labInJwt = me?.laboratoryId;
   const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
@@ -208,16 +210,10 @@ export function CalibrationGroupRegressionResultsPanel({
 
   const tableRowsForPicker = useMemo(() => parseAnalyteRows(analyteListQ.data), [analyteListQ.data]);
 
-  const hasComputedOutputs = useMemo(() => {
-    for (let i = 0; i < tableRowsForPicker.length; i++) {
-      const points = tableRowsForPicker[i].points;
-      for (let j = 0; j < points.length; j++) {
-        const p = points[j];
-        if (p.predictedY != null || p.predictedYValue != null) return true;
-      }
-    }
-    return false;
-  }, [tableRowsForPicker]);
+  const hasComputedOutputs = useMemo(
+    () => tableRowsForPicker.some((row) => hasComputedRegressionOutputs(row.points)),
+    [tableRowsForPicker],
+  );
 
   useEffect(() => {
     setUserPickedKey(null);

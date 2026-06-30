@@ -2,7 +2,7 @@
 
 import { AnalyteInternalStandardSelect } from "@/components/analyte-internal-standard-select";
 import { ViewOnlyNotice } from "@/components/view-only-notice";
-import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
+import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import {
   createAnalyteAlias,
   deleteAnalyte,
@@ -11,7 +11,7 @@ import {
   updateAnalyte,
   updateAnalyteAlias,
 } from "@/lib/api/wltr-api";
-import { hasPermission, PERMS } from "@/lib/types/wltr";
+import { ANALYTE_ROLE_LABEL, hasPermission, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
@@ -32,6 +32,7 @@ export default function AnalyteDetailPage() {
   const [form, setForm] = useState({
     name: "",
     casNumber: "",
+    role: 0,
     defaultInternalStandardId: "",
   });
   const [aliasName, setAliasName] = useState("");
@@ -43,6 +44,7 @@ export default function AnalyteDetailPage() {
     setForm({
       name: String(d.name ?? ""),
       casNumber: String(d.casNumber ?? ""),
+      role: Number(d.role ?? 0),
       defaultInternalStandardId: String(d.defaultInternalStandardId ?? ""),
     });
   }, [q.data]);
@@ -52,6 +54,7 @@ export default function AnalyteDetailPage() {
       await updateAnalyte(id, {
         name: form.name,
         casNumber: form.casNumber || undefined,
+        role: form.role,
         defaultInternalStandardId: form.defaultInternalStandardId || undefined,
       });
     },
@@ -118,6 +121,26 @@ export default function AnalyteDetailPage() {
               <div>
                 <Label htmlFor="casNumber">CAS</Label>
                 <Input id="casNumber" value={form.casNumber} onChange={(e) => setForm({ ...form, casNumber: e.target.value })} disabled={!canEdit} />
+              </div>
+              <div>
+                <Label htmlFor="role">Role</Label>
+                <Select
+                  id="role"
+                  value={String(form.role)}
+                  onChange={(e) => setForm({ ...form, role: Number(e.target.value) })}
+                  disabled={!canEdit}
+                >
+                  {[0, 1, 2].map((v) => (
+                    <option key={v} value={v}>
+                      {ANALYTE_ROLE_LABEL[v]}
+                    </option>
+                  ))}
+                </Select>
+                {canEdit ? (
+                  <p className="mt-1 text-xs text-neutral-500">
+                    Changing the role triggers a measurement remap for the lab.
+                  </p>
+                ) : null}
               </div>
             </div>
             <div className="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50/80 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">

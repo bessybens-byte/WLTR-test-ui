@@ -13,7 +13,7 @@ export default function NewInternalStandardPage() {
   const { me } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ name: "", casNumber: "" });
+  const [form, setForm] = useState({ name: "", casNumber: "", concentration: "" });
 
   useEffect(() => {
     if (!hasPermission(me, PERMS.configEdit)) router.replace("/internal-standards");
@@ -27,6 +27,7 @@ export default function NewInternalStandardPage() {
       const res = await createInternalStandard({
         name: form.name,
         casNumber: form.casNumber || undefined,
+        concentration: form.concentration === "" ? undefined : Number(form.concentration),
       });
       const id = String((res as { id?: string }).id ?? "");
       router.replace(`/internal-standards/${id}`);
@@ -61,6 +62,18 @@ export default function NewInternalStandardPage() {
           <div>
             <Label htmlFor="casNumber">CAS number</Label>
             <Input id="casNumber" value={form.casNumber} onChange={(e) => setForm({ ...form, casNumber: e.target.value })} />
+          </div>
+          <div>
+            <Label htmlFor="concentration">Spike concentration</Label>
+            <Input
+              id="concentration"
+              type="number"
+              step="any"
+              min="0"
+              value={form.concentration}
+              onChange={(e) => setForm({ ...form, concentration: e.target.value })}
+              placeholder="Optional — e.g. µg/L for amount ratios"
+            />
           </div>
           {error ? <div className="text-sm text-red-600">{error}</div> : null}
           <div className="flex flex-wrap gap-2">

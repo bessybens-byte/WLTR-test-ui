@@ -43,6 +43,7 @@ export function CalibrationGroupComputePanel({
         qc.invalidateQueries({ queryKey: ["calibration-group-regression-debug", groupId] }),
         qc.invalidateQueries({ queryKey: ["calibration-group-chart", groupId] }),
         qc.invalidateQueries({ queryKey: ["calibration-group-report-card", groupId] }),
+        qc.invalidateQueries({ queryKey: ["calibration-group-summary-report", groupId] }),
       ]);
     },
   });

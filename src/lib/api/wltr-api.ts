@@ -414,8 +414,8 @@ export async function getCalibrationGroupReadiness(
 
 export type CalibrationCurveQueryParams = {
   laboratoryId?: string;
-  regressionType?: number;
-  weightingMode?: number;
+  regressionType?: string;
+  weightingMode?: string;
 };
 
 /** Per-analyte assembled X/Y/weight tables; after compute rows include diagnostics from stored points. Platform operators should pass **`laboratoryId`**. Optional **`regressionType`** / **`weightingMode`** select a computed variant. */
@@ -489,15 +489,40 @@ export async function getCalibrationGroupReportCard(
   return apiJson(`calibration-groups/${groupId}/report-card`, { searchParams: params });
 }
 
-/** Persist the analyst's chosen regression variant for this group. Requires `perm.runs.upload`. */
-export async function selectCalibrationGroupModel(
+/** Four-table Summary Report for the selected regression model. Requires `perm.view`. Returns **409** when no model is selected. */
+export async function getCalibrationGroupSummaryReport(
   groupId: string,
-  body: { regressionType: number; weightingMode: number },
-): Promise<void> {
-  const res = await apiFetch(`calibration-groups/${groupId}/select-model`, {
-    method: "POST",
+  params?: { laboratoryId?: string },
+): Promise<Record<string, unknown>> {
+  return apiJson(`calibration-groups/${groupId}/report`, { searchParams: params });
+}
+
+/** Per-analyte acceptance limits configured on a method. Requires `perm.config.edit` for writes. */
+export async function listMethodAnalyteCriteria(methodConfigId: string): Promise<Record<string, unknown>[]> {
+  return apiJson(`method-configs/${methodConfigId}/analyte-criteria`);
+}
+
+export async function replaceMethodAnalyteCriteria(methodConfigId: string, body: unknown): Promise<void> {
+  const res = await apiFetch(`method-configs/${methodConfigId}/analyte-criteria`, {
+    method: "PUT",
     body: JSON.stringify(body),
   });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Persist the analyst's chosen regression variant for one analyte. Requires `perm.runs.upload`. */
+export async function selectCalibrationGroupModel(
+  groupId: string,
+  analyteId: string,
+  body: { regressionType: string; weightingMode: string },
+): Promise<void> {
+  const res = await apiFetch(
+    `calibration-groups/${encodeURIComponent(groupId)}/analytes/${encodeURIComponent(analyteId)}/select-model`,
+    {
+      method: "POST",
+      body: JSON.stringify(body),
+    },
+  );
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
@@ -577,6 +602,18 @@ export async function getCalibrationGroupRegressionDebug(
   );
 }
 
+/** All computed `(RegressionType, WeightingMode)` variants for one analyte — same shape as regression-debug per element. Requires **`perm.groups.approve`**. */
+export async function getCalibrationGroupAnalyteCurves(
+  groupId: string,
+  analyteId: string,
+  params?: CalibrationCurveQueryParams,
+): Promise<Record<string, unknown>[]> {
+  return apiJson(
+    `calibration-groups/${groupId}/analytes/${encodeURIComponent(analyteId)}/curves`,
+    { searchParams: params },
+  );
+}
+
 /** Plotly figure (`data`, `layout`, `config`). Requires **`perm.view`** and a **computed** group. Platform operators must pass **`laboratoryId`**. Optional **`regressionType`** / **`weightingMode`** select a computed variant. */
 export async function getCalibrationGroupChart(
   groupId: string,
@@ -597,7 +634,7 @@ export async function listCalibrationPointExclusions(
 /** Exclude a measurement (analyte + CAL run) from regression; requires `perm.runs.upload`. */
 export async function excludeCalibrationPoint(
   groupId: string,
-  body: { analyteId: string; calRunId: string; reason: number; note: string },
+  body: { analyteId: string; calRunId: string; reason: string; note: string },
 ): Promise<void> {
   const res = await apiFetch(`calibration-groups/${groupId}/point-exclusions`, {
     method: "POST",

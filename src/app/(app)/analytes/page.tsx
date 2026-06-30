@@ -3,7 +3,7 @@
 import { Button, Card, EmptyState, PageHeader } from "@/components/ui";
 import { PaginationBar } from "@/components/pagination";
 import { listAnalytes } from "@/lib/api/wltr-api";
-import { hasPermission, PERMS } from "@/lib/types/wltr";
+import { ANALYTE_ROLE_LABEL, hasPermission, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -48,6 +48,7 @@ export default function AnalytesPage() {
                 <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
                   <th className="py-2 pr-3">Name</th>
                   <th className="py-2 pr-3">CAS</th>
+                  <th className="py-2 pr-3">Role</th>
                   <th className="py-2 pr-3" />
                 </tr>
               </thead>
@@ -55,10 +56,13 @@ export default function AnalytesPage() {
                 {q.data.items!.map((row) => {
                   const r = row as Record<string, unknown>;
                   const id = String(r.id ?? "");
+                  const roleNum = typeof r.role === "number" ? r.role : null;
+                  const roleLabel = roleNum != null ? (ANALYTE_ROLE_LABEL[roleNum] ?? String(roleNum)) : "—";
                   return (
                     <tr key={id} className="border-b border-neutral-100 dark:border-neutral-900">
                       <td className="py-2 pr-3">{String(r.name ?? "")}</td>
                       <td className="py-2 pr-3">{String(r.casNumber ?? "")}</td>
+                      <td className="py-2 pr-3 text-neutral-600 dark:text-neutral-400">{roleLabel}</td>
                       <td className="py-2 pr-3 text-right">
                         <Link className="underline" href={`/analytes/${id}`}>
                           Open

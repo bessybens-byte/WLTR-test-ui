@@ -1,14 +1,36 @@
 "use client";
 
+import { MethodConfigAnalyteCriteriaPanel } from "@/components/method-config-analyte-criteria-panel";
+import { MethodConfigFormFields, type MethodConfigFormState } from "@/components/method-config-form-fields";
 import { ViewOnlyNotice } from "@/components/view-only-notice";
-import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
+import { Button, Card, PageHeader } from "@/components/ui";
 import { deleteMethodConfig, getMethodConfig, updateMethodConfig } from "@/lib/api/wltr-api";
-import { hasPermission, PERMS, QUANTITATION_MODE_LABEL } from "@/lib/types/wltr";
+import { hasPermission, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const defaultForm: MethodConfigFormState = {
+  name: "",
+  labelMode: "RSquared",
+  quantitationMode: "InternalStandard",
+  minCorrelation: 0,
+  maxRSE: 0,
+  pctDiffLowBound: 0,
+  pctDiffHighBound: 0,
+  minPointsRequired: 0,
+  maxMissedPoints: 0,
+  icvLimitPercent: 0,
+  rsdPercentLimit: 15,
+  isRsdPercentLimit: 20,
+  icvCdsParityPercent: 0.01,
+  soilDilutionFactor: "",
+  aqueousDilutionFactor: "",
+  internalStandardResponseMin: "",
+  internalStandardResponseMax: "",
+};
 
 export default function MethodConfigDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,20 +42,7 @@ export default function MethodConfigDetailPage() {
     queryFn: () => getMethodConfig(id),
     enabled: !!id,
   });
-  const [form, setForm] = useState({
-    name: "",
-    labelMode: 0,
-    quantitationMode: 0,
-    minCorrelation: 0,
-    maxRSE: 0,
-    pctDiffLowBound: 0,
-    pctDiffHighBound: 0,
-    minPointsRequired: 0,
-    maxMissedPoints: 0,
-    icvLimitPercent: 0,
-    internalStandardResponseMin: "",
-    internalStandardResponseMax: "",
-  });
+  const [form, setForm] = useState<MethodConfigFormState>(defaultForm);
   const [versionNote, setVersionNote] = useState<string | null>(null);
 
   useEffect(() => {
@@ -41,8 +50,8 @@ export default function MethodConfigDetailPage() {
     const d = q.data as Record<string, unknown>;
     setForm({
       name: String(d.name ?? ""),
-      labelMode: Number(d.labelMode ?? 0),
-      quantitationMode: Number(d.quantitationMode ?? 0),
+      labelMode: typeof d.labelMode === "string" ? d.labelMode : "RSquared",
+      quantitationMode: typeof d.quantitationMode === "string" ? d.quantitationMode : "InternalStandard",
       minCorrelation: Number(d.minCorrelation ?? 0),
       maxRSE: Number(d.maxRSE ?? 0),
       pctDiffLowBound: Number(d.pctDiffLowBound ?? 0),
@@ -50,6 +59,11 @@ export default function MethodConfigDetailPage() {
       minPointsRequired: Number(d.minPointsRequired ?? 0),
       maxMissedPoints: Number(d.maxMissedPoints ?? 0),
       icvLimitPercent: Number(d.icvLimitPercent ?? 0),
+      rsdPercentLimit: Number(d.rsdPercentLimit ?? 15),
+      isRsdPercentLimit: Number(d.isRsdPercentLimit ?? 20),
+      icvCdsParityPercent: Number(d.icvCdsParityPercent ?? 0.01),
+      soilDilutionFactor: d.soilDilutionFactor == null ? "" : String(d.soilDilutionFactor),
+      aqueousDilutionFactor: d.aqueousDilutionFactor == null ? "" : String(d.aqueousDilutionFactor),
       internalStandardResponseMin:
         d.internalStandardResponseMin == null ? "" : String(d.internalStandardResponseMin),
       internalStandardResponseMax:
@@ -61,6 +75,8 @@ export default function MethodConfigDetailPage() {
     mutationFn: async () =>
       updateMethodConfig(id, {
         ...form,
+        soilDilutionFactor: form.soilDilutionFactor === "" ? null : Number(form.soilDilutionFactor),
+        aqueousDilutionFactor: form.aqueousDilutionFactor === "" ? null : Number(form.aqueousDilutionFactor),
         internalStandardResponseMin:
           form.internalStandardResponseMin === "" ? null : Number(form.internalStandardResponseMin),
         internalStandardResponseMax:
@@ -104,148 +120,7 @@ export default function MethodConfigDetailPage() {
               if (canEdit) save.mutate();
             }}
           >
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={!canEdit} />
-            </div>
-            <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
-              <div className="mb-3 text-sm font-medium">Methodology</div>
-              <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
-                Regression type and weighting are no longer stored on the method config — every variant is computed on
-                each calibration group, then QA selects the best model on the report card.
-              </p>
-              <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <Label htmlFor="lm">Label mode</Label>
-                <Select
-                  id="lm"
-                  value={String(form.labelMode)}
-                  onChange={(e) => setForm({ ...form, labelMode: Number(e.target.value) })}
-                  disabled={!canEdit}
-                >
-                  <option value={0}>0</option>
-                  <option value={1}>1</option>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="qm">Quantitation mode</Label>
-                <Select
-                  id="qm"
-                  value={String(form.quantitationMode)}
-                  onChange={(e) => setForm({ ...form, quantitationMode: Number(e.target.value) })}
-                  disabled={!canEdit}
-                >
-                  {[0, 1].map((v) => (
-                    <option key={v} value={v}>
-                      {v} — {QUANTITATION_MODE_LABEL[v]}
-                    </option>
-                  ))}
-                </Select>
-              </div>
-              </div>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <Label htmlFor="minCorrelation">minCorrelation</Label>
-                <Input
-                  id="minCorrelation"
-                  type="number"
-                  step="0.0001"
-                  value={form.minCorrelation}
-                  onChange={(e) => setForm({ ...form, minCorrelation: Number(e.target.value) })}
-                  disabled={!canEdit}
-                />
-              </div>
-              <div>
-                <Label htmlFor="maxRSE">maxRSE</Label>
-                <Input id="maxRSE" type="number" step="0.0001" value={form.maxRSE} onChange={(e) => setForm({ ...form, maxRSE: Number(e.target.value) })} disabled={!canEdit} />
-              </div>
-              <div>
-                <Label htmlFor="pctDiffLowBound">pctDiffLowBound</Label>
-                <Input
-                  id="pctDiffLowBound"
-                  type="number"
-                  step="0.0001"
-                  value={form.pctDiffLowBound}
-                  onChange={(e) => setForm({ ...form, pctDiffLowBound: Number(e.target.value) })}
-                  disabled={!canEdit}
-                />
-              </div>
-              <div>
-                <Label htmlFor="pctDiffHighBound">pctDiffHighBound</Label>
-                <Input
-                  id="pctDiffHighBound"
-                  type="number"
-                  step="0.0001"
-                  value={form.pctDiffHighBound}
-                  onChange={(e) => setForm({ ...form, pctDiffHighBound: Number(e.target.value) })}
-                  disabled={!canEdit}
-                />
-              </div>
-              <div>
-                <Label htmlFor="minPointsRequired">minPointsRequired</Label>
-                <Input
-                  id="minPointsRequired"
-                  type="number"
-                  value={form.minPointsRequired}
-                  onChange={(e) => setForm({ ...form, minPointsRequired: Number(e.target.value) })}
-                  disabled={!canEdit}
-                />
-              </div>
-              <div>
-                <Label htmlFor="maxMissedPoints">maxMissedPoints</Label>
-                <Input
-                  id="maxMissedPoints"
-                  type="number"
-                  value={form.maxMissedPoints}
-                  onChange={(e) => setForm({ ...form, maxMissedPoints: Number(e.target.value) })}
-                  disabled={!canEdit}
-                />
-              </div>
-              <div>
-                <Label htmlFor="icvLimitPercent">icvLimitPercent</Label>
-                <Input
-                  id="icvLimitPercent"
-                  type="number"
-                  step="0.0001"
-                  value={form.icvLimitPercent}
-                  onChange={(e) => setForm({ ...form, icvLimitPercent: Number(e.target.value) })}
-                  disabled={!canEdit}
-                />
-              </div>
-            </div>
-            <div className="rounded-lg border border-neutral-200 p-4 dark:border-neutral-800">
-              <div className="text-sm font-medium text-neutral-900 dark:text-neutral-100">
-                IS response bounds (optional)
-              </div>
-              <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                Inclusive thresholds on mean IS response for run/group summary warnings. Clear both to remove bounds.
-              </p>
-              <div className="mt-3 grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="isMin">internalStandardResponseMin</Label>
-                  <Input
-                    id="isMin"
-                    type="number"
-                    step="any"
-                    value={form.internalStandardResponseMin}
-                    onChange={(e) => setForm({ ...form, internalStandardResponseMin: e.target.value })}
-                    disabled={!canEdit}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="isMax">internalStandardResponseMax</Label>
-                  <Input
-                    id="isMax"
-                    type="number"
-                    step="any"
-                    value={form.internalStandardResponseMax}
-                    onChange={(e) => setForm({ ...form, internalStandardResponseMax: e.target.value })}
-                    disabled={!canEdit}
-                  />
-                </div>
-              </div>
-            </div>
+            <MethodConfigFormFields form={form} setForm={setForm} disabled={!canEdit} />
             {save.isError ? <div className="text-sm text-red-600">{(save.error as Error).message}</div> : null}
             {versionNote ? <div className="text-sm text-neutral-700 dark:text-neutral-300">{versionNote}</div> : null}
             {canEdit ? (
@@ -263,6 +138,7 @@ export default function MethodConfigDetailPage() {
           </form>
         ) : null}
       </Card>
+      <MethodConfigAnalyteCriteriaPanel methodConfigId={id} canEdit={canEdit} />
     </div>
   );
 }

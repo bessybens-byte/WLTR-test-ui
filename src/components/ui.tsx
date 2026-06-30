@@ -56,6 +56,60 @@ export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLab
   );
 }
 
+export function FieldLabel({ text, abbrev }: { text: string; abbrev?: string }) {
+  return (
+    <>
+      {text}
+      {abbrev ? (
+        <span className="font-normal text-neutral-500 dark:text-neutral-400"> ({abbrev})</span>
+      ) : null}
+    </>
+  );
+}
+
+export function FieldHelp({ help, className }: { help: string; className?: string }) {
+  return (
+    <span className={cn("group relative inline-flex shrink-0", className)}>
+      <button
+        type="button"
+        tabIndex={0}
+        aria-label="Field help"
+        className="flex h-4 w-4 items-center justify-center rounded-full border border-neutral-300 bg-neutral-50 text-[10px] font-semibold leading-none text-neutral-600 hover:border-neutral-400 hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+      >
+        ?
+      </button>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 hidden w-64 -translate-x-1/2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-left text-xs font-normal leading-snug text-neutral-700 shadow-lg group-hover:block group-focus-within:block dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200"
+      >
+        {help}
+        <span className="absolute left-1/2 top-full -mt-px -translate-x-1/2 border-4 border-transparent border-t-neutral-200 dark:border-t-neutral-700" />
+      </span>
+    </span>
+  );
+}
+
+export function LabelWithHelp({
+  htmlFor,
+  children,
+  help,
+  className,
+}: {
+  htmlFor?: string;
+  children: ReactNode;
+  help: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("mb-1 flex items-start gap-1.5", className)}>
+      <label htmlFor={htmlFor} className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+        {children}
+      </label>
+      <FieldHelp help={help} />
+    </div>
+  );
+}
+
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input

@@ -16,8 +16,14 @@ import {
   resolveVariantOptions,
   variantKey,
 } from "@/lib/calibration-variant-utils";
+import {
+  exclusionReasonLabel,
+  hasComputedRegressionOutputs,
+  regressionPointAmountRatio,
+  regressionPointPredictedResponse,
+  regressionPointResponseRatio,
+} from "@/lib/regression-wire";
 import type { MeResponse } from "@/lib/types/wltr";
-import { EXCLUSION_REASON_LABEL, ExclusionReason } from "@/lib/types/wltr";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -80,7 +86,7 @@ function RegressionPointsTable({
 }) {
   const qc = useQueryClient();
   const [excludeFor, setExcludeFor] = useState<string | null>(null);
-  const [reason, setReason] = useState<number>(ExclusionReason.ManualExclude);
+  const [reason, setReason] = useState<string>("ManualExclude");
   const [note, setNote] = useState("");
 
   const invalidate = async () => {
@@ -91,7 +97,7 @@ function RegressionPointsTable({
   };
 
   const excludeMut = useMutation({
-    mutationFn: (args: { analyteId: string; calRunId: string; reason: number; note: string }) =>
+    mutationFn: (args: { analyteId: string; calRunId: string; reason: string; note: string }) =>
       excludeCalibrationPoint(groupId, args),
     onSuccess: async () => {
       setExcludeFor(null);
@@ -133,11 +139,11 @@ function RegressionPointsTable({
             <Select
               id={`excl-reason-${excludeFor}`}
               className="mt-1"
-              value={String(reason)}
-              onChange={(e) => setReason(Number(e.target.value))}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
             >
-              <option value={ExclusionReason.ManualExclude}>Manual exclude</option>
-              <option value={ExclusionReason.PctDiffOutOfRange}>% diff out of range</option>
+              <option value="ManualExclude">Manual exclude</option>
+              <option value="PctDiffOutOfRange">% diff out of range</option>
             </Select>
           </div>
           <div>
@@ -194,27 +200,34 @@ function RegressionPointsTable({
                 {canManagePoints ? (
                   <th className="whitespace-nowrap px-2 py-2 font-medium">Actions</th>
                 ) : null}
-                <th className="whitespace-nowrap px-2 py-2 font-medium">X</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Y (ratio)</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">Level</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">True conc</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">Amount ratio (X)</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">Std response</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">IS response</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">Response ratio (Y)</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">1/X</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">1/X²</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">Weight</th>
                 <th className="whitespace-nowrap px-2 py-2 font-medium">ŷ pred</th>
                 <th className="whitespace-nowrap px-2 py-2 font-medium">Residual</th>
                 <th className="whitespace-nowrap px-2 py-2 font-medium">% diff</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Weight</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">RF</th>
+                <th className="whitespace-nowrap px-2 py-2 font-medium">Calc conc</th>
                 <th className="whitespace-nowrap px-2 py-2 font-medium">In</th>
                 <th className="whitespace-nowrap px-2 py-2 font-medium">Exclusion</th>
                 <th className="whitespace-nowrap px-2 py-2 font-medium">Run</th>
                 <th className="min-w-[6rem] px-2 py-2 font-medium">Run name</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Level</th>
                 <th className="whitespace-nowrap px-2 py-2 font-medium">Manual</th>
                 <th className="min-w-[8rem] px-2 py-2 font-medium">Note</th>
               </tr>
             </thead>
             <tbody>
               {points.map((p, pi) => {
-                const ex = typeof p.exclusionReason === "number" ? p.exclusionReason : Number(p.exclusionReason);
-                const exLabel = Number.isFinite(ex) ? EXCLUSION_REASON_LABEL[ex as number] ?? String(ex) : "—";
+                const exLabel = exclusionReasonLabel(p.exclusionReason);
                 const runId = cellStr(p.sourceRunId);
                 const runName = cellStr(p.sourceRunName);
+                const levelName = cellStr(p.levelName);
                 const included = Boolean(p.isIncluded);
                 const exclusionKey = exclusionKeyFromRow(p, analyteId);
                 const busy = excludeMut.isPending || includeMut.isPending;
@@ -238,7 +251,7 @@ function RegressionPointsTable({
                                   disabled={busy || Boolean(excludeFor && excludeFor !== exclusionKey)}
                                   onClick={() => {
                                     setExcludeFor(exclusionKey);
-                                    setReason(ExclusionReason.ManualExclude);
+                                    setReason("ManualExclude");
                                     setNote("");
                                   }}
                                 >
@@ -266,12 +279,22 @@ function RegressionPointsTable({
                         )}
                       </td>
                     ) : null}
-                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.x)}</td>
-                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.y)}</td>
-                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.predictedY)}</td>
+                    <td className="max-w-[8rem] truncate px-2 py-1.5 text-[10px]" title={levelName || undefined}>
+                      {levelName || "—"}
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.trueConcentration)}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(regressionPointAmountRatio(p))}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.standardResponse)}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.isResponse)}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(regressionPointResponseRatio(p))}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.inverseAmountRatio)}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.inverseAmountRatioSquared)}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.weight)}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(regressionPointPredictedResponse(p))}</td>
                     <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.residual)}</td>
                     <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.percentDiff)}</td>
-                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.weight)}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.responseFactor)}</td>
+                    <td className="whitespace-nowrap px-2 py-1.5 font-mono">{formatNum(p.calcConcentration)}</td>
                     <td className="whitespace-nowrap px-2 py-1.5">
                       {included ? <Badge tone="ok">Yes</Badge> : <Badge tone="neutral">No</Badge>}
                     </td>
@@ -287,9 +310,6 @@ function RegressionPointsTable({
                     </td>
                     <td className="max-w-[10rem] truncate px-2 py-1.5 text-[10px]" title={runName || undefined}>
                       {runName || "—"}
-                    </td>
-                    <td className="whitespace-nowrap px-2 py-1.5 font-mono text-[10px]">
-                      {p.calibrationLevelId == null ? "—" : cellStr(p.calibrationLevelId).slice(0, 8) + "…"}
                     </td>
                     <td className="whitespace-nowrap px-2 py-1.5">{p.isManualIntegration ? "Yes" : "—"}</td>
                     <td className="px-2 py-1.5 text-neutral-600 dark:text-neutral-400">
@@ -321,8 +341,8 @@ export function CalibrationGroupRegressionInputsPanel({
   readonly groupId: string;
   readonly me: MeResponse | null | undefined;
   readonly canManagePoints?: boolean;
-  readonly selectedRegressionType?: number | null;
-  readonly selectedWeightingMode?: number | null;
+  readonly selectedRegressionType?: unknown;
+  readonly selectedWeightingMode?: unknown;
 }) {
   const labInJwt = me?.laboratoryId;
   const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
@@ -354,16 +374,10 @@ export function CalibrationGroupRegressionInputsPanel({
 
   const analyteRows = useMemo(() => parseRegressionTables(analyteListQ.data), [analyteListQ.data]);
 
-  const hasComputedOutputs = useMemo(() => {
-    for (let i = 0; i < analyteRows.length; i++) {
-      const points = analyteRows[i].points;
-      for (let j = 0; j < points.length; j++) {
-        const p = points[j];
-        if (p.predictedY != null || p.predictedYValue != null) return true;
-      }
-    }
-    return false;
-  }, [analyteRows]);
+  const hasComputedOutputs = useMemo(
+    () => analyteRows.some((row) => hasComputedRegressionOutputs(row.points)),
+    [analyteRows],
+  );
 
   useEffect(() => {
     setUserPickedKey(null);

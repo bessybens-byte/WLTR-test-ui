@@ -129,6 +129,9 @@ export function InternalStandardSummariesPanel({
                   <th className="py-2 pr-2">Min</th>
                   <th className="py-2 pr-2">Max</th>
                   <th className="py-2 pr-2">Mean</th>
+                  <th className="py-2 pr-2">%RSD</th>
+                  <th className="py-2 pr-2">RSD limit</th>
+                  <th className="py-2 pr-2">RSD pass</th>
                   <th className="py-2 pr-2">Count</th>
                   <th className="py-2 pr-2">Runs</th>
                   <th className="py-2 pr-2">Warn</th>
@@ -145,6 +148,17 @@ export function InternalStandardSummariesPanel({
                       <td className="py-2 pr-2">{num(r.min)}</td>
                       <td className="py-2 pr-2">{num(r.max)}</td>
                       <td className="py-2 pr-2">{num(r.mean)}</td>
+                      <td className="py-2 pr-2">{num(r.responseRsdPercent)}</td>
+                      <td className="py-2 pr-2">{num(r.isRsdPercentLimit)}</td>
+                      <td className="py-2 pr-2">
+                        {r.isRsdPassed == null ? (
+                          "—"
+                        ) : r.isRsdPassed ? (
+                          <Badge tone="ok">Pass</Badge>
+                        ) : (
+                          <Badge tone="bad">Fail</Badge>
+                        )}
+                      </td>
                       <td className="py-2 pr-2">{num(r.count)}</td>
                       <td className="py-2 pr-2">
                         {r.distinctCalibrationRunCount == null ? "—" : String(r.distinctCalibrationRunCount)}

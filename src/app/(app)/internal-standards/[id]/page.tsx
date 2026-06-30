@@ -21,7 +21,7 @@ export default function InternalStandardDetailPage() {
     enabled: !!id,
   });
 
-  const [form, setForm] = useState({ name: "", casNumber: "" });
+  const [form, setForm] = useState({ name: "", casNumber: "", concentration: "" });
 
   useEffect(() => {
     if (!q.data) return;
@@ -29,6 +29,7 @@ export default function InternalStandardDetailPage() {
     setForm({
       name: String(d.name ?? ""),
       casNumber: String(d.casNumber ?? ""),
+      concentration: d.concentration == null ? "" : String(d.concentration),
     });
   }, [q.data]);
 
@@ -37,6 +38,7 @@ export default function InternalStandardDetailPage() {
       await updateInternalStandard(id, {
         name: form.name,
         casNumber: form.casNumber || undefined,
+        concentration: form.concentration === "" ? null : Number(form.concentration),
       });
     },
     onSuccess: async () => {
@@ -102,6 +104,19 @@ export default function InternalStandardDetailPage() {
                 value={form.casNumber}
                 onChange={(e) => setForm({ ...form, casNumber: e.target.value })}
                 disabled={!canEdit}
+              />
+            </div>
+            <div>
+              <Label htmlFor="concentration">Spike concentration</Label>
+              <Input
+                id="concentration"
+                type="number"
+                step="any"
+                min="0"
+                value={form.concentration}
+                onChange={(e) => setForm({ ...form, concentration: e.target.value })}
+                disabled={!canEdit}
+                placeholder="Optional — used for concentrationRatio / responseFactor on measurements"
               />
             </div>
             {save.isError ? <div className="text-sm text-red-600">{(save.error as Error).message}</div> : null}

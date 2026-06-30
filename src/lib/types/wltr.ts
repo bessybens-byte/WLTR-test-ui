@@ -30,20 +30,44 @@ export const WeightingMode = {
   InverseXSquared: 2,
 } as const;
 
-export const LabelMode = {
-  Absolute: 0,
-  Relative: 1,
+/** `Wltr.Domain.Enums.AnalyteRole` — QC role assigned to the analyte. */
+export const AnalyteRole = {
+  Target: 0,
+  InternalStandard: 1,
+  Surrogate: 2,
 } as const;
+export type AnalyteRole = (typeof AnalyteRole)[keyof typeof AnalyteRole];
 
-/** Method config `quantitationMode` — `InternalStandard = 0`, `ExternalStandard = 1`. */
+export const ANALYTE_ROLE_LABEL: Record<number, string> = {
+  0: "Target",
+  1: "Internal standard",
+  2: "Surrogate",
+};
+
+/** Method config `quantitationMode` — string enum as returned/accepted by the API. */
 export const QuantitationMode = {
-  InternalStandard: 0,
-  ExternalStandard: 1,
+  InternalStandard: "InternalStandard",
+  ExternalStandard: "ExternalStandard",
 } as const;
+export type QuantitationMode = (typeof QuantitationMode)[keyof typeof QuantitationMode];
 
-export const QUANTITATION_MODE_LABEL: Record<number, string> = {
-  0: "Internal standard (ISTD)",
-  1: "External standard (ESTD)",
+export const QUANTITATION_MODE_LABEL: Record<string, string> = {
+  InternalStandard: "Internal standard (ISTD)",
+  ExternalStandard: "External standard (ESTD)",
+};
+
+/** Method config `labelMode` — string enum as returned/accepted by the API. */
+export const LabelMode = {
+  /** Display R² on charts. */
+  RSquared: "RSquared",
+  /** Display √R² (correlation coefficient r) on charts. */
+  R: "R",
+} as const;
+export type LabelMode = (typeof LabelMode)[keyof typeof LabelMode];
+
+export const LABEL_MODE_LABEL: Record<string, string> = {
+  RSquared: "R²",
+  R: "√R² (correlation r)",
 };
 
 export const AnalyteMappingApplyScope = {
@@ -92,6 +116,45 @@ export const GROUP_STATUS_LABEL: Record<number, string> = {
   1: "Computed",
   2: "Approved",
   3: "Rejected",
+};
+
+/** `Wltr.Domain.Enums.AnalyteCalStatus` — 0 Fail, 1 Pass. */
+export const AnalyteCalStatus = {
+  Fail: 0,
+  Pass: 1,
+} as const;
+
+export const ANALYTE_CAL_STATUS_LABEL: Record<number, string> = {
+  0: "Fail",
+  1: "Pass",
+};
+
+/** `Wltr.Domain.Enums.CompoundCategory` as returned on measurement rows. */
+export const CompoundCategory = {
+  Target: 0,
+  InternalStandard: 1,
+  Unknown: 2,
+  SystemMonitoringCompound: 3,
+  Surrogate: 4,
+} as const;
+
+export const COMPOUND_CATEGORY_LABEL: Record<number, string> = {
+  0: "Target",
+  1: "Internal standard",
+  2: "Unknown",
+  3: "SMC",
+  4: "Surrogate",
+};
+
+/** `Wltr.Domain.Enums.PointAcceptance` on calibration points. */
+export const PointAcceptance = {
+  Rejected: 0,
+  Accepted: 1,
+} as const;
+
+export const POINT_ACCEPTANCE_LABEL: Record<number, string> = {
+  0: "Rejected",
+  1: "Accepted",
 };
 
 /** `Wltr.Domain.Enums.ExclusionReason` (JSON integers). Manual POST body accepts 1 or 2 only. */

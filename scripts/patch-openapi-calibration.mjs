@@ -1,5 +1,7 @@
 /**
- * Applies incremental schema/path updates when the backend OpenAPI export drifts.
+ * Legacy incremental patches for when the backend OpenAPI export drifts.
+ * Prefer importing the full backend export into `openapi/wltr.openapi.source.json`
+ * and running `npm run generate:api-types` instead.
  * Run: node scripts/patch-openapi-calibration.mjs
  */
 import fs from "node:fs";

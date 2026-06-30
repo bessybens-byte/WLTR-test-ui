@@ -2,7 +2,7 @@
   "openapi": "3.0.4",
   "info": {
     "title": "WLTR API",
-    "description": "## About this API\n\n**WLTR** exposes a **JSON** REST API for calibration analytics and laboratory administration. It covers: laboratories, lab technicians, users, roles, invitations, instruments, calibration run uploads (raw instrument text, parse metadata, compound measurements, and IS response ratios), analytes and raw-name aliases, the **internal-standard catalog** (`GET /api/internal-standards`), calibration levels, **draft calibration group assembly** (`POST /api/calibration-groups`), and versioned method configurations (regression rules, weighting, **quantitation mode** (ISTD/ESTD), thresholds, and immutable snapshots for full traceability).\n\nSee **Calibration regression and weighting** for **WeightingMode** values (None, 1/x, 1/x²), **QuantitationMode** (curve **Y** source), per-point weights, snapshot vs live config, and compute validation.\n\nBase path: **`/api`**. Successful responses are usually **`application/json`**; internal-standard summary endpoints also support **`text/csv`** when you pass **`format=csv`** (see **Internal standard response summaries**).\n\n## Authentication\n\n- **JWT Bearer** access tokens are issued by **`POST /api/Auth/login`**.\n- Rotate sessions with **`POST /api/Auth/refresh`**.\n- Revoke a refresh token (logout) with **`POST /api/Auth/logout`**.\n- Password recovery: **`POST /api/Auth/forgot-password`** → **`POST /api/Auth/reset-password`**.\n  - `forgot-password` is intentionally non-enumerating — returns 204 for both known and unknown emails.\n  - Successful reset revokes all active refresh tokens for that user.\n- New users join via one-time invitation links: **`POST /api/Invitations`** (admin creates) → **`POST /api/Auth/accept-invite`** (user accepts).\n- Self-service profile: **`GET /api/Auth/me`** (identity + permissions) and **`PUT /api/Auth/me`** (name, qualifications, hire date).\n- Self-service password change: **`POST /api/Auth/change-password`** — verifies current password and revokes all active refresh tokens on success.\n- Send the access token in the **`Authorization`** header: `Authorization: Bearer {accessToken}`.\n- In Swagger UI, click **Authorize**, enter the raw JWT — Swagger adds the `Bearer ` prefix automatically.\n\n## Authorization\n\nAll endpoints require authentication by default. Anonymous routes are: `POST /api/Auth/login`, `POST /api/Auth/refresh`, `POST /api/Auth/forgot-password`, `POST /api/Auth/reset-password`, and `POST /api/Auth/accept-invite`.\n\nEndpoints are protected by **permission policies**. The required permission is documented on each operation.\n\n## Permissions reference\n\n| Permission | Value | Held by |\n|------------|-------|---------|\n| View | `perm.view` | All lab roles (Viewer, Analyst, QA, LabAdmin, SuperAdmin) |\n| Lab user management | `perm.users.manage_lab` | LabAdmin, SuperAdmin |\n| Lab role management | `perm.roles.manage_lab` | LabAdmin, SuperAdmin |\n| Lab configuration edit | `perm.config.edit` | LabAdmin, SuperAdmin |\n| Run upload | `perm.runs.upload` | Analyst, LabAdmin, SuperAdmin |\n| Run delete | `perm.runs.delete` | Analyst, LabAdmin, SuperAdmin |\n| Groups approve | `perm.groups.approve` | QA, LabAdmin, SuperAdmin |\n| Lab settings manage | `perm.laboratories.manage` | LabAdmin, SuperAdmin |\n| Laboratory create (platform) | `perm.laboratories.create` | SuperAdmin only |\n| Platform manage | `perm.platform.manage` | SuperAdmin only |\n\n## Laboratory scope\n\n- Each lab user has exactly one **`LaboratoryId`** claim in the JWT; all data is scoped to that lab.\n- **Platform operators** (Super Administrator) often have **no** `LaboratoryId` in the JWT. Endpoints that must resolve a tenant for a **specific resource id** (for example **internal-standard summaries** and **calibration-group readiness**) require an explicit **`laboratoryId`** query parameter that **must equal** that resource's laboratory (derived from the run's or group's instrument). Omitting it returns **400**; a mismatch returns **404**.\n- Other endpoints may accept optional `laboratoryId` or infer scope differently — follow each operation's description.\n- Cross-lab reads are blocked. Depending on the endpoint:\n  - **404 Not Found** — the id does not exist *or* belongs to another laboratory (IDOR protection).\n  - **403 Forbidden** — the resource exists but is in another laboratory (explicit when noted on the operation).\n\n## Common HTTP status codes\n\n| Code | Meaning |\n|------|---------|\n| **200** | OK (body varies by resource) |\n| **201** | Created — resource id in body; `Location` is usually a GET path (or the canonical resource path, e.g. `POST /api/calibration-groups` → `/api/calibration-groups/{id}`) |\n| **204** | No Content — success, no body |\n| **400** | Bad Request — validation failure or business rule violation; body is **ProblemDetails** with `detail` |\n| **401** | Unauthorized — missing or expired access token |\n| **403** | Forbidden — authenticated but insufficient permission, or resource belongs to another lab |\n| **404** | Not Found — unknown id or IDOR-masked cross-lab resource |\n| **409** | Conflict — optimistic concurrency failure (stale `RowVersion`), or referential integrity; body is **ProblemDetails** |\n| **429** | Too Many Requests — rate-limited auth endpoints |\n\n## Errors\n\nFailures return **RFC 7807 ProblemDetails** (`application/problem+json`) with `title`, `status`, `detail`, `instance`. Validation errors from FluentValidation include field-level messages.\n\n## Optimistic concurrency\n\nEntities with a `rowVersion` field use optimistic concurrency (e.g. technician profiles via `PUT /api/Auth/me`, instruments via `PUT /api/instruments/{id}`). Fetch `rowVersion` from the last **GET** detail response and supply it in the **PUT** body. A **409 Conflict** is returned when the row was modified by another request between your read and write.\n\n## Data immutability\n\nSome records are immutable by design:\n\n- `CalibrationRun.rawText` and its `textHash` are **never updated** after creation.\n- `MethodConfigSnapshot` rows are **append-only** — never edited or deleted; use `GET snapshots/{version}` to read historical configurations.\n- Approved `CalibrationGroup` records are **locked** — no further edits to the group, runs, points, or curves.\n\n## Pagination (list endpoints)\n\nThese **GET** routes return a **paged envelope** (not a bare array):\n\n- `GET /api/instruments`\n- `GET /api/runs`\n- `GET /api/Laboratories`\n- `GET /api/LabTechnicians`\n- `GET /api/Users`\n- `GET /api/Roles`\n- `GET /api/analytes`\n- `GET /api/calibration-levels`\n- `GET /api/calibration-groups`\n- `GET /api/method-configs`\n- `GET /api/method-configs/{id}/snapshots`\n\nEnvelope shape:\n\n```json\n{ \"items\": [ ... ], \"totalCount\": 42, \"page\": 1, \"pageSize\": 25 }\n```\n\nQuery parameters (all optional):\n\n| Parameter | Default | Max | Description |\n|-----------|---------|-----|-------------|\n| `page` | 1 | — | 1-based page index |\n| `pageSize` | 25 | 100 | Items per page |\n| `sort` | resource default | — | `field` or `field:asc` / `field:desc` |\n\nSupported sort fields by resource:\n\n- **Instruments** — `name` (default, case-insensitive ascending), `createdAt`\n  - Optional filters: `isActive` (boolean), `instrumentType` (exact match, case-insensitive after trim)\n- **Runs** — `runDate` (default, newest first), `status`, `createdAt`\n  - Optional filters: `instrumentId` (GUID), `runType` (`CAL`/`ICV`), `status` (`Valid`/`ValidWithWarnings`/`Invalid`)\n- **Laboratories** — `name`, `createdAt`\n- **LabTechnicians** — `lastName`, `firstName`, `createdAt`\n- **Users** — `email`, `laboratoryId`\n- **Roles** — `name`\n- **Analytes** — `name`, `createdAt`\n- **Calibration levels** — `sortOrder` (default), `levelName`, `trueConcentration`, `createdAt`\n- **Calibration groups** — `createdAt` (default, newest first), `status`\n  - Optional filter: `laboratoryId` (platform operators only)\n- **Method configs** — `name` (default), `createdAt`, `version`\n\n## Bare JSON array list endpoints\n\nThese **GET** routes return a **JSON array** in the response body (not the paged envelope above):\n\n- **`GET /api/internal-standards`** — internal standard rows for the **`LaboratoryId`** in the JWT (`id`, `name`, `casNumber`), sorted by `name`. Requires **`perm.view`**.\n- **`GET /api/internal-standards/{id}`**, **`POST /api/internal-standards`**, **`PUT /api/internal-standards/{id}`**, **`DELETE /api/internal-standards/{id}`** — see **Internal standards catalog**; writes require **`perm.config.edit`**.\n- **`GET /api/runs/{id}/internal-standard-summaries`** and **`GET /api/calibration-groups/{id}/internal-standard-summaries`** — aggregated IS **response** statistics (JSON or CSV). Requires **`perm.view`**. See **Internal standard response summaries**.\n- **`GET /api/calibration-groups/{id}/readiness`** — regression **readiness** (`isReady`, `blockingIssues`, `warnings`). Requires **`perm.view`**. See **Calibration group readiness (pre-compute gate)**.\n\n## Internal standards catalog\n\nInternal standards are reference compounds used to normalize analyte responses on uploaded runs (**response ratio** = analyte response ÷ IS response when linkage succeeds).\n\n### Operations\n\n- **`GET /api/internal-standards`** — list all internal standards for the JWT laboratory (sorted JSON array). **Permission:** `perm.view`.\n- **`GET /api/internal-standards/{id}`** — detail for one row in the caller's laboratory, or **404** if unknown or other-lab id. **Permission:** `perm.view`.\n- **`POST /api/internal-standards`** — create (`name`, optional `casNumber`). **Permission:** `perm.config.edit`.\n- **`PUT /api/internal-standards/{id}`** — update. **Permission:** `perm.config.edit`.\n- **`DELETE /api/internal-standards/{id}`** — soft-delete when no analyte uses it as default IS; **409** if still referenced. **Permission:** `perm.config.edit`.\n- **Laboratory claim:** list requires **`LaboratoryId`** in the JWT; if missing, **400 Bad Request** on list (ProblemDetails: *No laboratory context available*) — not an empty array.\n- **403 Forbidden** when the user lacks the required permission for the verb (e.g. Viewer calling `POST`).\n\n### Laboratory scope\n\nEach **`InternalStandards`** row has a **`laboratoryId`** foreign key. The list endpoint filters by the JWT **`LaboratoryId`**; analytes may only reference internal standards in the **same** laboratory.\n\n### Linking to analytes\n\nWhen creating or updating an analyte, set optional **`defaultInternalStandardId`** to one of the `id` values from this list (`POST /api/analytes`, `PUT /api/analytes/{id}`).\n\n### Linking to run uploads\n\nAfter `POST /api/runs`, the server resolves each target measurement's IS using the **name** of the selected `InternalStandard` row and matching it to internal-standard compound rows in the same file (see **Calibration run measurements and response ratios**).\n\n## Method configuration versioning\n\nEach **MethodConfig** has a monotonic **version** number. Every material change to tracked fields automatically appends an immutable **MethodConfigSnapshot**. Tracked fields include: regression type, weighting, force-zero intercept, label mode, **quantitation mode** (**`quantitationMode`** — ISTD vs ESTD), correlation / RSE / %diff acceptance bands, point counts, ICV limit **percent**, and optional **internal standard response** bounds (**`internalStandardResponseMin`** / **`internalStandardResponseMax`**) used when flagging **internal-standard summaries** (inclusive bounds on the **mean** IS response per summary row). No-op updates (identical values) do not increment the version.\n\nCalibration groups capture the snapshot at compute time — historical calibration results and frozen IS thresholds always reflect the configuration that was in effect, regardless of subsequent edits to the live config.\n\nUse **`GET /api/method-configs/{id}/snapshots`** to list the full audit history, and **`GET /api/method-configs/{id}/snapshots/{version}`** to retrieve a specific version.\n\n## Calibration regression and weighting\n\n**Method configuration** exposes **`defaultWeightingMode`** and **`quantitationMode`** on **`POST`/`PUT /api/method-configs`** and on each immutable **`MethodConfigSnapshot`** (frozen as **`weightingMode`** and **`quantitationMode`** in snapshot payloads). At **calibration compute** time, the regression engine must use the snapshot attached to the **calibration group**, not the live method config — so historical curves always match the methodology that was approved for that run.\n\n### `QuantitationMode` (integer enum)\n\nSelects which measurement value is plotted as curve **Y** (response axis). JSON **integers**:\n\n| Value | Name | Curve **Y** per calibration point |\n|-------|------|----------------------------------|\n| **0** | `InternalStandard` (ISTD) | **`responseRatio`** — analyte response ÷ internal-standard response |\n| **1** | `ExternalStandard` (ESTD) | **`response`** — raw analyte signal (no IS normalization) |\n\nISTD compensates for injection-volume variation and instrument drift; ESTD uses the external-standard workflow (concentration from raw response vs known standards). Default is **0** (`InternalStandard`), preserving historical behaviour for existing configs and snapshots.\n\n**Auto-exclusion at compute:** when **Y** cannot be resolved, included points are auto-excluded — **`MissingIS`** in ISTD mode (null ratio), **`MissingRatio`** in ESTD mode (null response). Optional **`internalStandardResponseMin`** / **`internalStandardResponseMax`** apply only to IS summary flagging; leave null for ESTD configs.\n\n### `WeightingMode` (integer enum)\n\nSent and returned as JSON **integers** (Swagger shows the underlying enum names for reference):\n\n| Value | Name | Per included point weight `w` (curve **X** = true concentration) |\n|-------|------|----------------------------------------------------------------|\n| **0** | `None` | `w = 1` (ordinary least squares when all weights are 1) |\n| **1** | `InverseX` | `w = 1 / X` |\n| **2** | `InverseXSquared` | `w = 1 / (X × X)` |\n\nInverse modes emphasize fit at **lower** concentrations (larger weight when **X** is small), consistent with common analytical chemistry practice.\n\n### Included vs excluded calibration points\n\n- Weights apply only to points **included** in the regression.\n- **Excluded** points do not contribute to weighted sums; their persisted **`weight`** is **0** after compute.\n- For **`InverseX`** and **`InverseXSquared`**, **every included** point must have **`X > 0`** (finite). If any included point has **`X ≤ 0`** (or non-finite **X**), compute must fail with **400 Bad Request** (ProblemDetails **`detail`**) — do not produce NaN/Inf weights. **Excluded** points with **`X ≤ 0`** do **not** trigger this rule because they are not weighted.\n- For **`None`**, included points may have any finite **X** (including zero or negative) unless a later regression rule forbids it.\n\n### Quadratic regression (`RegressionType.Quadratic`)\n\nWhen the snapshot regression type is **Quadratic**, the engine fits **ŷ = a·x² + b·x + c** via weighted least squares (3×3 normal-equation Gaussian elimination; no third-party math libraries).\n\n**Coefficient storage on `CalibrationCurve`:**\n\n| JSON field | Role | Symbol |\n|------------|------|--------|\n| **`quadraticCoefficient`** | x² term | **a** |\n| **`slope`** | x term | **b** |\n| **`intercept`** | constant | **c** |\n\n`quadraticCoefficient` is **`null`** for non-quadratic models; `slope` and `intercept` retain their usual linear meanings in those models.\n\n**Degrees of freedom:** p = 3 — so **RSE = √(SSE / (n − 3))** where n is the included point count.\n\n**`correlationR` for quadratic** is the Pearson correlation between observed y and predicted ŷ (corr(y, ŷ)) on included weighted points, rather than the x-vs-y correlation which is not meaningful for curved responses.\n\n**Constraints enforced at method-config save time:** `forceZeroIntercept` cannot be `true` when `defaultRegressionType` is `Quadratic` (returns **400**); `minPointsRequired` must be **≥ 3** for `Quadratic` (returns **400**).\n\n**Constraint enforced at compute time:** the normal-equation matrix must be non-singular (requires ≥ 3 included points with distinct x-values); a singular matrix returns **400**.\n\n**Report label:** curve-summary APIs expose a `modelLabel` field, e.g. `\"Quadratic (y = ax² + bx + c)\"`.\n\n### Non-regression model (`RegressionType.Average`)\n\nWhen the snapshot’s regression family is **Average** (RSD-style, not a least-squares line), effective weighting is treated as **None** for included points at compute time, regardless of the stored snapshot **`weightingMode`** on the curve record (methodology remains visible on the snapshot).\n\n### Compute endpoint and point diagnostics\n\n**`POST /api/calibration-groups/{id}/compute`** runs the full regression pipeline and transitions the group to `Computed`:\n\n1. Attaches the latest `MethodConfigSnapshot` (freezing methodology including `quantitationMode`).\n2. Materialises `CalibrationPoint` rows from parsed measurements and calibration levels (curve **Y** from `responseRatio` or `response` per snapshot mode).\n3. Assigns per-point weights from the frozen snapshot `weightingMode`.\n4. Fits the curve via the snapshot `regressionType` (linear, forced-zero, or quadratic).\n5. Stamps **`predictedY`**, **`residual`**, and **`percentDiff`** on every point; SSE/RSE/R² on the curve.\n\nAfter compute, **`GET /api/calibration-groups/{id}/regression-inputs`** returns the same point layout enriched with **`predictedY`**, **`residual`**, and **`percentDiff`** from the stored `CalibrationPoint` rows. Pre-compute responses return `null` for those three fields.\n\n**Recompute behaviour:** calling compute on an already-`Computed` group clears all existing curves and points before rebuilding; manual include/exclude overrides are **not** preserved across a recompute — inclusion is re-determined from current measurement data. Validate positive **X** for inverse-weighting modes is enforced at compute time (returns **400**).\n\n- Configure defaults via **`defaultWeightingMode`** and **`quantitationMode`** on method configs; read frozen values from **`GET /api/method-configs/{id}/snapshots/{version}`**.\n- Each **calibration curve** stores **`regressionType`**, **`quadraticCoefficient`** (nullable), **`slope`**, **`intercept`**, SSE, RSE, R², and a **`modelLabel`** string (from `CalibrationCurvePrediction.ModelLabel`) for direct use in reports.\n\n## Calibration groups — create draft\n\nA **CalibrationGroup** ties multiple **CAL** runs (one per distinct calibration level) to a single **instrument** and a selected **MethodConfig** (same laboratory). The server stores the group in **`Draft`** status; it may later be computed, then approved, per the broader calibration workflow.\n\n### `POST /api/calibration-groups`\n\nAssembles a new draft group from an explicit list of run ids.\n\n- **Permission:** **`perm.runs.upload`** (same as **`POST /api/runs`**).\n- **Prerequisites (HTTP 400 if missing):** JWT must carry a **laboratory** (`LaboratoryId` claim), and the user must have a linked **lab technician** profile in that lab — identical policy to run upload (see run endpoint documentation).\n- **Request body (JSON, all primary keys are UUIDs / GUIDs):**\n\n| Field | Required | Description |\n|--------|----------|-------------|\n| **`instrumentId`** | Yes | Instrument that owns this group. Must belong to the caller’s laboratory. |\n| **`methodConfigId`** | Yes | Lab-scoped method configuration. Must belong to the **same laboratory** as the instrument. |\n| **`calRunIds`** | Yes, non-empty | Array of **CAL** run ids. **Must be distinct** in the request. Each run must: exist; be type **CAL**; use this **`instrumentId`**; not be **`Invalid`** (see **Calibration run status**); and map to a **calibration level** with a true concentration. **No two runs** may share the same **`calibrationLevelId`** in one group. |\n| **`icvRunId`** | No | Optional **ICV** run on the same instrument, same rules as CAL for instrument and not **`Invalid`**. Must not duplicate any id in **`calRunIds`**. |\n\n- **Success (201 Created):** Response body is `{ \"id\": \"<group-guid>\" }`. **`Location`** is set to **`/api/calibration-groups/{id}`** (path-style URI; a dedicated **GET** group detail may be added in a later release). Content-Type: **`application/json`**.\n- **Client validation (400):** FluentValidation may reject before business rules, e.g. empty **`calRunIds`**, duplicate ids in the array, or **`icvRunId`** equal to a **`calRunIds`** entry — often with field-scoped error messages where applicable.\n- **Business rules (400, ProblemDetails `detail`):** include unknown instrument/config/run ids, cross-lab instrument or method config, wrong run type, **`Invalid`** run status, missing calibration level on a CAL run, or duplicate calibration level across CAL runs. Cross-lab or missing resources are described without leaking existence where the API returns a generic *not found* or validation message, consistent with other lab-scoped commands.\n- **401** — Unauthenticated. **403** — Authenticated but missing **`perm.runs.upload`**.\n\nRelated: **`GET /api/calibration-groups/{id}/readiness`** (pre-compute gate — see **Calibration group readiness (pre-compute gate)** below), **`GET /api/calibration-groups/{id}/internal-standard-summaries`** (aggregates only **CalRuns**, not the optional **ICV**). See also **Method configuration versioning** and **Calibration run status** in this document.\n\n## Calibration group readiness (pre-compute gate)\n\n**`GET /api/calibration-groups/{id}/readiness`** answers whether a draft (or future computed) group has enough valid **CAL**-level data to run regression safely. It is the authoritative check a future **`POST /api/calibration-groups/{id}/compute`** should reuse: do not compute when **`isReady`** is **false** until **`blockingIssues`** is empty.\n\n**Note:** Readiness does not yet enforce **positive curve X** for inverse weighting (1/x, 1/x²); that validation is part of the future compute step — see **Calibration regression and weighting**.\n\n### Scope\n\n- Only **CAL** runs linked to the group (the many-to-many **`CalRuns`** set) are evaluated. The optional **ICV** run on the group is **not** part of this check.\n- **Curve X** (true concentration) comes from each CAL run’s **calibration level**, not from export **`calculatedConcentration`** on rows; some measurement warnings (e.g. malformed export concentration) may appear under **`warnings`** without blocking readiness.\n\n### Endpoint\n\n| Method | Path | Permission |\n|--------|------|------------|\n| **GET** | `/api/calibration-groups/{id}/readiness` | **`perm.view`** |\n\n### Query parameters\n\n| Parameter | Required | Description |\n|-----------|----------|-------------|\n| **`laboratoryId`** | **Yes** for **platform operators** (JWT has no laboratory); **ignored** for normal lab users | Must equal the **instrument’s** `laboratoryId` for the group. Missing for operator → **400** ProblemDetails. Wrong lab → **404** (IDOR-safe). |\n\n### Response body (200 OK, `application/json`)\n\n| JSON property | Type | Description |\n|---------------|------|-------------|\n| **`calibrationGroupId`** | string (UUID) | Same as path `{id}`. |\n| **`isReady`** | boolean | **false** if **`blockingIssues`** has any item; **true** otherwise. |\n| **`minPointsRequired`** | integer | Effective minimum number of **CAL runs / levels** from **`MethodConfigSnapshot.minPointsRequired`** when **`methodConfigSnapshotId`** is set on the group, otherwise from the **live** **`MethodConfig`** referenced by the group’s **`methodConfigId`**. |\n| **`calibrationLevelCount`** | integer | Count of CAL runs currently linked to the group (same as distinct levels when create rules hold). |\n| **`blockingIssues`** | array | Hard failures; each item matches **`RunValidationIssueResponse`** (see **Issue object** below). Must be **empty** before compute. |\n| **`warnings`** | array | Non-blocking findings; same shape as **`blockingIssues`**. |\n\n### Issue object (`blockingIssues` / `warnings` items)\n\nSame schema as **`GET /api/runs/{id}/validation`** issues:\n\n| JSON property | Type | Description |\n|---------------|------|-------------|\n| **`code`** | integer | **`RunValidationIssueCode`** — see table below. |\n| **`isError`** | boolean | Original row severity from run validation; **blocking** list entries are still listed under **`blockingIssues`** regardless. |\n| **`message`** | string | Human-readable explanation. |\n| **`measurementId`** | string (UUID) or null | Persisted measurement when the issue targets a row. |\n| **`rawCompoundName`** | string or null | Export compound name when applicable. |\n| **`sourceLineNumber`** | integer or null | Parser line hint when known. |\n| **`calibrationRunId`** | string (UUID) or null | CAL run scope for whole-run or group-scoped issues. |\n\n### `code` values (`RunValidationIssueCode`)\n\n| Value | Name | Typical use |\n|-------|------|-------------|\n| **0** | `NonPositiveResponse` | Target response ≤ 0 — blocking for regression. |\n| **1** | `MissingAnalyteMapping` | Row not mapped to a canonical analyte — **blocking** for group readiness (even if run status is `ValidWithWarnings`). |\n| **2** | `MissingInternalStandard` | Run has **InternalStandard** rows but **`responseRatio`** missing for a target row — **blocking** for readiness. |\n| **3** | `MalformedConcentrationOrRatio` | Export concentration / parser issue — usually **warning** for readiness (curve X from levels). |\n| **4** | `NonPositiveInternalStandardResponse` | IS response not usable for ratio — blocking. |\n| **5** | `InsufficientCalibrationLevels` | **`calibrationLevelCount`** is below **`minPointsRequired`**, or no CAL runs linked. |\n| **6** | `CalibrationRunLevelUnresolved` | A CAL run has no **`calibrationLevelId`**. |\n| **7** | `DuplicateCalibrationLevelInGroup` | Two+ CAL runs share the same level in the group. |\n| **8** | `CalibrationRunReferenceMissing` | A listed run id was not found (defense in depth). |\n| **9** | `InvalidCalibrationRunStatus` | Persisted run **`status`** is **`Invalid`**. |\n| **10** | `InvalidResponseRatio` | **`responseRatio`** present but not finite or not positive when IS rows exist. |\n\n### Rules evaluated (summary)\n\n1. **Minimum levels:** **`calibrationLevelCount`** ≥ effective **`minPointsRequired`**.\n2. **Level mapping:** every linked CAL run has a resolved calibration level; no duplicate level across runs.\n3. **Run status:** no linked CAL run in **`Invalid`** status.\n4. **Measurements:** run validation is recomputed from persisted rows; **`MissingAnalyteMapping`**, **`MissingInternalStandard`**, **`NonPositiveInternalStandardResponse`**, and other **`isError`** issues are **blocking** for readiness.\n5. **IS / ratio:** when the run contains **InternalStandard** compound rows, each **Target**/**Unknown** row with positive **Response** must have a **finite**, **positive** **`responseRatio`** (additional check beyond run validation).\n\n### HTTP status codes (readiness)\n\n| Code | When |\n|------|------|\n| **200** | Success — body always includes **`isReady`** and issue arrays (may be empty). Not-ready groups still return **200** with **`isReady: false`** and populated **`blockingIssues`**. |\n| **400** | Platform operator omitted **`laboratoryId`** (ProblemDetails **`detail`**). |\n| **401** | No or invalid bearer token. |\n| **403** | Authenticated but missing **`perm.view`**. |\n| **404** | Group unknown, instrument missing, or group not in the **effective** laboratory; IDOR-safe. |\n\n### See also\n\n- **`GET /api/runs/{id}/validation`** — per-run issue shape and run-level **`status`**. - **Internal standard response summaries** — IS **Response** aggregates (separate from readiness). - **Method configuration versioning** — snapshot vs live **`minPointsRequired`**.\n\n## Calibration group analyte exclusion\n\nA **CalibrationGroup** may carry a per-group **analyte exclusion list**: canonical analytes on this list are **skipped entirely** during regression compute (no curve is fitted for them). This is distinct from **point-level** exclusion (see **Calibration point exclusion and re-inclusion**), which operates on individual calibration points within a curve.\n\nThe exclusion list is **preserved** when group run membership changes via **`PUT /api/calibration-groups/{id}`**. Any mutation sets **`isComputationStale = true`** on the group; recompute before approval.\n\n### Endpoints\n\n| Method | Path | Description | Permission |\n|--------|------|-------------|------------|\n| **PUT** | `/api/calibration-groups/{id}/excluded-analytes` | **Replace** the group's entire exclusion list atomically | **`perm.runs.upload`** |\n| **POST** | `/api/calibration-groups/{id}/excluded-analytes` | Add one analyte (optional per-item `note`) | **`perm.runs.upload`** |\n| **DELETE** | `/api/calibration-groups/{id}/excluded-analytes/{analyteId}` | Re-include one analyte | **`perm.runs.upload`** |\n| **GET** | `/api/calibration-groups/{id}/excluded-analytes` | List excluded analytes | **`perm.view`** |\n\n### Bulk replace request body (`PUT .../excluded-analytes`)\n\n```json\n{ \"analyteIds\": [\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"], \"note\": \"Instrument drift — exclude pending re-run\" }\n```\n\n| Field | Required | Notes |\n|-------|----------|-------|\n| **`analyteIds`** | Yes (array, may be empty) | Becomes the **complete** exclusion list. Analytes in the array but not previously excluded are **added**; analytes previously excluded but absent are **re-included**. Empty array clears all exclusions. Duplicates and empty GUIDs are rejected (**400**). |\n| **`note`** | No | Optional shared note applied to analytes **newly added** by this request. |\n\n**Idempotency:** submitting the same set as the current list is a no-op (still **204**; `isComputationStale` unchanged).\n\n### Single-item add request body (`POST .../excluded-analytes`)\n\n```json\n{ \"analyteId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", \"note\": \"Co-elution suspected\" }\n```\n\nReturns **409** if the analyte is already excluded.\n\n### Response payloads\n\nMutations return **204 No Content**. **`GET`** returns an array of excluded rows with canonical **`analyteName`** (from **`Analyte.Name`**), not raw instrument alias text.\n\n### Group status guard\n\nAll mutations refuse modifications on groups in **`Approved`** or **`Rejected`** status (**409 Conflict**). Groups in **`Draft`** or **`Computed`** status may be updated.\n\n### Laboratory scope (IDOR)\n\nThe server resolves the group → instrument → laboratory. For **`PUT`**, any unknown or out-of-scope **`analyteId`** rejects the **entire** request with **404 Not Found** (IDOR-safe). Cross-lab group access also returns **404**.\n\n### HTTP status codes (mutations)\n\n| Code | When |\n|------|------|\n| **204** | Success; no body. |\n| **400** | Validation failure (e.g. duplicate `analyteIds`, empty GUID). **ProblemDetails**. |\n| **401** | Missing or expired token. |\n| **403** | Missing **`perm.runs.upload`**. |\n| **404** | Group or analyte not found / out of scope (IDOR-safe). |\n| **409** | Group locked, or single-item POST/DELETE idempotency conflict. **ProblemDetails**. |\n\n### Audit trail\n\nBulk replace logs **`CalibrationGroupAnalyteExclusionsReplaced`** with before/after exclusion id sets. Single-item add/remove log **`CalibrationGroupAnalyteExcluded`** / **`CalibrationGroupAnalyteIncluded`**.\n\n## Calibration point exclusion and re-inclusion\n\nA **CalibrationPoint** represents one analyte/level data point within a **CalibrationCurve** that is itself part of a **CalibrationGroup**. Points that carry invalid or unreliable data can be **excluded** from regression so the model reflects only accepted calibration evidence. An excluded point retains all stored values (for audit); it is simply not weighted in the regression computation.\n\n### Endpoints\n\n| Method | Path | Description | Permission |\n|--------|------|-------------|------------|\n| **POST** | `/api/calibration-groups/{id}/points/{pointId}/exclude` | Mark a point as excluded | **`perm.runs.upload`** |\n| **DELETE** | `/api/calibration-groups/{id}/points/{pointId}/exclude` | Re-include a previously excluded point | **`perm.runs.upload`** |\n\nBoth operations are **idempotent-guarded**: attempting to exclude an already-excluded point, or to re-include an already-included point, returns **409 Conflict**.\n\n### Exclusion request body (`POST .../exclude`)\n\n```json\n{ \"reason\": \"ManualExclude\", \"note\": \"Outlier confirmed by analyst — co-elution suspected\" }\n```\n\n| Field | Required | Values | Notes |\n|-------|----------|--------|-------|\n| **`reason`** | Yes | `ManualExclude`, `PctDiffOutOfRange` | Only user-initiated reasons are accepted here. System reasons (`MissingRatio`, `MissingIS`, `InvalidX`) are set automatically during data-quality checks and cannot be submitted manually. |\n| **`note`** | Yes | Non-empty string | Required analyst justification for audit purposes. |\n\n### Exclusion fields stamped on the point\n\nOn successful exclusion, the following fields are persisted on `CalibrationPoint`:\n\n| Field | Description |\n|-------|-------------|\n| **`isIncluded`** | Set to `false`. |\n| **`exclusionReason`** | The submitted `reason` value. |\n| **`exclusionNote`** | The submitted `note` value. |\n| **`excludedByUserId`** | Identity user id of the acting analyst. |\n| **`excludedAt`** | UTC timestamp of the exclusion. |\n\nOn successful **re-inclusion**, all five fields are cleared (`isIncluded → true`, others → null / None).\n\n### System auto-exclusion reasons\n\nThese reasons are set automatically during data quality evaluation and are **not** accepted as manual inputs:\n\n| Reason | Condition |\n|--------|-----------|\n| `MissingRatio` | Response or response ratio is null (no IS method). |\n| `MissingIS` | Response ratio is null because the internal standard could not be resolved. |\n| `InvalidX` | True concentration (curve X) is zero, negative, or non-finite. |\n\n### Group status guard\n\nBoth endpoints refuse modifications on groups in **`Approved`** or **`Rejected`** status, returning **409 Conflict** (same rule as `PUT /api/calibration-groups/{id}`). Groups in **`Draft`** or **`Computed`** status can have points excluded or re-included.\n\n### Laboratory scope (IDOR)\n\nThe server resolves `{id}` (group) → instrument → laboratory and verifies it matches the caller's JWT `LaboratoryId`. A missing group, a missing point, a point-to-group mismatch, or a cross-lab access all return **404 Not Found** without revealing whether the resource exists in another laboratory.\n\n### HTTP status codes\n\n| Code | When |\n|------|------|\n| **204** | Operation succeeded; no response body. |\n| **400** | Validation failure — `reason` is not a user-submittable value, or `note` is empty / missing. Body is **ProblemDetails**. |\n| **401** | Missing or expired access token. |\n| **403** | Authenticated but missing **`perm.runs.upload`**. |\n| **404** | Group or point not found, or resource is outside the caller's laboratory (IDOR-safe). |\n| **409** | Point is already in the target state, the group is locked (**Approved** / **Rejected**), or an optimistic-concurrency conflict. Body is **ProblemDetails** with `detail`. |\n\n### Audit trail\n\nBoth operations write to `AuditLog` with action types `CalibrationPointExcluded` and `CalibrationPointIncluded` respectively, recording the `UserId`, `Timestamp`, `EntityId`, `OldValue` (JSON snapshot of prior state), and `NewValue` (JSON snapshot of new state).\n\n## Calibration run status\n\nEach uploaded run has a computed `status` field:\n\n| Status | Description |\n|--------|-------------|\n| `Valid` | No measurement validation issues after parse (includes response-ratio / internal-standard checks when applicable) |\n| `ValidWithWarnings` | At least one non-blocking measurement issue (e.g. missing analyte mapping, missing ratio with IS rows present, malformed concentration) |\n| `Invalid` | No measurements, no usable target rows after validation, or blocking row errors (e.g. non-positive analyte or IS response) |\n\nEven `Invalid` runs are stored (raw text is immutable once uploaded). They appear in the database but cannot be used in calibration groups until the data source is corrected and re-uploaded.\n\n## Run naming\n\n**`POST /api/runs`** accepts an optional **`name`** field (string, max 256 characters) that sets a human-readable display label for the run. When omitted or blank, the server assigns a default of **`\"{RunType} {RunDate:yyyy-MM-dd}\"`** (e.g. `CAL 2026-04-24` or `ICV 2026-04-24`). The name is returned on every read endpoint:\n\n- `GET /api/runs` — `name` appears on each list item.\n- `GET /api/runs/{id}` — `name` in the detail response.\n- `GET /api/calibration-groups/candidates` — `name` on each candidate run row, so group builders can identify runs by label.\n\nThe name is **not** immutable — it is set once at upload and is not subsequently editable via this API version.\n\n## Run deletion\n\n**`DELETE /api/runs/{id}`** soft-deletes a calibration run. The run is excluded from all subsequent reads but the raw text and SHA-256 hash remain in the database for audit purposes. The audit trail records the run metadata and text hash under action type `CalibrationRunDeleted`.\n\n### Permission\n\nRequires **`perm.runs.delete`** (Analyst, LabAdmin, or equivalent). Authenticated but missing permission → **403 Forbidden**.\n\n### Laboratory scope\n\nLab users may delete only runs whose instrument belongs to their JWT laboratory. An unknown run id **or** a run from another laboratory both return **404 Not Found** (IDOR-safe).\n\n### Referential guard — 409 Conflict\n\nA run **cannot** be deleted while it is a member of any **CalibrationGroup** (either as a CAL run or as the optional ICV run). Attempting to do so returns **409 Conflict** with a `ProblemDetails` body. Remove the run from all groups first, then delete it.\n\n### HTTP status codes\n\n| Code | When |\n|------|------|\n| **204** | Soft-deletion succeeded; no response body. |\n| **401** | No or invalid bearer token. |\n| **403** | Authenticated but missing `perm.runs.delete`. |\n| **404** | Run not found or belongs to a different laboratory (IDOR-safe). |\n| **409** | Run is a member of one or more calibration groups; `detail` in ProblemDetails names the constraint. |\n\n## Calibration run measurements and response ratios\n\nAfter **`POST /api/runs`** parses compound rows, the server **computes internal-standard (IS) normalization** for each **Target** and **Unknown** row that has a resolved **`analyteId`**:\n\n- The canonical **`Analyte`** row supplies **`defaultInternalStandardId`** → **`InternalStandard`** name (choose the id from **`GET /api/internal-standards`** when configuring analytes).\n- That name is matched (case-insensitive; hyphens, underscores, and extra whitespace ignored) to a compound row in the same run categorized as **`InternalStandard`**.\n- When a match is found and the IS row response is **positive**, the measurement stores:\n  - **`internalStandardResponse`** — the IS compound row response used as the divisor.\n  - **`responseRatio`** — `analyteResponse / internalStandardResponse` (used before regression).\n- When the IS response is **zero or negative**, **`internalStandardResponse`** is still stored and **`responseRatio`** remains null; **`GET /api/runs/{id}/validation`** returns a blocking issue with code **`NonPositiveInternalStandardResponse`**.\n- When the run contains IS rows but no IS could be linked for a target row (missing analyte IS assignment or name mismatch), **`responseRatio`** stays null and validation may emit **`MissingInternalStandard`** (warning).\n\nUse **`GET /api/runs/{id}/measurements`** to read per-row values (including `internalStandardResponse` and `responseRatio`). Use **`GET /api/runs/{id}/validation`** for structured errors and warnings (`code`, `isError`, `measurementId`, line numbers).\n\n## Internal standard response summaries\n\nThese endpoints help analysts verify that **internal standard (IS)** compound responses are **consistent** within one run or across the **CAL** runs bundled in a **calibration group**. They operate on raw **`Response`** values from measurement rows whose **`compoundCategory`** is **`InternalStandard`** (not on per-target `internalStandardResponse` copies). Grouping matches **`GET /api/runs/{id}/measurements`** normalization: compound names are normalized with the same rules as calibration level / IS name matching (case-insensitive; hyphens, underscores, and extra whitespace stripped for the grouping key).\n\n### Endpoints\n\n| Method | Path | Scope |\n|--------|------|-------|\n| **GET** | `/api/runs/{id}/internal-standard-summaries` | One acquisition (CAL or ICV) |\n| **GET** | `/api/calibration-groups/{id}/internal-standard-summaries` | All **CAL** runs linked via the group's many-to-many; **ICV** run is **not** included |\n\nCreate the draft group first with **`POST /api/calibration-groups`** — see **Calibration groups — create draft** (requires **`perm.runs.upload`**).\n\n**Permission:** **`perm.view`** on both GET routes above.\n\n### Query parameters\n\n| Parameter | Required | Description |\n|-----------|----------|-------------|\n| **`laboratoryId`** | **Yes** for **platform operators** (no JWT laboratory); **ignored** for normal lab users | Must equal the **instrument's** `laboratoryId` for the run or group. Wrong or missing (operator) → **404** or **400**. |\n| **`methodConfigId`** | No | When set, **thresholds** for warnings are read from this config; it must belong to the **effective** laboratory (JWT lab or `laboratoryId`). Invalid id → **404**. When **omitted**, run summaries use **no** threshold flags; group summaries use the group's **snapshot** if **`methodConfigSnapshotId`** is set, else the group's **live** `methodConfig`. |\n| **`format`** | No | Omit or any value except `csv` → **JSON** array. **`format=csv`** (case-insensitive) → **`text/csv; charset=utf-8`** file download with a stable header row. |\n\n### Response shape (JSON)\n\nArray of objects (may be empty if the run/group has no IS rows):\n\n| JSON property | Type | Meaning |\n|---------------|------|---------|\n| **`normalizedKey`** | string | Normalized compound name key used for grouping |\n| **`rawCompoundName`** | string | Display name from one representative row (stable ordering by source line, then id) |\n| **`min`**, **`max`**, **`mean`** | number | Statistics over **Response** for that key in scope |\n| **`count`** | integer | Number of **IS measurement rows** aggregated (not necessarily number of runs if a file has duplicate IS lines) |\n| **`distinctCalibrationRunCount`** | integer or null | **Run** endpoint: **null**. **Group** endpoint: distinct `calibrationRunId` count contributing to that key |\n| **`thresholdMin`**, **`thresholdMax`** | number or null | Bounds **echoed** from the config used for evaluation (if any) |\n| **`isWarning`** | boolean | **True** if **mean** is strictly below **`thresholdMin`** or strictly above **`thresholdMax`** when that bound is set (bounds are **inclusive** — mean equal to a bound is OK) |\n| **`warningMessages`** | string[] | Human-readable reasons when **`isWarning`** is true |\n\n### CSV export\n\nSame data as JSON: one header row, then one data row per summary line. Numbers use **invariant** culture. Fields that may contain commas are quoted. Filename hint: `is-summaries-run-{runId}.csv` or `is-summaries-calibration-group-{groupId}.csv`. Empty IS set → **header only**, still **200 OK**.\n\n### HTTP status codes (summaries)\n\n| Code | When |\n|------|------|\n| **200** | Success — JSON array or CSV body |\n| **400** | Platform operator did not supply **`laboratoryId`** (ProblemDetails `detail` explains) |\n| **401** | No or invalid bearer token |\n| **403** | Authenticated but missing **`perm.view`** |\n| **404** | Run/group not found, instrument missing, **or** resource not in the effective laboratory (including bad **`methodConfigId`**); responses are IDOR-safe |\n\n### Configuring thresholds\n\nSet optional **`internalStandardResponseMin`** / **`internalStandardResponseMax`** on **`POST`/`PUT /api/method-configs`**. They are copied into each new **MethodConfigSnapshot** on material change. Snapshot columns drive **group** summaries after compute; draft groups without a snapshot use the **live** config for threshold evaluation.\n\n## Rate limiting\n\nThe following routes use a fixed-window rate limiter. Expect **429 Too Many Requests** when the limit is exceeded:\n\n- `POST /api/Auth/login`\n- `POST /api/Auth/refresh`\n- `POST /api/Auth/forgot-password`\n- `POST /api/Auth/reset-password`\n- `POST /api/Auth/accept-invite`\n- `POST /api/Invitations` (invitation create)\n\n",
+    "description": "## About this API\n\n**WLTR** exposes a **JSON** REST API for calibration analytics and laboratory administration. It covers: laboratories, lab technicians, users, roles, invitations, instruments, calibration run uploads (raw instrument text, parse metadata, compound measurements, and IS response ratios), analytes and raw-name aliases, the **internal-standard catalog** (`GET /api/internal-standards`), calibration levels, **draft calibration group assembly** (`POST /api/calibration-groups`), and versioned method configurations (regression rules, weighting, **quantitation mode** (ISTD/ESTD), thresholds, and immutable snapshots for full traceability).\n\nSee **Calibration regression and weighting** for **WeightingMode** values (None, 1/x, 1/x²), **QuantitationMode** (curve **Y** source), per-point weights, snapshot vs live config, and compute validation.\n\nBase path: **`/api`**. Successful responses are usually **`application/json`**; internal-standard summary endpoints also support **`text/csv`** when you pass **`format=csv`** (see **Internal standard response summaries**).\n\n## Authentication\n\n- **JWT Bearer** access tokens are issued by **`POST /api/Auth/login`**.\n- Rotate sessions with **`POST /api/Auth/refresh`**.\n- Revoke a refresh token (logout) with **`POST /api/Auth/logout`**.\n- Password recovery: **`POST /api/Auth/forgot-password`** → **`POST /api/Auth/reset-password`**.\n  - `forgot-password` is intentionally non-enumerating — returns 204 for both known and unknown emails.\n  - Successful reset revokes all active refresh tokens for that user.\n- New users join via one-time invitation links: **`POST /api/Invitations`** (admin creates) → **`POST /api/Auth/accept-invite`** (user accepts).\n- Self-service profile: **`GET /api/Auth/me`** (identity + permissions) and **`PUT /api/Auth/me`** (name, qualifications, hire date).\n- Self-service password change: **`POST /api/Auth/change-password`** — verifies current password and revokes all active refresh tokens on success.\n- Send the access token in the **`Authorization`** header: `Authorization: Bearer {accessToken}`.\n- In Swagger UI, click **Authorize**, enter the raw JWT — Swagger adds the `Bearer ` prefix automatically.\n\n## Authorization\n\nAll endpoints require authentication by default. Anonymous routes are: `POST /api/Auth/login`, `POST /api/Auth/refresh`, `POST /api/Auth/forgot-password`, `POST /api/Auth/reset-password`, and `POST /api/Auth/accept-invite`.\n\nEndpoints are protected by **permission policies**. The required permission is documented on each operation.\n\n## Permissions reference\n\n| Permission | Value | Held by |\n|------------|-------|---------|\n| View | `perm.view` | All lab roles (Viewer, Analyst, QA, LabAdmin, SuperAdmin) |\n| Lab user management | `perm.users.manage_lab` | LabAdmin, SuperAdmin |\n| Lab role management | `perm.roles.manage_lab` | LabAdmin, SuperAdmin |\n| Lab configuration edit | `perm.config.edit` | LabAdmin, SuperAdmin |\n| Run upload | `perm.runs.upload` | Analyst, LabAdmin, SuperAdmin |\n| Run delete | `perm.runs.delete` | Analyst, LabAdmin, SuperAdmin |\n| Groups approve | `perm.groups.approve` | QA, LabAdmin, SuperAdmin |\n| Lab settings manage | `perm.laboratories.manage` | LabAdmin, SuperAdmin |\n| Laboratory create (platform) | `perm.laboratories.create` | SuperAdmin only |\n| Platform manage | `perm.platform.manage` | SuperAdmin only |\n\n## Laboratory scope\n\n- Each lab user has exactly one **`LaboratoryId`** claim in the JWT; all data is scoped to that lab.\n- **Platform operators** (Super Administrator) often have **no** `LaboratoryId` in the JWT. Endpoints that must resolve a tenant for a **specific resource id** (for example **internal-standard summaries** and **calibration-group readiness**) require an explicit **`laboratoryId`** query parameter that **must equal** that resource's laboratory (derived from the run's or group's instrument). Omitting it returns **400**; a mismatch returns **404**.\n- Other endpoints may accept optional `laboratoryId` or infer scope differently — follow each operation's description.\n- Cross-lab reads are blocked. Depending on the endpoint:\n  - **404 Not Found** — the id does not exist *or* belongs to another laboratory (IDOR protection).\n  - **403 Forbidden** — the resource exists but is in another laboratory (explicit when noted on the operation).\n\n## Common HTTP status codes\n\n| Code | Meaning |\n|------|---------|\n| **200** | OK (body varies by resource) |\n| **201** | Created — resource id in body; `Location` is usually a GET path (or the canonical resource path, e.g. `POST /api/calibration-groups` → `/api/calibration-groups/{id}`) |\n| **204** | No Content — success, no body |\n| **400** | Bad Request — validation failure or business rule violation; body is **ProblemDetails** with `detail` |\n| **401** | Unauthorized — missing or expired access token |\n| **403** | Forbidden — authenticated but insufficient permission, or resource belongs to another lab |\n| **404** | Not Found — unknown id or IDOR-masked cross-lab resource |\n| **409** | Conflict — optimistic concurrency failure (stale `RowVersion`), or referential integrity; body is **ProblemDetails** |\n| **429** | Too Many Requests — rate-limited auth endpoints |\n\n## Errors\n\nFailures return **RFC 7807 ProblemDetails** (`application/problem+json`) with `title`, `status`, `detail`, `instance`. Validation errors from FluentValidation include field-level messages.\n\n## Optimistic concurrency\n\nEntities with a `rowVersion` field use optimistic concurrency (e.g. technician profiles via `PUT /api/Auth/me`, instruments via `PUT /api/instruments/{id}`). Fetch `rowVersion` from the last **GET** detail response and supply it in the **PUT** body. A **409 Conflict** is returned when the row was modified by another request between your read and write.\n\n## Data immutability\n\nSome records are immutable by design:\n\n- `CalibrationRun.rawText` and its `textHash` are **never updated** after creation.\n- `MethodConfigSnapshot` rows are **append-only** — never edited or deleted; use `GET snapshots/{version}` to read historical configurations.\n- Approved `CalibrationGroup` records are **locked** — no further edits to the group, runs, points, or curves.\n\n## Pagination (list endpoints)\n\nThese **GET** routes return a **paged envelope** (not a bare array):\n\n- `GET /api/instruments`\n- `GET /api/runs`\n- `GET /api/Laboratories`\n- `GET /api/LabTechnicians`\n- `GET /api/Users`\n- `GET /api/Roles`\n- `GET /api/analytes`\n- `GET /api/calibration-levels`\n- `GET /api/calibration-groups`\n- `GET /api/method-configs`\n- `GET /api/method-configs/{id}/snapshots`\n\nEnvelope shape:\n\n```json\n{ \"items\": [ ... ], \"totalCount\": 42, \"page\": 1, \"pageSize\": 25 }\n```\n\nQuery parameters (all optional):\n\n| Parameter | Default | Max | Description |\n|-----------|---------|-----|-------------|\n| `page` | 1 | — | 1-based page index |\n| `pageSize` | 25 | 100 | Items per page |\n| `sort` | resource default | — | `field` or `field:asc` / `field:desc` |\n\nSupported sort fields by resource:\n\n- **Instruments** — `name` (default, case-insensitive ascending), `createdAt`\n  - Optional filters: `isActive` (boolean), `instrumentType` (exact match, case-insensitive after trim)\n- **Runs** — `runDate` (default, newest first), `status`, `createdAt`\n  - Optional filters: `instrumentId` (GUID), `runType` (`CAL`/`ICV`), `status` (`Valid`/`ValidWithWarnings`/`Invalid`)\n- **Laboratories** — `name`, `createdAt`\n- **LabTechnicians** — `lastName`, `firstName`, `createdAt`\n- **Users** — `email`, `laboratoryId`\n- **Roles** — `name`\n- **Analytes** — `name`, `createdAt`\n- **Calibration levels** — `sortOrder` (default), `levelName`, `trueConcentration`, `createdAt`\n- **Calibration groups** — `createdAt` (default, newest first), `status`\n  - Optional filter: `laboratoryId` (platform operators only)\n- **Method configs** — `name` (default), `createdAt`, `version`\n\n## Bare JSON array list endpoints\n\nThese **GET** routes return a **JSON array** in the response body (not the paged envelope above):\n\n- **`GET /api/internal-standards`** — internal standard rows for the **`LaboratoryId`** in the JWT (`id`, `name`, `casNumber`), sorted by `name`. Requires **`perm.view`**.\n- **`GET /api/internal-standards/{id}`**, **`POST /api/internal-standards`**, **`PUT /api/internal-standards/{id}`**, **`DELETE /api/internal-standards/{id}`** — see **Internal standards catalog**; writes require **`perm.config.edit`**.\n- **`GET /api/runs/{id}/internal-standard-summaries`** and **`GET /api/calibration-groups/{id}/internal-standard-summaries`** — aggregated IS **response** statistics (JSON or CSV). Requires **`perm.view`**. See **Internal standard response summaries**.\n- **`GET /api/calibration-groups/{id}/readiness`** — regression **readiness** (`isReady`, `blockingIssues`, `warnings`). Requires **`perm.view`**. See **Calibration group readiness (pre-compute gate)**.\n\n## Internal standards catalog\n\nInternal standards are reference compounds used to normalize analyte responses on uploaded runs (**response ratio** = analyte response ÷ IS response when linkage succeeds).\n\n### Operations\n\n- **`GET /api/internal-standards`** — list all internal standards for the JWT laboratory (sorted JSON array). **Permission:** `perm.view`.\n- **`GET /api/internal-standards/{id}`** — detail for one row in the caller's laboratory, or **404** if unknown or other-lab id. **Permission:** `perm.view`.\n- **`POST /api/internal-standards`** — create (`name`, optional `casNumber`). **Permission:** `perm.config.edit`.\n- **`PUT /api/internal-standards/{id}`** — update. **Permission:** `perm.config.edit`.\n- **`DELETE /api/internal-standards/{id}`** — soft-delete when no analyte uses it as default IS; **409** if still referenced. **Permission:** `perm.config.edit`.\n- **Laboratory claim:** list requires **`LaboratoryId`** in the JWT; if missing, **400 Bad Request** on list (ProblemDetails: *No laboratory context available*) — not an empty array.\n- **403 Forbidden** when the user lacks the required permission for the verb (e.g. Viewer calling `POST`).\n\n### Laboratory scope\n\nEach **`InternalStandards`** row has a **`laboratoryId`** foreign key. The list endpoint filters by the JWT **`LaboratoryId`**; analytes may only reference internal standards in the **same** laboratory.\n\n### Linking to analytes\n\nWhen creating or updating an analyte, set optional **`defaultInternalStandardId`** to one of the `id` values from this list (`POST /api/analytes`, `PUT /api/analytes/{id}`).\n\n### Linking to run uploads\n\nAfter `POST /api/runs`, the server resolves each target measurement's IS using the **name** of the selected `InternalStandard` row and matching it to internal-standard compound rows in the same file (see **Calibration run measurements and response ratios**).\n\n## Method configuration versioning\n\nEach **MethodConfig** has a monotonic **version** number. Every material change to tracked fields automatically appends an immutable **MethodConfigSnapshot**. Tracked fields include: label mode, **quantitation mode** (**`quantitationMode`** — ISTD vs ESTD), correlation / RSE / %diff acceptance bands, point counts, ICV limit **percent**, and optional **internal standard response** bounds (**`internalStandardResponseMin`** / **`internalStandardResponseMax`**) used when flagging **internal-standard summaries** (inclusive bounds on the **mean** IS response per summary row). No-op updates (identical values) do not increment the version.\n\nCalibration groups capture the snapshot at compute time — historical calibration results and frozen IS thresholds always reflect the configuration that was in effect, regardless of subsequent edits to the live config.\n\nUse **`GET /api/method-configs/{id}/snapshots`** to list the full audit history, and **`GET /api/method-configs/{id}/snapshots/{version}`** to retrieve a specific version.\n\n## Calibration regression and weighting\n\n**Method configuration** exposes **`quantitationMode`** (ISTD vs ESTD) on **`POST`/`PUT /api/method-configs`**, frozen onto each immutable **`MethodConfigSnapshot`**. It does **not** carry a single regression type, weighting mode, or force-zero flag: at **calibration compute** time the engine fits **all nine `(RegressionType, WeightingMode)` variants** per analyte and ranks them, and QA later selects one model per group. Compute always uses the snapshot attached to the **calibration group**, not the live method config — so historical curves always match the methodology that was in effect for that run.\n\n### `QuantitationMode` (string enum)\n\nSelects which measurement value is plotted as curve **Y** (response axis). Sent and returned as JSON **strings** (enum names; the **Value** column is the underlying ordinal for reference):\n\n| Value | Name | Curve **Y** per calibration point |\n|-------|------|----------------------------------|\n| **0** | `InternalStandard` (ISTD) | **`responseRatio`** — analyte response ÷ internal-standard response |\n| **1** | `ExternalStandard` (ESTD) | **`response`** — raw analyte signal (no IS normalization) |\n\nISTD compensates for injection-volume variation and instrument drift; ESTD uses the external-standard workflow (concentration from raw response vs known standards). Default is **0** (`InternalStandard`), preserving historical behaviour for existing configs and snapshots.\n\n**Auto-exclusion at compute:** when **Y** cannot be resolved, included points are auto-excluded — **`MissingIS`** in ISTD mode (null ratio), **`MissingRatio`** in ESTD mode (null response). Optional **`internalStandardResponseMin`** / **`internalStandardResponseMax`** apply only to IS summary flagging; leave null for ESTD configs.\n\n### `WeightingMode` (string enum)\n\nSent and returned as JSON **strings** (enum names; the **Value** column is the underlying ordinal for reference):\n\n| Value | Name | Per included point weight `w` (curve **X** = Amount Ratio for ISTD; true concentration for ESTD) |\n|-------|------|--------------------------------------------------------------------------------------------------|\n| **0** | `None` | `w = 1` (ordinary least squares when all weights are 1) |\n| **1** | `InverseX` | `w = 1 / X` = `inverseAmountRatio` |\n| **2** | `InverseXSquared` | `w = 1 / (X × X)` = `inverseAmountRatioSquared` |\n\nInverse modes emphasize fit at **lower** concentrations (larger weight when **X** is small), consistent with common analytical chemistry practice.\n\n### Included vs excluded calibration points\n\n- Weights apply only to points **included** in the regression.\n- **Excluded** points do not contribute to weighted sums; their persisted **`weight`** is **0** after compute.\n- For **`InverseX`** and **`InverseXSquared`**, **every included** point must have **`X > 0`** (finite). If an included point has **`X ≤ 0`** (or non-finite **X**), the engine **skips that weighting variant** for the analyte — it produces no curve and is absent from the report card — rather than producing NaN/Inf weights. Compute still returns **204**; it returns **400 Bad Request** only when **no** variant fits for **any** analyte. **Excluded** points with **`X ≤ 0`** do **not** trigger this rule because they are not weighted.\n- For **`None`**, included points may have any finite **X** (including zero or negative) unless a later regression rule forbids it.\n\n### Quadratic regression (`RegressionType.Quadratic`)\n\nWhen the snapshot regression type is **Quadratic**, the engine fits **ŷ = a·x² + b·x + c** via weighted least squares (3×3 normal-equation Gaussian elimination; no third-party math libraries).\n\n**Coefficient storage on `CalibrationCurve`:**\n\n| JSON field | Role | Symbol |\n|------------|------|--------|\n| **`quadraticCoefficient`** | x² term | **a** |\n| **`slope`** | x term | **b** |\n| **`intercept`** | constant | **c** |\n\n`quadraticCoefficient` is **`null`** for non-quadratic models; `slope` and `intercept` retain their usual linear meanings in those models.\n\n**Degrees of freedom:** p = 3 — so **RSE = √(SSE / (n − 3))** where n is the included point count.\n\n**`correlationR` for quadratic** is the Pearson correlation between observed y and predicted ŷ (corr(y, ŷ)) on included weighted points, rather than the x-vs-y correlation which is not meaningful for curved responses.\n\n**Quadratic feasibility is enforced per variant at compute time** (not as a method-config save-time rule): the quadratic variant needs **≥ 3 included points with distinct x-values** for a non-singular normal-equation matrix. When that is not met, the engine **skips the quadratic variant** for that analyte rather than returning an error — compute still returns **204** as long as some other variant fits.\n\n**Report label:** curve-summary APIs expose a `modelLabel` field, e.g. `\"Quadratic (y = ax² + bx + c)\"`.\n\n### Non-regression model (`RegressionType.Average`)\n\nFor the **Average** family (RSD-style, not a least-squares line), effective weighting is treated as **None** for included points at compute time, regardless of which weighting mode the variant is paired with. Each fitted **`CalibrationCurve`** records its own **`regressionType`** and **`weightingMode`** so every variant stays identifiable on the report card.\n\n### Compute endpoint and point diagnostics\n\n**`POST /api/calibration-groups/{id}/compute`** runs the full regression pipeline and transitions the group to `Computed`:\n\n1. Attaches the latest `MethodConfigSnapshot` (freezing methodology including `quantitationMode`).\n2. Materialises `CalibrationPoint` rows from parsed measurements and calibration levels (curve **Y** from `responseRatio` or `response` per snapshot mode).\n3. For **every analyte**, fits **all nine `(RegressionType, WeightingMode)` variants**: assigns per-point weights, fits the curve (linear, forced-zero, or quadratic), and applies diagnostics.\n4. **Silently skips** any variant that cannot be fitted (e.g. inverse weighting with `X ≤ 0`, or a singular quadratic matrix) and continues with the rest.\n5. Stamps **`predictedY`**, **`residual`**, and **`percentDiff`** on every point and SSE/RSE/R² on each curve, then sets group status to `Computed` with **no** model selected yet.\n\nCompute returns **204 No Content** when at least one variant fits for at least one analyte, and **400 Bad Request** only when **no** variant fits for **any** analyte.\n\nAfter compute, **`GET /api/calibration-groups/{id}/regression-inputs`** returns the same point layout enriched with fitted diagnostics from the stored `CalibrationPoint` rows. Pre-compute responses return `null` for fitted fields.\n\n### Per-point fields (`regression-inputs`, `regression-debug`, and `curves` point rows)\n\n| JSON field | Always present | Description |\n|------------|---------------|-------------|\n| **`amountRatio`** | Yes | Regression X-axis (Excel *Amount Ratio (X-Value)*): `trueConc / IS_conc` for ISTD; `trueConc` for ESTD |\n| **`responseRatio`** | Yes | Regression Y-axis (Excel *Response Ratio (Y-Value)*): `analyte_area / IS_area` for ISTD; raw `response` for ESTD |\n| **`standardResponse`** | Yes | Raw analyte instrument signal / peak area (Excel *Standard Response*) |\n| **`isResponse`** | nullable | Raw IS peak area paired with this measurement (Excel *Internal Standard Response*) |\n| **`inverseAmountRatio`** | nullable | `1 / amountRatio` (Excel *Inverse Amount Ratio*) — the 1/x weighting factor; `null` when `amountRatio` is zero |\n| **`inverseAmountRatioSquared`** | nullable | `1 / amountRatio²` (Excel *Inverse Amount Ratio Squared*) — the 1/x² weighting factor |\n| **`trueConcentration`** | nullable | Absolute true concentration from the calibration level, e.g. µg/L (Excel *True Conct*) |\n| **`weight`** | Yes | Regression weight applied at fit time; 0 for excluded points |\n| **`predictedResponseRatio`** | nullable | Fitted ŷ at `amountRatio` from the curve equation; `null` before compute |\n| **`residual`** | nullable | `responseRatio − predictedResponseRatio`; `null` before compute |\n| **`percentDiff`** | nullable | `(CalcConc − TrueConc) / TrueConc × 100`; `null` before compute |\n| **`responseFactor`** | nullable | Per-point RF = `responseRatio / amountRatio` (Excel *Response Factor*) |\n| **`calcConcentration`** | nullable | Back-calculated absolute concentration = `trueConc × (1 + percentDiff / 100)` (Excel *Calc Conct*); `null` before compute |\n| **`levelName`** | nullable | Display name of the calibration level (e.g. `Cal_10ppb`) |\n| **`runName`** | Yes | Display name of the source CAL run |\n\n### Curve-level fields (`regression-debug` and `curves`)\n\nIn addition to weighted sums, coefficients, and existing diagnostics, the debug response now exposes:\n\n| JSON field | Description |\n|------------|-------------|\n| **`meanResponseFactor`** | Arithmetic mean RF across included points (Excel *Mean RF*) |\n| **`responseFactorRsd`** | RF %RSD — relative standard deviation of per-point RFs (Excel *RF %RSD*) |\n| **`icvCdsPercentDiff`** | Absolute % difference between WLTR ICV calc concentration and the instrument-reported CDS concentration |\n| **`icvCdsPassed`** | Whether ICV CDS-parity is within the configured limit |\n| **`spccMinRfPassed`** | Whether the SPCC minimum response factor criterion passed; `null` when the analyte is not SPCC |\n| **`cccRsdPassed`** | Whether the CCC maximum %RSD criterion passed; `null` when the analyte is not CCC |\n| **`icvLcsRecoveryPassed`** | Whether ICV/LCS recovery is within the per-analyte LCL/UCL; `null` when limits are not configured |\n\n**Recompute behaviour:** calling compute on an already-`Computed` group clears all existing curves and points before rebuilding, and **re-applies persisted manual point exclusions** — each excluded `(analyte, run)` pair is re-excluded with its stored reason, so QA overrides survive recompute. Any prior **model selection** is cleared (the group returns to `Computed` with no selected model).\n\n- Configure **`quantitationMode`** (and acceptance thresholds) on method configs; read frozen values from **`GET /api/method-configs/{id}/snapshots/{version}`**.\n- Each **calibration curve** stores **`regressionType`**, **`quadraticCoefficient`** (nullable), **`slope`**, **`intercept`**, SSE, RSE, R², and a **`modelLabel`** string (from `CalibrationCurvePrediction.ModelLabel`) for direct use in reports.\n\n## Analyte curve list\n\n**`GET /api/calibration-groups/{id}/analytes/{analyteId}/curves`** returns all computed `(RegressionType, WeightingMode)` variants for a single analyte within one calibration group as a flat JSON array.\n\nEach element in the array has the same shape as a single **`regression-debug`** response (see **Calibration regression and weighting** for field references). Use this endpoint to compare all variants side-by-side without issuing one request per variant.\n\n### When to use this vs `regression-debug`\n\n| Endpoint | Returns | Variant selection |\n|----------|---------|-------------------|\n| `GET .../regression-debug` | One variant, full debug detail | Explicit `regressionType` + `weightingMode`, or falls back to selected model |\n| `GET .../curves` | **All** computed variants, same detail per element | No variant params — always returns every variant |\n\n### Permission\n\n**`perm.groups.approve`** — restricted to QA and Lab Admin roles. The full intermediate-sum audit data (weighted sums `s0`–`denominator`, `sse`, `sst`) is included in each variant object.\n\n### Query parameters\n\n| Parameter | Required | Description |\n|-----------|----------|-------------|\n| **`laboratoryId`** | **Yes** for platform operators (no JWT laboratory); **ignored** for lab users | Must equal the group's instrument laboratory. Missing for operator → **400**. Wrong lab → **404**. |\n\n### Response body (200 OK, `application/json`)\n\nJSON array. May be **empty** (`[]`) when:\n\n- The group has not yet been computed (status `Draft`).\n- No `CalibrationCurve` rows exist for the requested `analyteId` in this group (e.g. the analyte was on the group exclusion list at the last compute).\n\nWhen non-empty, elements are ordered ascending by `regressionType` then `weightingMode` (enum ordinal). Up to nine variants may be present; variants that could not be fitted (e.g. inverse weighting with non-positive X, or a singular quadratic matrix) are silently absent — see **Calibration regression and weighting** for skipping rules.\n\n### HTTP status codes\n\n| Code | When |\n|------|------|\n| **200** | Success — array (possibly empty) |\n| **400** | Platform operator omitted `laboratoryId` |\n| **401** | Missing or expired bearer token |\n| **403** | Authenticated but missing `perm.groups.approve` |\n| **404** | Group not found or outside the effective laboratory (IDOR-safe) |\n\n## Calibration groups — create draft\n\nA **CalibrationGroup** ties multiple **CAL** runs (one per distinct calibration level) to a single **instrument** and a selected **MethodConfig** (same laboratory). The server stores the group in **`Draft`** status; it may later be computed, then approved, per the broader calibration workflow.\n\n### `POST /api/calibration-groups`\n\nAssembles a new draft group from an explicit list of run ids.\n\n- **Permission:** **`perm.runs.upload`** (same as **`POST /api/runs`**).\n- **Prerequisites (HTTP 400 if missing):** JWT must carry a **laboratory** (`LaboratoryId` claim), and the user must have a linked **lab technician** profile in that lab — identical policy to run upload (see run endpoint documentation).\n- **Request body (JSON, all primary keys are UUIDs / GUIDs):**\n\n| Field | Required | Description |\n|--------|----------|-------------|\n| **`instrumentId`** | Yes | Instrument that owns this group. Must belong to the caller’s laboratory. |\n| **`methodConfigId`** | Yes | Lab-scoped method configuration. Must belong to the **same laboratory** as the instrument. |\n| **`calRunIds`** | Yes, non-empty | Array of **CAL** run ids. **Must be distinct** in the request. Each run must: exist; be type **CAL**; use this **`instrumentId`**; not be **`Invalid`** (see **Calibration run status**); and map to a **calibration level** with a true concentration. **No two runs** may share the same **`calibrationLevelId`** in one group. |\n| **`icvRunId`** | No | Optional **ICV** run on the same instrument, same rules as CAL for instrument and not **`Invalid`**. Must not duplicate any id in **`calRunIds`**. |\n\n- **Success (201 Created):** Response body is `{ \"id\": \"<group-guid>\" }`. **`Location`** is set to **`/api/calibration-groups/{id}`** (path-style URI; a dedicated **GET** group detail may be added in a later release). Content-Type: **`application/json`**.\n- **Client validation (400):** FluentValidation may reject before business rules, e.g. empty **`calRunIds`**, duplicate ids in the array, or **`icvRunId`** equal to a **`calRunIds`** entry — often with field-scoped error messages where applicable.\n- **Business rules (400, ProblemDetails `detail`):** include unknown instrument/config/run ids, cross-lab instrument or method config, wrong run type, **`Invalid`** run status, missing calibration level on a CAL run, or duplicate calibration level across CAL runs. Cross-lab or missing resources are described without leaking existence where the API returns a generic *not found* or validation message, consistent with other lab-scoped commands.\n- **401** — Unauthenticated. **403** — Authenticated but missing **`perm.runs.upload`**.\n\nRelated: **`GET /api/calibration-groups/{id}/readiness`** (pre-compute gate — see **Calibration group readiness (pre-compute gate)** below), **`GET /api/calibration-groups/{id}/internal-standard-summaries`** (aggregates only **CalRuns**, not the optional **ICV**). See also **Method configuration versioning** and **Calibration run status** in this document.\n\n## Calibration group readiness (pre-compute gate)\n\n**`GET /api/calibration-groups/{id}/readiness`** answers whether a draft (or future computed) group has enough valid **CAL**-level data to run regression safely. It is the authoritative check a future **`POST /api/calibration-groups/{id}/compute`** should reuse: do not compute when **`isReady`** is **false** until **`blockingIssues`** is empty.\n\n**Note:** Readiness does not yet enforce **positive curve X** for inverse weighting (1/x, 1/x²); that validation is part of the future compute step — see **Calibration regression and weighting**.\n\n### Scope\n\n- Only **CAL** runs linked to the group (the many-to-many **`CalRuns`** set) are evaluated. The optional **ICV** run on the group is **not** part of this check.\n- **Curve X** (true concentration) comes from each CAL run’s **calibration level**, not from export **`calculatedConcentration`** on rows; some measurement warnings (e.g. malformed export concentration) may appear under **`warnings`** without blocking readiness.\n\n### Endpoint\n\n| Method | Path | Permission |\n|--------|------|------------|\n| **GET** | `/api/calibration-groups/{id}/readiness` | **`perm.view`** |\n\n### Query parameters\n\n| Parameter | Required | Description |\n|-----------|----------|-------------|\n| **`laboratoryId`** | **Yes** for **platform operators** (JWT has no laboratory); **ignored** for normal lab users | Must equal the **instrument’s** `laboratoryId` for the group. Missing for operator → **400** ProblemDetails. Wrong lab → **404** (IDOR-safe). |\n\n### Response body (200 OK, `application/json`)\n\n| JSON property | Type | Description |\n|---------------|------|-------------|\n| **`calibrationGroupId`** | string (UUID) | Same as path `{id}`. |\n| **`isReady`** | boolean | **false** if **`blockingIssues`** has any item; **true** otherwise. |\n| **`minPointsRequired`** | integer | Effective minimum number of **CAL runs / levels** from **`MethodConfigSnapshot.minPointsRequired`** when **`methodConfigSnapshotId`** is set on the group, otherwise from the **live** **`MethodConfig`** referenced by the group’s **`methodConfigId`**. |\n| **`calibrationLevelCount`** | integer | Count of CAL runs currently linked to the group (same as distinct levels when create rules hold). |\n| **`blockingIssues`** | array | Hard failures; each item matches **`RunValidationIssueResponse`** (see **Issue object** below). Must be **empty** before compute. |\n| **`warnings`** | array | Non-blocking findings; same shape as **`blockingIssues`**. |\n\n### Issue object (`blockingIssues` / `warnings` items)\n\nSame schema as **`GET /api/runs/{id}/validation`** issues:\n\n| JSON property | Type | Description |\n|---------------|------|-------------|\n| **`code`** | integer | **`RunValidationIssueCode`** — see table below. |\n| **`isError`** | boolean | Original row severity from run validation; **blocking** list entries are still listed under **`blockingIssues`** regardless. |\n| **`message`** | string | Human-readable explanation. |\n| **`measurementId`** | string (UUID) or null | Persisted measurement when the issue targets a row. |\n| **`rawCompoundName`** | string or null | Export compound name when applicable. |\n| **`sourceLineNumber`** | integer or null | Parser line hint when known. |\n| **`calibrationRunId`** | string (UUID) or null | CAL run scope for whole-run or group-scoped issues. |\n\n### `code` values (`RunValidationIssueCode`)\n\n| Value | Name | Typical use |\n|-------|------|-------------|\n| **0** | `NonPositiveResponse` | Target response ≤ 0 — blocking for regression. |\n| **1** | `MissingAnalyteMapping` | Row not mapped to a canonical analyte — **blocking** for group readiness (even if run status is `ValidWithWarnings`). |\n| **2** | `MissingInternalStandard` | Run has **InternalStandard** rows but **`responseRatio`** missing for a target row — **blocking** for readiness. |\n| **3** | `MalformedConcentrationOrRatio` | Export concentration / parser issue — usually **warning** for readiness (curve X from levels). |\n| **4** | `NonPositiveInternalStandardResponse` | IS response not usable for ratio — blocking. |\n| **5** | `InsufficientCalibrationLevels` | **`calibrationLevelCount`** is below **`minPointsRequired`**, or no CAL runs linked. |\n| **6** | `CalibrationRunLevelUnresolved` | A CAL run has no **`calibrationLevelId`**. |\n| **7** | `DuplicateCalibrationLevelInGroup` | Two+ CAL runs share the same level in the group. |\n| **8** | `CalibrationRunReferenceMissing` | A listed run id was not found (defense in depth). |\n| **9** | `InvalidCalibrationRunStatus` | Persisted run **`status`** is **`Invalid`**. |\n| **10** | `InvalidResponseRatio` | **`responseRatio`** present but not finite or not positive when IS rows exist. |\n\n### Rules evaluated (summary)\n\n1. **Minimum levels:** **`calibrationLevelCount`** ≥ effective **`minPointsRequired`**.\n2. **Level mapping:** every linked CAL run has a resolved calibration level; no duplicate level across runs.\n3. **Run status:** no linked CAL run in **`Invalid`** status.\n4. **Measurements:** run validation is recomputed from persisted rows; **`MissingAnalyteMapping`**, **`MissingInternalStandard`**, **`NonPositiveInternalStandardResponse`**, and other **`isError`** issues are **blocking** for readiness.\n5. **IS / ratio:** when the run contains **InternalStandard** compound rows, each **Target**/**Unknown** row with positive **Response** must have a **finite**, **positive** **`responseRatio`** (additional check beyond run validation).\n\n### HTTP status codes (readiness)\n\n| Code | When |\n|------|------|\n| **200** | Success — body always includes **`isReady`** and issue arrays (may be empty). Not-ready groups still return **200** with **`isReady: false`** and populated **`blockingIssues`**. |\n| **400** | Platform operator omitted **`laboratoryId`** (ProblemDetails **`detail`**). |\n| **401** | No or invalid bearer token. |\n| **403** | Authenticated but missing **`perm.view`**. |\n| **404** | Group unknown, instrument missing, or group not in the **effective** laboratory; IDOR-safe. |\n\n### See also\n\n- **`GET /api/runs/{id}/validation`** — per-run issue shape and run-level **`status`**. - **Internal standard response summaries** — IS **Response** aggregates (separate from readiness). - **Method configuration versioning** — snapshot vs live **`minPointsRequired`**.\n\n## Calibration group analyte exclusion\n\nA **CalibrationGroup** may carry a per-group **analyte exclusion list**: canonical analytes on this list are **skipped entirely** during regression compute (no curve is fitted for them). This is distinct from **point-level** exclusion (see **Calibration point exclusion and re-inclusion**), which operates on individual calibration points within a curve.\n\nThe exclusion list is **preserved** when group run membership changes via **`PUT /api/calibration-groups/{id}`**. Any mutation sets **`isComputationStale = true`** on the group; recompute before approval.\n\n### Endpoints\n\n| Method | Path | Description | Permission |\n|--------|------|-------------|------------|\n| **PUT** | `/api/calibration-groups/{id}/excluded-analytes` | **Replace** the group's entire exclusion list atomically | **`perm.runs.upload`** |\n| **POST** | `/api/calibration-groups/{id}/excluded-analytes` | Add one analyte (optional per-item `note`) | **`perm.runs.upload`** |\n| **DELETE** | `/api/calibration-groups/{id}/excluded-analytes/{analyteId}` | Re-include one analyte | **`perm.runs.upload`** |\n| **GET** | `/api/calibration-groups/{id}/excluded-analytes` | List excluded analytes | **`perm.view`** |\n\n### Bulk replace request body (`PUT .../excluded-analytes`)\n\n```json\n{ \"analyteIds\": [\"3fa85f64-5717-4562-b3fc-2c963f66afa6\"], \"note\": \"Instrument drift — exclude pending re-run\" }\n```\n\n| Field | Required | Notes |\n|-------|----------|-------|\n| **`analyteIds`** | Yes (array, may be empty) | Becomes the **complete** exclusion list. Analytes in the array but not previously excluded are **added**; analytes previously excluded but absent are **re-included**. Empty array clears all exclusions. Duplicates and empty GUIDs are rejected (**400**). |\n| **`note`** | No | Optional shared note applied to analytes **newly added** by this request. |\n\n**Idempotency:** submitting the same set as the current list is a no-op (still **204**; `isComputationStale` unchanged).\n\n### Single-item add request body (`POST .../excluded-analytes`)\n\n```json\n{ \"analyteId\": \"3fa85f64-5717-4562-b3fc-2c963f66afa6\", \"note\": \"Co-elution suspected\" }\n```\n\nReturns **409** if the analyte is already excluded.\n\n### Response payloads\n\nMutations return **204 No Content**. **`GET`** returns an array of excluded rows with canonical **`analyteName`** (from **`Analyte.Name`**), not raw instrument alias text.\n\n### Group status guard\n\nAll mutations refuse modifications on groups in **`Approved`** or **`Rejected`** status (**409 Conflict**). Groups in **`Draft`** or **`Computed`** status may be updated.\n\n### Laboratory scope (IDOR)\n\nThe server resolves the group → instrument → laboratory. For **`PUT`**, any unknown or out-of-scope **`analyteId`** rejects the **entire** request with **404 Not Found** (IDOR-safe). Cross-lab group access also returns **404**.\n\n### HTTP status codes (mutations)\n\n| Code | When |\n|------|------|\n| **204** | Success; no body. |\n| **400** | Validation failure (e.g. duplicate `analyteIds`, empty GUID). **ProblemDetails**. |\n| **401** | Missing or expired token. |\n| **403** | Missing **`perm.runs.upload`**. |\n| **404** | Group or analyte not found / out of scope (IDOR-safe). |\n| **409** | Group locked, or single-item POST/DELETE idempotency conflict. **ProblemDetails**. |\n\n### Audit trail\n\nBulk replace logs **`CalibrationGroupAnalyteExclusionsReplaced`** with before/after exclusion id sets. Single-item add/remove log **`CalibrationGroupAnalyteExcluded`** / **`CalibrationGroupAnalyteIncluded`**.\n\n## Calibration point exclusion and re-inclusion\n\nA **CalibrationPoint** represents one analyte/level data point within a **CalibrationCurve** that is itself part of a **CalibrationGroup**. Points that carry invalid or unreliable data can be **excluded** from regression so the model reflects only accepted calibration evidence. An excluded point retains all stored values (for audit); it is simply not weighted in the regression computation.\n\n### Endpoints\n\n| Method | Path | Description | Permission |\n|--------|------|-------------|------------|\n| **POST** | `/api/calibration-groups/{id}/points/{pointId}/exclude` | Mark a point as excluded | **`perm.runs.upload`** |\n| **DELETE** | `/api/calibration-groups/{id}/points/{pointId}/exclude` | Re-include a previously excluded point | **`perm.runs.upload`** |\n\nBoth operations are **idempotent-guarded**: attempting to exclude an already-excluded point, or to re-include an already-included point, returns **409 Conflict**.\n\n### Exclusion request body (`POST .../exclude`)\n\n```json\n{ \"reason\": \"ManualExclude\", \"note\": \"Outlier confirmed by analyst — co-elution suspected\" }\n```\n\n| Field | Required | Values | Notes |\n|-------|----------|--------|-------|\n| **`reason`** | Yes | `ManualExclude`, `PctDiffOutOfRange` | Only user-initiated reasons are accepted here. System reasons (`MissingRatio`, `MissingIS`, `InvalidX`) are set automatically during data-quality checks and cannot be submitted manually. |\n| **`note`** | Yes | Non-empty string | Required analyst justification for audit purposes. |\n\n### Exclusion fields stamped on the point\n\nOn successful exclusion, the following fields are persisted on `CalibrationPoint`:\n\n| Field | Description |\n|-------|-------------|\n| **`isIncluded`** | Set to `false`. |\n| **`exclusionReason`** | The submitted `reason` value. |\n| **`exclusionNote`** | The submitted `note` value. |\n| **`excludedByUserId`** | Identity user id of the acting analyst. |\n| **`excludedAt`** | UTC timestamp of the exclusion. |\n\nOn successful **re-inclusion**, all five fields are cleared (`isIncluded → true`, others → null / None).\n\n### System auto-exclusion reasons\n\nThese reasons are set automatically during data quality evaluation and are **not** accepted as manual inputs:\n\n| Reason | Condition |\n|--------|-----------|\n| `MissingRatio` | Response or response ratio is null (no IS method). |\n| `MissingIS` | Response ratio is null because the internal standard could not be resolved. |\n| `InvalidX` | True concentration (curve X) is zero, negative, or non-finite. |\n\n### Group status guard\n\nBoth endpoints refuse modifications on groups in **`Approved`** or **`Rejected`** status, returning **409 Conflict** (same rule as `PUT /api/calibration-groups/{id}`). Groups in **`Draft`** or **`Computed`** status can have points excluded or re-included.\n\n### Laboratory scope (IDOR)\n\nThe server resolves `{id}` (group) → instrument → laboratory and verifies it matches the caller's JWT `LaboratoryId`. A missing group, a missing point, a point-to-group mismatch, or a cross-lab access all return **404 Not Found** without revealing whether the resource exists in another laboratory.\n\n### HTTP status codes\n\n| Code | When |\n|------|------|\n| **204** | Operation succeeded; no response body. |\n| **400** | Validation failure — `reason` is not a user-submittable value, or `note` is empty / missing. Body is **ProblemDetails**. |\n| **401** | Missing or expired access token. |\n| **403** | Authenticated but missing **`perm.runs.upload`**. |\n| **404** | Group or point not found, or resource is outside the caller's laboratory (IDOR-safe). |\n| **409** | Point is already in the target state, the group is locked (**Approved** / **Rejected**), or an optimistic-concurrency conflict. Body is **ProblemDetails** with `detail`. |\n\n### Audit trail\n\nBoth operations write to `AuditLog` with action types `CalibrationPointExcluded` and `CalibrationPointIncluded` respectively, recording the `UserId`, `Timestamp`, `EntityId`, `OldValue` (JSON snapshot of prior state), and `NewValue` (JSON snapshot of new state).\n\n## Calibration run status\n\nEach uploaded run has a computed `status` field:\n\n| Status | Description |\n|--------|-------------|\n| `Valid` | No measurement validation issues after parse (includes response-ratio / internal-standard checks when applicable) |\n| `ValidWithWarnings` | At least one non-blocking measurement issue (e.g. missing analyte mapping, missing ratio with IS rows present, malformed concentration) |\n| `Invalid` | No measurements, no usable target rows after validation, or blocking row errors (e.g. non-positive analyte or IS response) |\n\nEven `Invalid` runs are stored (raw text is immutable once uploaded). They appear in the database but cannot be used in calibration groups until the data source is corrected and re-uploaded.\n\n## Run naming\n\n**`POST /api/runs`** accepts an optional **`name`** field (string, max 256 characters) that sets a human-readable display label for the run. When omitted or blank, the server assigns a default of **`\"{RunType} {RunDate:yyyy-MM-dd}\"`** (e.g. `CAL 2026-04-24` or `ICV 2026-04-24`). The name is returned on every read endpoint:\n\n- `GET /api/runs` — `name` appears on each list item.\n- `GET /api/runs/{id}` — `name` in the detail response.\n- `GET /api/calibration-groups/candidates` — `name` on each candidate run row, so group builders can identify runs by label.\n\nThe name is **not** immutable — it is set once at upload and is not subsequently editable via this API version.\n\n## Run deletion\n\n**`DELETE /api/runs/{id}`** soft-deletes a calibration run. The run is excluded from all subsequent reads but the raw text and SHA-256 hash remain in the database for audit purposes. The audit trail records the run metadata and text hash under action type `CalibrationRunDeleted`.\n\n### Permission\n\nRequires **`perm.runs.delete`** (Analyst, LabAdmin, or equivalent). Authenticated but missing permission → **403 Forbidden**.\n\n### Laboratory scope\n\nLab users may delete only runs whose instrument belongs to their JWT laboratory. An unknown run id **or** a run from another laboratory both return **404 Not Found** (IDOR-safe).\n\n### Referential guard — 409 Conflict\n\nA run **cannot** be deleted while it is a member of any **CalibrationGroup** (either as a CAL run or as the optional ICV run). Attempting to do so returns **409 Conflict** with a `ProblemDetails` body. Remove the run from all groups first, then delete it.\n\n### HTTP status codes\n\n| Code | When |\n|------|------|\n| **204** | Soft-deletion succeeded; no response body. |\n| **401** | No or invalid bearer token. |\n| **403** | Authenticated but missing `perm.runs.delete`. |\n| **404** | Run not found or belongs to a different laboratory (IDOR-safe). |\n| **409** | Run is a member of one or more calibration groups; `detail` in ProblemDetails names the constraint. |\n\n## Calibration run measurements and response ratios\n\nAfter **`POST /api/runs`** parses compound rows, the server **computes internal-standard (IS) normalization** for each **Target** and **Unknown** row that has a resolved **`analyteId`**:\n\n- The canonical **`Analyte`** row supplies **`defaultInternalStandardId`** → **`InternalStandard`** name (choose the id from **`GET /api/internal-standards`** when configuring analytes).\n- That name is matched (case-insensitive; hyphens, underscores, and extra whitespace ignored) to a compound row in the same run categorized as **`InternalStandard`**.\n- When a match is found and the IS row response is **positive**, the measurement stores:\n  - **`internalStandardResponse`** — the IS compound row response used as the divisor.\n  - **`responseRatio`** — `analyteResponse / internalStandardResponse` (used before regression).\n- When the IS response is **zero or negative**, **`internalStandardResponse`** is still stored and **`responseRatio`** remains null; **`GET /api/runs/{id}/validation`** returns a blocking issue with code **`NonPositiveInternalStandardResponse`**.\n- When the run contains IS rows but no IS could be linked for a target row (missing analyte IS assignment or name mismatch), **`responseRatio`** stays null and validation may emit **`MissingInternalStandard`** (warning).\n\nUse **`GET /api/runs/{id}/measurements`** to read per-row values (including `internalStandardResponse` and `responseRatio`). Use **`GET /api/runs/{id}/validation`** for structured errors and warnings (`code`, `isError`, `measurementId`, line numbers).\n\n## Internal standard response summaries\n\nThese endpoints help analysts verify that **internal standard (IS)** compound responses are **consistent** within one run or across the **CAL** runs bundled in a **calibration group**. They operate on raw **`Response`** values from measurement rows whose **`compoundCategory`** is **`InternalStandard`** (not on per-target `internalStandardResponse` copies). Grouping matches **`GET /api/runs/{id}/measurements`** normalization: compound names are normalized with the same rules as calibration level / IS name matching (case-insensitive; hyphens, underscores, and extra whitespace stripped for the grouping key).\n\n### Endpoints\n\n| Method | Path | Scope |\n|--------|------|-------|\n| **GET** | `/api/runs/{id}/internal-standard-summaries` | One acquisition (CAL or ICV) |\n| **GET** | `/api/calibration-groups/{id}/internal-standard-summaries` | All **CAL** runs linked via the group's many-to-many; **ICV** run is **not** included |\n\nCreate the draft group first with **`POST /api/calibration-groups`** — see **Calibration groups — create draft** (requires **`perm.runs.upload`**).\n\n**Permission:** **`perm.view`** on both GET routes above.\n\n### Query parameters\n\n| Parameter | Required | Description |\n|-----------|----------|-------------|\n| **`laboratoryId`** | **Yes** for **platform operators** (no JWT laboratory); **ignored** for normal lab users | Must equal the **instrument's** `laboratoryId` for the run or group. Wrong or missing (operator) → **404** or **400**. |\n| **`methodConfigId`** | No | When set, **thresholds** for warnings are read from this config; it must belong to the **effective** laboratory (JWT lab or `laboratoryId`). Invalid id → **404**. When **omitted**, run summaries use **no** threshold flags; group summaries use the group's **snapshot** if **`methodConfigSnapshotId`** is set, else the group's **live** `methodConfig`. |\n| **`format`** | No | Omit or any value except `csv` → **JSON** array. **`format=csv`** (case-insensitive) → **`text/csv; charset=utf-8`** file download with a stable header row. |\n\n### Response shape (JSON)\n\nArray of objects (may be empty if the run/group has no IS rows):\n\n| JSON property | Type | Meaning |\n|---------------|------|---------|\n| **`normalizedKey`** | string | Normalized compound name key used for grouping |\n| **`rawCompoundName`** | string | Display name from one representative row (stable ordering by source line, then id) |\n| **`min`**, **`max`**, **`mean`** | number | Statistics over **Response** for that key in scope |\n| **`count`** | integer | Number of **IS measurement rows** aggregated (not necessarily number of runs if a file has duplicate IS lines) |\n| **`distinctCalibrationRunCount`** | integer or null | **Run** endpoint: **null**. **Group** endpoint: distinct `calibrationRunId` count contributing to that key |\n| **`thresholdMin`**, **`thresholdMax`** | number or null | Bounds **echoed** from the config used for evaluation (if any) |\n| **`isWarning`** | boolean | **True** if **mean** is strictly below **`thresholdMin`** or strictly above **`thresholdMax`** when that bound is set (bounds are **inclusive** — mean equal to a bound is OK) |\n| **`warningMessages`** | string[] | Human-readable reasons when **`isWarning`** is true |\n\n### CSV export\n\nSame data as JSON: one header row, then one data row per summary line. Numbers use **invariant** culture. Fields that may contain commas are quoted. Filename hint: `is-summaries-run-{runId}.csv` or `is-summaries-calibration-group-{groupId}.csv`. Empty IS set → **header only**, still **200 OK**.\n\n### HTTP status codes (summaries)\n\n| Code | When |\n|------|------|\n| **200** | Success — JSON array or CSV body |\n| **400** | Platform operator did not supply **`laboratoryId`** (ProblemDetails `detail` explains) |\n| **401** | No or invalid bearer token |\n| **403** | Authenticated but missing **`perm.view`** |\n| **404** | Run/group not found, instrument missing, **or** resource not in the effective laboratory (including bad **`methodConfigId`**); responses are IDOR-safe |\n\n### Configuring thresholds\n\nSet optional **`internalStandardResponseMin`** / **`internalStandardResponseMax`** on **`POST`/`PUT /api/method-configs`**. They are copied into each new **MethodConfigSnapshot** on material change. Snapshot columns drive **group** summaries after compute; draft groups without a snapshot use the **live** config for threshold evaluation.\n\n## Rate limiting\n\nThe following routes use a fixed-window rate limiter. Expect **429 Too Many Requests** when the limit is exceeded:\n\n- `POST /api/Auth/login`\n- `POST /api/Auth/refresh`\n- `POST /api/Auth/forgot-password`\n- `POST /api/Auth/reset-password`\n- `POST /api/Auth/accept-invite`\n- `POST /api/Invitations` (invitation create)\n\n",
     "contact": {
       "name": "WLTR"
     },
@@ -1849,7 +1849,7 @@
           {
             "name": "weightingMode",
             "in": "query",
-            "description": "**Weighted least-squares** mode for calibration curves. JSON integers: **0** = None (w=1 for each included point), **1** = InverseX (w=1/X), **2** = InverseXSquared (w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**.",
+            "description": "**Weighted least-squares** mode for calibration curves. JSON strings (enum names; ordinal in parentheses): `None` (0, w=1 for each included point), `InverseX` (1, w=1/X), `InverseXSquared` (2, w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute; a variant with an included X ≤ 0 is skipped (no curve), it does not fail the whole compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**.",
             "schema": {
               "$ref": "#/components/schemas/WeightingMode"
             }
@@ -1940,7 +1940,7 @@
           {
             "name": "weightingMode",
             "in": "query",
-            "description": "**Weighted least-squares** mode for calibration curves. JSON integers: **0** = None (w=1 for each included point), **1** = InverseX (w=1/X), **2** = InverseXSquared (w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**.",
+            "description": "**Weighted least-squares** mode for calibration curves. JSON strings (enum names; ordinal in parentheses): `None` (0, w=1 for each included point), `InverseX` (1, w=1/X), `InverseXSquared` (2, w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute; a variant with an included X ≤ 0 is skipped (no curve), it does not fail the whole compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**.",
             "schema": {
               "$ref": "#/components/schemas/WeightingMode"
             }
@@ -1962,6 +1962,101 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RegressionDebugResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calibration-groups/{id}/analytes/{analyteId}/curves": {
+      "get": {
+        "tags": [
+          "Calibration groups"
+        ],
+        "summary": "Returns all computed regression variants for one analyte within a calibration group.",
+        "description": "\r\nEach element in the returned array corresponds to one `(RegressionType, WeightingMode)` pair that\r\n            was computed during the last `POST .../compute` call. The payload shape per element is identical\r\n            to the single-variant `regression-debug` endpoint. Use this endpoint to compare all variants\r\n            side-by-side without making a separate request per variant.\r\n\r\nReturns an <strong>empty array</strong> when the group has not yet been computed (Draft status) or\r\n            when no `CalibrationCurve` rows exist for the specified analyte.\r\n\r\n<strong>Access:</strong> restricted to `perm.groups.approve` — only QA and Lab Admin roles.\r\n\r\n<strong>Laboratory scope:</strong> lab users may only read groups in their JWT laboratory.\r\n            Platform operators must supply `laboratoryId`; omitting it returns <strong>400</strong>.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Calibration group identifier (UUID).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "analyteId",
+            "in": "path",
+            "description": "Analyte identifier (UUID) whose curves should be returned.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "laboratoryId",
+            "in": "query",
+            "description": "Required for platform operators; ignored for lab users.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RegressionDebugResponse"
+                  }
                 }
               }
             }
@@ -2047,7 +2142,7 @@
           {
             "name": "weightingMode",
             "in": "query",
-            "description": "**Weighted least-squares** mode for calibration curves. JSON integers: **0** = None (w=1 for each included point), **1** = InverseX (w=1/X), **2** = InverseXSquared (w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**.",
+            "description": "**Weighted least-squares** mode for calibration curves. JSON strings (enum names; ordinal in parentheses): `None` (0, w=1 for each included point), `InverseX` (1, w=1/X), `InverseXSquared` (2, w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute; a variant with an included X ≤ 0 is skipped (no curve), it does not fail the whole compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**.",
             "schema": {
               "$ref": "#/components/schemas/WeightingMode"
             }
@@ -2501,6 +2596,181 @@
         }
       }
     },
+    "/api/calibration-groups/{id}/report": {
+      "get": {
+        "tags": [
+          "Calibration groups"
+        ],
+        "summary": "Returns the four-table Summary Report for the selected regression model.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationGroupSummaryReportDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calibration-groups/{id}/extrapolate": {
+      "post": {
+        "tags": [
+          "Calibration groups"
+        ],
+        "summary": "Predicts response from concentration or inverts response to concentration using a computed curve variant.",
+        "description": "\r\nSupply exactly one of `x` (true concentration) or `y` (response ratio) in the body.\r\n            When inverting from `y` on a quadratic model, optional `xHint` selects the nearest root.\r\n\r\n`regressionType` and `weightingMode` query parameters select the variant (like regression-debug).\r\n            When omitted, the group's selected model is used.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "regressionType",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/RegressionType"
+            }
+          },
+          {
+            "name": "weightingMode",
+            "in": "query",
+            "description": "**Weighted least-squares** mode for calibration curves. JSON strings (enum names; ordinal in parentheses): `None` (0, w=1 for each included point), `InverseX` (1, w=1/X), `InverseXSquared` (2, w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute; a variant with an included X ≤ 0 is skipped (no curve), it does not fail the whole compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**.",
+            "schema": {
+              "$ref": "#/components/schemas/WeightingMode"
+            }
+          },
+          {
+            "name": "laboratoryId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtrapolationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtrapolationResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/calibration-groups/{id}/select-model": {
       "post": {
         "tags": [
@@ -2748,6 +3018,91 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calibration-groups/{id}/target-analytes": {
+      "get": {
+        "tags": [
+          "Calibration groups"
+        ],
+        "summary": "Returns the distinct target analytes resolved in the group's linked CAL runs, each annotated with its current exclusion state.",
+        "description": "\r\nOnly `Target`-category measurements with a resolved `AnalyteId` are included — IS compound rows are not returned.\r\n            Results are sorted by analyte name ascending. Analytes already on the group's exclusion list have `isExcluded = true`.\r\n\r\nWorks for all group statuses (Draft, Computed, Approved, Rejected) — this is a read-only derivation from measurement data.\r\n\r\n<strong>Laboratory scope:</strong> JWT laboratory for lab users; platform operators must supply `laboratoryId`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Calibration group identifier.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "laboratoryId",
+            "in": "query",
+            "description": "Required for platform operators; ignored for laboratory users.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GroupTargetAnalyteDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -5383,6 +5738,101 @@
         }
       }
     },
+    "/api/method-configs/{id}/analyte-criteria": {
+      "get": {
+        "tags": [
+          "Method configuration"
+        ],
+        "summary": "Returns per-analyte acceptance limits configured for the method.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MethodAnalyteCriteriaDto"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Method configuration"
+        ],
+        "summary": "Replaces the full per-analyte criteria set for the method configuration.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceMethodAnalyteCriteriaRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/Roles": {
       "get": {
         "tags": [
@@ -6748,11 +7198,10 @@
       },
       "AnalyteCalStatus": {
         "enum": [
-          0,
-          1
+          "Pass",
+          "Fail"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "AnalyteDetailDto": {
         "type": "object",
@@ -6820,12 +7269,11 @@
       },
       "AnalyteMappingApplyScope": {
         "enum": [
-          0,
-          1
+          "RunOnly",
+          "Laboratory"
         ],
-        "type": "integer",
-        "description": "Scope for applying a one-off analyte assignment when not saving an alias.",
-        "format": "int32"
+        "type": "string",
+        "description": "Scope for applying a one-off analyte assignment when not saving an alias."
       },
       "AnalyteRefDto": {
         "type": "object",
@@ -7354,13 +7802,75 @@
       },
       "CalibrationGroupStatus": {
         "enum": [
-          0,
-          1,
-          2,
-          3
+          "Draft",
+          "Computed",
+          "Approved",
+          "Rejected"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
+      },
+      "CalibrationGroupSummaryReportDto": {
+        "type": "object",
+        "properties": {
+          "calibrationGroupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "groupName": {
+            "type": "string",
+            "nullable": true
+          },
+          "instrumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "methodConfigId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "methodConfigSnapshotId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "methodConfigVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "selectedRegressionType": {
+            "$ref": "#/components/schemas/RegressionType"
+          },
+          "selectedWeightingMode": {
+            "$ref": "#/components/schemas/WeightingMode"
+          },
+          "administrative": {
+            "$ref": "#/components/schemas/SummaryReportAdministrativeDto"
+          },
+          "executive": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SummaryReportExecutiveAnalyteDto"
+            },
+            "nullable": true
+          },
+          "responseFactors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SummaryReportResponseFactorAnalyteDto"
+            },
+            "nullable": true
+          },
+          "linearDynamicRange": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SummaryReportLdrAnalyteDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Full Summary Report payload for a computed calibration group with a selected model."
       },
       "CalibrationLevelDetailDto": {
         "type": "object",
@@ -7425,6 +7935,9 @@
             "description": "Compound name as parsed from the instrument export.",
             "nullable": true
           },
+          "compoundCategory": {
+            "$ref": "#/components/schemas/CompoundCategory"
+          },
           "analyteId": {
             "type": "string",
             "description": "Canonical analyte when matched; null when unresolved.",
@@ -7440,6 +7953,39 @@
             "type": "boolean",
             "description": "True when AnalyteId is set."
           },
+          "response": {
+            "type": "number",
+            "description": "Raw instrument response (area) for this compound row.",
+            "format": "double"
+          },
+          "retentionTime": {
+            "type": "number",
+            "description": "Retention time from the instrument export; null when not present.",
+            "format": "double",
+            "nullable": true
+          },
+          "quantIon": {
+            "type": "number",
+            "description": "Quantitation ion from the instrument export; null when not present.",
+            "format": "double",
+            "nullable": true
+          },
+          "isManualIntegration": {
+            "type": "boolean",
+            "description": "True when the response was manually integrated (e.g. MassHunter `m` suffix)."
+          },
+          "calculatedConcentration": {
+            "type": "number",
+            "description": "Concentration back-calculated by the instrument software; null when not exported.",
+            "format": "double",
+            "nullable": true
+          },
+          "trueConcentration": {
+            "type": "number",
+            "description": "Known standard concentration from the run's calibration level; null for ICV runs or when no level is assigned.",
+            "format": "double",
+            "nullable": true
+          },
           "internalStandardResponse": {
             "type": "number",
             "description": "IS response used for normalization when computed; null otherwise.",
@@ -7451,10 +7997,28 @@
             "description": "Analyte response divided by IS response when both are valid; null otherwise.",
             "format": "double",
             "nullable": true
+          },
+          "concentrationRatio": {
+            "type": "number",
+            "description": "Analyte true concentration divided by IS concentration (analyte_conc / IS_conc); the X value used in ISTD regression. Null when IS concentration is not configured or no level is assigned.",
+            "format": "double",
+            "nullable": true
+          },
+          "concentrationRatioSquared": {
+            "type": "number",
+            "description": "Square of ConcentrationRatio; the X² term used in quadratic ISTD regression.",
+            "format": "double",
+            "nullable": true
+          },
+          "responseFactor": {
+            "type": "number",
+            "description": "Response ratio multiplied by the inverse concentration ratio (ResponseRatio × IS_conc / analyte_conc); the per-point value whose mean is the Average RF slope.",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false,
-        "description": "One parsed compound row with analyte resolution and optional internal-standard normalization for review UIs and regression prep."
+        "description": "One parsed compound row with analyte resolution, raw instrument values, and optional IS-normalized fields for review UIs and regression prep."
       },
       "CalibrationRunListItemResponse": {
         "type": "object",
@@ -7494,6 +8058,16 @@
         },
         "additionalProperties": false,
         "description": "Row from `GET /api/runs`."
+      },
+      "CompoundCategory": {
+        "enum": [
+          "Unknown",
+          "Target",
+          "InternalStandard",
+          "SystemMonitoring",
+          "Surrogate"
+        ],
+        "type": "string"
       },
       "CreateAnalyteAliasRequest": {
         "type": "object",
@@ -7701,6 +8275,12 @@
             "type": "string",
             "description": "Optional CAS registry number.",
             "nullable": true
+          },
+          "concentration": {
+            "type": "number",
+            "description": "Known spike concentration (e.g. µg/L); used to compute amount ratios. Null when not applicable.",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -7882,6 +8462,33 @@
             "description": "ICV verification limit as a percentage (method-specific).",
             "format": "double"
           },
+          "rsdPercentLimit": {
+            "type": "number",
+            "description": "Maximum acceptable %RSD of per-level response factors for target analytes.",
+            "format": "double"
+          },
+          "isRsdPercentLimit": {
+            "type": "number",
+            "description": "Maximum acceptable %RSD for internal-standard and surrogate compounds.",
+            "format": "double"
+          },
+          "icvCdsParityPercent": {
+            "type": "number",
+            "description": "Maximum acceptable absolute % difference between WLTR ICV and CDS-reported concentration.",
+            "format": "double"
+          },
+          "soilDilutionFactor": {
+            "type": "number",
+            "description": "Presentation-only soil-matrix dilution factor.",
+            "format": "double",
+            "nullable": true
+          },
+          "aqueousDilutionFactor": {
+            "type": "number",
+            "description": "Presentation-only aqueous-matrix dilution factor.",
+            "format": "double",
+            "nullable": true
+          },
           "internalStandardResponseMin": {
             "type": "number",
             "description": "Optional inclusive lower bound for mean IS response (summary warnings).",
@@ -8059,15 +8666,98 @@
       },
       "ExclusionReason": {
         "enum": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
+          "None",
+          "MissingRatio",
+          "MissingIS",
+          "InvalidX",
+          "ManualExclude",
+          "PctDiffOutOfRange"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
+      },
+      "ExtrapolationRequest": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "description": "Canonical analyte whose fitted curve should be evaluated.",
+            "format": "uuid"
+          },
+          "x": {
+            "type": "number",
+            "description": "True concentration (X). Supply this or Wltr.Api.Models.ExtrapolationRequest.Y, not both.",
+            "format": "double",
+            "nullable": true
+          },
+          "y": {
+            "type": "number",
+            "description": "Observed response ratio (Y). Supply this or Wltr.Api.Models.ExtrapolationRequest.X, not both.",
+            "format": "double",
+            "nullable": true
+          },
+          "xHint": {
+            "type": "number",
+            "description": "True concentration hint used to pick the nearest quadratic root when inverting from Wltr.Api.Models.ExtrapolationRequest.Y.\r\nDefaults to 0 when omitted.",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request body for calibration curve extrapolation or inversion."
+      },
+      "ExtrapolationResultDto": {
+        "type": "object",
+        "properties": {
+          "calibrationGroupId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "analyteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "nullable": true
+          },
+          "regressionType": {
+            "$ref": "#/components/schemas/RegressionType"
+          },
+          "weightingMode": {
+            "$ref": "#/components/schemas/WeightingMode"
+          },
+          "modelLabel": {
+            "type": "string",
+            "nullable": true
+          },
+          "inputX": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "inputY": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "predictedY": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "calculatedConcentration": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "xHint": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Result of extrapolating or inverting a fitted calibration curve outside included calibration levels."
       },
       "GroupCandidateRunResponse": {
         "type": "object",
@@ -8138,6 +8828,27 @@
         },
         "additionalProperties": false,
         "description": "Response for `GET /api/calibration-groups/candidates`."
+      },
+      "GroupTargetAnalyteDto": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "description": "Canonical analyte identifier; use as `analyteId` on exclusion requests.",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "description": "Human-readable canonical analyte name.",
+            "nullable": true
+          },
+          "isExcluded": {
+            "type": "boolean",
+            "description": "True when this analyte is currently on the group's exclusion list."
+          }
+        },
+        "additionalProperties": false,
+        "description": "A distinct target analyte resolved in a calibration group's linked CAL runs, with its current exclusion state."
       },
       "InstrumentDetailResponse": {
         "type": "object",
@@ -8271,6 +8982,12 @@
             "description": "Optional CAS registry number.",
             "nullable": true
           },
+          "concentration": {
+            "type": "number",
+            "description": "Known spike concentration (e.g. µg/L); null when not configured.",
+            "format": "double",
+            "nullable": true
+          },
           "analytes": {
             "type": "array",
             "items": {
@@ -8299,6 +9016,12 @@
           "casNumber": {
             "type": "string",
             "description": "Optional CAS registry number when recorded.",
+            "nullable": true
+          },
+          "concentration": {
+            "type": "number",
+            "description": "Known spike concentration (e.g. µg/L); null when not configured.",
+            "format": "double",
             "nullable": true
           }
         },
@@ -8345,6 +9068,20 @@
           "thresholdMax": {
             "type": "number",
             "format": "double",
+            "nullable": true
+          },
+          "responseRsdPercent": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "isRsdPercentLimit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "isRsdPassed": {
+            "type": "boolean",
             "nullable": true
           },
           "isWarning": {
@@ -8453,11 +9190,10 @@
       },
       "LabelMode": {
         "enum": [
-          0,
-          1
+          "R",
+          "RSquared"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "LaboratoryDetailDto": {
         "type": "object",
@@ -8540,6 +9276,57 @@
         "additionalProperties": false,
         "description": "Laboratory summary returned from list endpoints."
       },
+      "MethodAnalyteCriteriaDto": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "nullable": true
+          },
+          "isSpcc": {
+            "type": "boolean"
+          },
+          "minResponseFactor": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "isCcc": {
+            "type": "boolean"
+          },
+          "maxRsdPercent": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "methodBlankLimit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvLcsConcentration": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvLcsLowerControlLimit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvLcsUpperControlLimit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Per-analyte acceptance limits for a method configuration."
+      },
       "MethodConfigDetailDto": {
         "type": "object",
         "properties": {
@@ -8588,6 +9375,28 @@
           "icvLimitPercent": {
             "type": "number",
             "format": "double"
+          },
+          "rsdPercentLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "isRsdPercentLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "icvCdsParityPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "soilDilutionFactor": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "aqueousDilutionFactor": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           },
           "internalStandardResponseMin": {
             "type": "number",
@@ -8678,6 +9487,28 @@
           "icvLimitPercent": {
             "type": "number",
             "format": "double"
+          },
+          "rsdPercentLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "isRsdPercentLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "icvCdsParityPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "soilDilutionFactor": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "aqueousDilutionFactor": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
           },
           "internalStandardResponseMin": {
             "type": "number",
@@ -9029,11 +9860,10 @@
       },
       "PointAcceptance": {
         "enum": [
-          0,
-          1
+          "Accepted",
+          "Rejected"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "PointExclusionDto": {
         "type": "object",
@@ -9114,12 +9944,11 @@
       },
       "QuantitationMode": {
         "enum": [
-          0,
-          1
+          "InternalStandard",
+          "ExternalStandard"
         ],
-        "type": "integer",
-        "description": "**Quantitation strategy** for calibration curves. JSON integers: **0** = InternalStandard (ISTD — curve **Y** = analyte response / IS response), **1** = ExternalStandard (ESTD — curve **Y** = raw analyte response). Frozen on each <c>MethodConfigSnapshot</c> at compute. Full narrative: OpenAPI description sections **Method configuration versioning** and **Calibration regression and weighting**.",
-        "format": "int32"
+        "type": "string",
+        "description": "**Quantitation strategy** for calibration curves. JSON strings (enum names; ordinal in parentheses): `InternalStandard` (0 — ISTD — curve **Y** = analyte response / IS response), `ExternalStandard` (1 — ESTD — curve **Y** = raw analyte response). Frozen on each <c>MethodConfigSnapshot</c> at compute. Full narrative: OpenAPI description sections **Method configuration versioning** and **Calibration regression and weighting**."
       },
       "RegressionDebugPointResponse": {
         "type": "object",
@@ -9131,8 +9960,13 @@
           },
           "calibrationRunId": {
             "type": "string",
-            "description": "Source CAL run for this point.",
+            "description": "Source CAL run identifier.",
             "format": "uuid"
+          },
+          "runName": {
+            "type": "string",
+            "description": "Display name of the source CAL run.",
+            "nullable": true
           },
           "calibrationLevelId": {
             "type": "string",
@@ -9140,14 +9974,25 @@
             "format": "uuid",
             "nullable": true
           },
-          "x": {
+          "levelName": {
+            "type": "string",
+            "description": "Display name of the calibration level (e.g. `Cal_10ppb`); `null` when no level is linked.",
+            "nullable": true
+          },
+          "trueConcentration": {
             "type": "number",
-            "description": "True standard concentration (curve X axis).",
+            "description": "Absolute true concentration from the calibration level (e.g. µg/L) — Excel \"True Conct\".\r\n`null` when no level is linked. Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is derived as\r\n`TrueConcentration / IS_conc` for ISTD methods.",
+            "format": "double",
+            "nullable": true
+          },
+          "amountRatio": {
+            "type": "number",
+            "description": "Regression X-axis value (Excel \"Amount Ratio (X-Value)\"). For ISTD methods:\r\n`analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not configured:\r\nthe raw true concentration.",
             "format": "double"
           },
-          "y": {
+          "responseRatio": {
             "type": "number",
-            "description": "Response ratio or raw response (curve Y axis) as stored at compute time.",
+            "description": "Regression Y-axis value (Excel \"Respnse Ratio (Y-Value)\"). For ISTD methods:\r\n`analyte_area / IS_area`. For ESTD methods: the raw analyte response (area).",
             "format": "double"
           },
           "weight": {
@@ -9155,15 +10000,15 @@
             "description": "Regression weight applied at fit time; 0 for excluded points.",
             "format": "double"
           },
-          "predictedY": {
+          "predictedResponseRatio": {
             "type": "number",
-            "description": "Fitted ŷ from the curve equation at this point's X; `null` when the model did not produce a forward prediction.",
+            "description": "Fitted ŷ at Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio; `null` when the model did not produce a forward prediction.",
             "format": "double",
             "nullable": true
           },
           "residual": {
             "type": "number",
-            "description": "Y − PredictedY; `null` when Wltr.Api.Models.RegressionDebugPointResponse.PredictedY is `null`.",
+            "description": "Wltr.Api.Models.RegressionDebugPointResponse.ResponseRatio − Wltr.Api.Models.RegressionDebugPointResponse.PredictedResponseRatio; `null` when Wltr.Api.Models.RegressionDebugPointResponse.PredictedResponseRatio is `null`.",
             "format": "double",
             "nullable": true
           },
@@ -9192,6 +10037,41 @@
             "type": "string",
             "description": "UTC timestamp when the point was manually excluded; `null` when not manually excluded.",
             "format": "date-time",
+            "nullable": true
+          },
+          "responseFactor": {
+            "type": "number",
+            "description": "Per-point response factor (Excel \"Response Factor\") = Wltr.Api.Models.RegressionDebugPointResponse.ResponseRatio / Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio;\r\n`null` when Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is zero.",
+            "format": "double",
+            "nullable": true
+          },
+          "calcConcentration": {
+            "type": "number",
+            "description": "Back-calculated absolute concentration (Excel \"Calc Conct\") = Wltr.Api.Models.RegressionDebugPointResponse.TrueConcentration × (1 + Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff / 100);\r\n`null` when Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff or Wltr.Api.Models.RegressionDebugPointResponse.TrueConcentration is `null`.",
+            "format": "double",
+            "nullable": true
+          },
+          "standardResponse": {
+            "type": "number",
+            "description": "Raw analyte instrument signal (peak area) from the source measurement (Excel \"Standard Response\").",
+            "format": "double"
+          },
+          "isResponse": {
+            "type": "number",
+            "description": "Raw IS instrument signal (peak area) paired with this measurement (Excel \"Internal Standard Response\");\r\n`null` when no IS is assigned or the IS signal was not found.",
+            "format": "double",
+            "nullable": true
+          },
+          "inverseAmountRatio": {
+            "type": "number",
+            "description": "1 / Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio (Excel \"Inverse Amount Ratio\"); the weighting factor under `1/x` weighting mode.\r\n`null` when Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is zero.",
+            "format": "double",
+            "nullable": true
+          },
+          "inverseAmountRatioSquared": {
+            "type": "number",
+            "description": "1 / Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio² (Excel \"Inverse Amount Ratio Squared\"); the weighting factor under `1/x²` weighting mode.\r\n`null` when Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is zero.",
+            "format": "double",
             "nullable": true
           }
         },
@@ -9349,6 +10229,44 @@
             "description": "`true` when the ICV %Diff is within the configured limit; `null` when no ICV run was linked.",
             "nullable": true
           },
+          "meanResponseFactor": {
+            "type": "number",
+            "description": "Arithmetic mean of per-point response factors (ResponseRatio / AmountRatio) across included points; `null` when not computed.",
+            "format": "double",
+            "nullable": true
+          },
+          "responseFactorRsd": {
+            "type": "number",
+            "description": "Relative standard deviation of per-point response factors, percent (Excel \"RF %RSD\"); `null` when not computed.",
+            "format": "double",
+            "nullable": true
+          },
+          "icvCdsPercentDiff": {
+            "type": "number",
+            "description": "Absolute % difference between WLTR ICV calculated concentration and the instrument-reported (CDS) concentration; `null` when not applicable.",
+            "format": "double",
+            "nullable": true
+          },
+          "icvCdsPassed": {
+            "type": "boolean",
+            "description": "`true` when ICV CDS-parity is within the configured limit; `null` when not applicable.",
+            "nullable": true
+          },
+          "spccMinRfPassed": {
+            "type": "boolean",
+            "description": "`true` when the SPCC minimum response factor criterion passed; `null` when the analyte is not SPCC.",
+            "nullable": true
+          },
+          "cccRsdPassed": {
+            "type": "boolean",
+            "description": "`true` when the CCC maximum %RSD criterion passed; `null` when the analyte is not CCC.",
+            "nullable": true
+          },
+          "icvLcsRecoveryPassed": {
+            "type": "boolean",
+            "description": "`true` when ICV/LCS recovery is within the per-analyte LCL/UCL; `null` when limits are not configured.",
+            "nullable": true
+          },
           "points": {
             "type": "array",
             "items": {
@@ -9380,25 +10298,36 @@
             "format": "uuid",
             "nullable": true
           },
-          "x": {
+          "levelName": {
+            "type": "string",
+            "description": "Display name of the calibration level (e.g. `Cal_10ppb`); `null` when no level is linked.",
+            "nullable": true
+          },
+          "trueConcentration": {
             "type": "number",
-            "description": "True standard concentration (curve X axis).",
+            "description": "Absolute true concentration from the calibration level (e.g. µg/L) — Excel \"True Conct\".\r\n`null` when no level is linked. Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is derived as\r\n`TrueConcentration / IS_conc` for ISTD methods.",
+            "format": "double",
+            "nullable": true
+          },
+          "amountRatio": {
+            "type": "number",
+            "description": "Regression X-axis value (Excel \"Amount Ratio (X-Value)\"). For ISTD methods:\r\n`analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not\r\nconfigured: the raw true concentration.",
             "format": "double"
           },
-          "y": {
+          "responseRatio": {
             "type": "number",
-            "description": "Response ratio (analyte / IS response); `null` when the ratio could not be computed.",
+            "description": "Regression Y-axis value (Excel \"Respnse Ratio (Y-Value)\"). For ISTD methods:\r\n`analyte_area / IS_area`. For ESTD methods: the raw analyte response (area).\r\n`null` when the ratio could not be computed.",
             "format": "double",
             "nullable": true
           },
           "weight": {
             "type": "number",
-            "description": "Regression weight derived from the group weighting mode and X; 0 for excluded points.",
+            "description": "Regression weight derived from the group weighting mode and Wltr.Api.Models.RegressionInputPointResponse.AmountRatio; 0 for excluded points.",
             "format": "double"
           },
           "isIncluded": {
             "type": "boolean",
-            "description": "Initial inclusion flag; `false` when Y is null or X is non-positive for inverse-weight modes."
+            "description": "Initial inclusion flag; `false` when Wltr.Api.Models.RegressionInputPointResponse.ResponseRatio is null or Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is non-positive for inverse-weight modes."
           },
           "exclusionReason": {
             "$ref": "#/components/schemas/ExclusionReason"
@@ -9412,21 +10341,56 @@
             "description": "Parser or validation warning from the source compound row; `null` when clean.",
             "nullable": true
           },
-          "predictedY": {
+          "predictedResponseRatio": {
             "type": "number",
-            "description": "Fitted ŷ at this point's X from the calibration curve equation; `null` when the group has not been computed\r\nor the model does not produce a forward prediction (e.g. Average).",
+            "description": "Fitted ŷ at Wltr.Api.Models.RegressionInputPointResponse.AmountRatio from the calibration curve equation; `null` when the group has not been computed\r\nor the model does not produce a forward prediction (e.g. Average).",
             "format": "double",
             "nullable": true
           },
           "residual": {
             "type": "number",
-            "description": "Observed Y minus fitted ŷ; `null` when Wltr.Api.Models.RegressionInputPointResponse.PredictedY is `null`.",
+            "description": "Wltr.Api.Models.RegressionInputPointResponse.ResponseRatio minus fitted ŷ; `null` when Wltr.Api.Models.RegressionInputPointResponse.PredictedResponseRatio is `null`.",
             "format": "double",
             "nullable": true
           },
           "percentDiff": {
             "type": "number",
             "description": "`(CalcConc − TrueConc) / TrueConc × 100` where `CalcConc` is obtained by inverting the fitted\r\n            curve for the observed response; `null` when inversion is undefined or the group has not been computed.",
+            "format": "double",
+            "nullable": true
+          },
+          "responseFactor": {
+            "type": "number",
+            "description": "Per-point response factor (Excel \"Response Factor\") = Wltr.Api.Models.RegressionInputPointResponse.ResponseRatio / Wltr.Api.Models.RegressionInputPointResponse.AmountRatio;\r\n`null` when Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is zero or Wltr.Api.Models.RegressionInputPointResponse.ResponseRatio is `null`.",
+            "format": "double",
+            "nullable": true
+          },
+          "calcConcentration": {
+            "type": "number",
+            "description": "Back-calculated absolute concentration (Excel \"Calc Conct\") = Wltr.Api.Models.RegressionInputPointResponse.TrueConcentration × (1 + Wltr.Api.Models.RegressionInputPointResponse.PercentDiff / 100);\r\n`null` when Wltr.Api.Models.RegressionInputPointResponse.PercentDiff or Wltr.Api.Models.RegressionInputPointResponse.TrueConcentration is `null`.",
+            "format": "double",
+            "nullable": true
+          },
+          "standardResponse": {
+            "type": "number",
+            "description": "Raw analyte instrument signal (peak area) from the source measurement (Excel \"Standard Response\").",
+            "format": "double"
+          },
+          "isResponse": {
+            "type": "number",
+            "description": "Raw IS instrument signal (peak area) paired with this measurement (Excel \"Internal Standard Response\");\r\n`null` when no IS is assigned or the IS signal was not found.",
+            "format": "double",
+            "nullable": true
+          },
+          "inverseAmountRatio": {
+            "type": "number",
+            "description": "1 / Wltr.Api.Models.RegressionInputPointResponse.AmountRatio (Excel \"Inverse Amount Ratio\"); the weighting factor under `1/x` weighting mode.\r\n`null` when Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is zero.",
+            "format": "double",
+            "nullable": true
+          },
+          "inverseAmountRatioSquared": {
+            "type": "number",
+            "description": "1 / Wltr.Api.Models.RegressionInputPointResponse.AmountRatio² (Excel \"Inverse Amount Ratio Squared\"); the weighting factor under `1/x²` weighting mode.\r\n`null` when Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is zero.",
             "format": "double",
             "nullable": true
           }
@@ -9461,13 +10425,12 @@
       },
       "RegressionType": {
         "enum": [
-          0,
-          1,
-          2,
-          3
+          "Average",
+          "Linear",
+          "LinearForcedZero",
+          "Quadratic"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "RejectCalibrationGroupRequest": {
         "type": "object",
@@ -9501,6 +10464,20 @@
         },
         "additionalProperties": false,
         "description": "Request body for replacing a calibration group's entire analyte exclusion list in one call."
+      },
+      "ReplaceMethodAnalyteCriteriaRequest": {
+        "type": "object",
+        "properties": {
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SaveMethodAnalyteCriteriaRequest"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Replaces the full per-analyte criteria set for a method configuration."
       },
       "ReportCardAnalyteDto": {
         "type": "object",
@@ -9829,39 +10806,36 @@
       },
       "RunStatus": {
         "enum": [
-          0,
-          1,
-          2,
-          3
+          "Pending",
+          "Valid",
+          "ValidWithWarnings",
+          "Invalid"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "RunType": {
         "enum": [
-          0,
-          1
+          "CAL",
+          "ICV"
         ],
-        "type": "integer",
-        "format": "int32"
+        "type": "string"
       },
       "RunValidationIssueCode": {
         "enum": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10
+          "NonPositiveResponse",
+          "MissingAnalyteMapping",
+          "MissingInternalStandard",
+          "MalformedConcentrationOrRatio",
+          "NonPositiveInternalStandardResponse",
+          "InsufficientCalibrationLevels",
+          "CalibrationRunLevelUnresolved",
+          "DuplicateCalibrationLevelInGroup",
+          "CalibrationRunReferenceMissing",
+          "InvalidCalibrationRunStatus",
+          "InvalidResponseRatio"
         ],
-        "type": "integer",
-        "description": "Identifies the kind of validation issue on a calibration measurement row or group-level readiness finding.",
-        "format": "int32"
+        "type": "string",
+        "description": "Identifies the kind of validation issue on a calibration measurement row or group-level readiness finding."
       },
       "RunValidationIssueResponse": {
         "type": "object",
@@ -9938,6 +10912,53 @@
         "additionalProperties": false,
         "description": "Structured measurement validation for a calibration run."
       },
+      "SaveMethodAnalyteCriteriaRequest": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "isSpcc": {
+            "type": "boolean"
+          },
+          "minResponseFactor": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "isCcc": {
+            "type": "boolean"
+          },
+          "maxRsdPercent": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "methodBlankLimit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvLcsConcentration": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvLcsLowerControlLimit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvLcsUpperControlLimit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Per-analyte criteria row in a replace request."
+      },
       "SelectModelRequest": {
         "type": "object",
         "properties": {
@@ -9950,6 +10971,275 @@
         },
         "additionalProperties": false,
         "description": "Request body for selecting the regression model variant a QA reviewer will sign off on."
+      },
+      "SummaryReportAdministrativeDto": {
+        "type": "object",
+        "properties": {
+          "methodConfigName": {
+            "type": "string",
+            "nullable": true
+          },
+          "computedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "computationVersion": {
+            "type": "string",
+            "nullable": true
+          },
+          "rsdPercentLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "isRsdPercentLimit": {
+            "type": "number",
+            "format": "double"
+          },
+          "icvLimitPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "icvCdsParityPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "soilDilutionFactor": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "aqueousDilutionFactor": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "isComputationStale": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SummaryReportExecutiveAnalyteDto": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "nullable": true
+          },
+          "calStatus": {
+            "$ref": "#/components/schemas/AnalyteCalStatus"
+          },
+          "failureReasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "rSquared": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "correlationR": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "rse": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "responseFactorRsd": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "meanResponseFactor": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvPassed": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "icvCdsPassed": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "icvLcsRecoveryPassed": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "spccMinRfPassed": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "cccRsdPassed": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SummaryReportLdrAnalyteDto": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "nullable": true
+          },
+          "slope": {
+            "type": "number",
+            "format": "double"
+          },
+          "intercept": {
+            "type": "number",
+            "format": "double"
+          },
+          "icvTrueConcentration": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvCalculatedConcentration": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvPercentDiff": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvCdsPercentDiff": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvPassed": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "icvCdsPassed": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SummaryReportLdrPointDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SummaryReportLdrPointDto": {
+        "type": "object",
+        "properties": {
+          "calibrationRunId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "x": {
+            "type": "number",
+            "format": "double"
+          },
+          "y": {
+            "type": "number",
+            "format": "double"
+          },
+          "predictedY": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "residual": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "percentDiff": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "isIncluded": {
+            "type": "boolean"
+          },
+          "acceptance": {
+            "$ref": "#/components/schemas/PointAcceptance"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SummaryReportResponseFactorAnalyteDto": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "nullable": true
+          },
+          "meanResponseFactor": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "responseFactorRsd": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SummaryReportResponseFactorPointDto"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SummaryReportResponseFactorPointDto": {
+        "type": "object",
+        "properties": {
+          "calibrationRunId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "x": {
+            "type": "number",
+            "format": "double"
+          },
+          "y": {
+            "type": "number",
+            "format": "double"
+          },
+          "responseFactor": {
+            "type": "number",
+            "format": "double"
+          },
+          "isIncluded": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
       },
       "SuppressAnalyteRequest": {
         "type": "object",
@@ -10175,6 +11465,12 @@
             "type": "string",
             "description": "Optional CAS registry number.",
             "nullable": true
+          },
+          "concentration": {
+            "type": "number",
+            "description": "Known spike concentration (e.g. µg/L); used to compute amount ratios. Null when not applicable.",
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -10316,6 +11612,33 @@
             "type": "number",
             "description": "ICV limit percent.",
             "format": "double"
+          },
+          "rsdPercentLimit": {
+            "type": "number",
+            "description": "Maximum acceptable %RSD of per-level response factors for target analytes.",
+            "format": "double"
+          },
+          "isRsdPercentLimit": {
+            "type": "number",
+            "description": "Maximum acceptable %RSD for internal-standard and surrogate compounds.",
+            "format": "double"
+          },
+          "icvCdsParityPercent": {
+            "type": "number",
+            "description": "Maximum acceptable absolute % difference between WLTR ICV and CDS-reported concentration.",
+            "format": "double"
+          },
+          "soilDilutionFactor": {
+            "type": "number",
+            "description": "Presentation-only soil-matrix dilution factor.",
+            "format": "double",
+            "nullable": true
+          },
+          "aqueousDilutionFactor": {
+            "type": "number",
+            "description": "Presentation-only aqueous-matrix dilution factor.",
+            "format": "double",
+            "nullable": true
           },
           "internalStandardResponseMin": {
             "type": "number",
@@ -10467,13 +11790,12 @@
       },
       "WeightingMode": {
         "enum": [
-          0,
-          1,
-          2
+          "None",
+          "InverseX",
+          "InverseXSquared"
         ],
-        "type": "integer",
-        "description": "**Weighted least-squares** mode for calibration curves. JSON integers: **0** = None (w=1 for each included point), **1** = InverseX (w=1/X), **2** = InverseXSquared (w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**.",
-        "format": "int32"
+        "type": "string",
+        "description": "**Weighted least-squares** mode for calibration curves. JSON strings (enum names; ordinal in parentheses): `None` (0, w=1 for each included point), `InverseX` (1, w=1/X), `InverseXSquared` (2, w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute; a variant with an included X ≤ 0 is skipped (no curve), it does not fail the whole compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**."
       }
     },
     "securitySchemes": {

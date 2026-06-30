@@ -1,8 +1,9 @@
 "use client";
 
 import { AnalyteInternalStandardSelect } from "@/components/analyte-internal-standard-select";
-import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
+import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import { createAnalyte } from "@/lib/api/wltr-api";
+import { ANALYTE_ROLE_LABEL } from "@/lib/types/wltr";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -14,6 +15,7 @@ export default function NewAnalytePage() {
   const [form, setForm] = useState({
     name: "",
     casNumber: "",
+    role: 0,
     defaultInternalStandardId: "",
   });
 
@@ -25,6 +27,7 @@ export default function NewAnalytePage() {
       const res = await createAnalyte({
         name: form.name,
         casNumber: form.casNumber || undefined,
+        role: form.role,
         defaultInternalStandardId: form.defaultInternalStandardId || undefined,
       });
       const id = String((res as { id?: string }).id ?? "");
@@ -53,6 +56,20 @@ export default function NewAnalytePage() {
             <div>
               <Label htmlFor="casNumber">CAS number</Label>
               <Input id="casNumber" value={form.casNumber} onChange={(e) => setForm({ ...form, casNumber: e.target.value })} />
+            </div>
+            <div>
+              <Label htmlFor="role">Role</Label>
+              <Select
+                id="role"
+                value={String(form.role)}
+                onChange={(e) => setForm({ ...form, role: Number(e.target.value) })}
+              >
+                {[0, 1, 2].map((v) => (
+                  <option key={v} value={v}>
+                    {ANALYTE_ROLE_LABEL[v]}
+                  </option>
+                ))}
+              </Select>
             </div>
           </div>
           <div className="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50/80 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">

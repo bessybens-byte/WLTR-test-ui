@@ -1,5 +1,6 @@
 "use client";
 
+import { RunMeasurementsTable } from "@/components/run-measurements-table";
 import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import { InternalStandardSummariesPanel } from "@/components/internal-standard-summaries-panel";
 import {
@@ -104,34 +105,15 @@ export default function RunDetailPage() {
 
       <Card>
         <div className="text-sm font-medium">Measurements</div>
+        <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+          Parsed compound rows with instrument fields and IS-derived amount ratios (null when IS concentration is not
+          configured on the default internal standard).
+        </p>
         <div className="mt-3">
           {measurements.isLoading ? <div className="text-sm">Loading…</div> : null}
           {measurements.isError ? <div className="text-sm text-red-600">{(measurements.error as Error).message}</div> : null}
           {measurements.isSuccess ? (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs">
-                <thead>
-                  <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
-                    <th className="py-2 pr-2">Compound</th>
-                    <th className="py-2 pr-2">Resolved</th>
-                    <th className="py-2 pr-2">Ratio</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {measurements.data!.map((m) => {
-                    const r = m as Record<string, unknown>;
-                    const mid = String(r.id ?? "");
-                    return (
-                      <tr key={mid} className="border-b border-neutral-100 dark:border-neutral-900">
-                        <td className="py-2 pr-2">{String(r.rawCompoundName ?? "")}</td>
-                        <td className="py-2 pr-2">{String(r.isResolved ?? "")}</td>
-                        <td className="py-2 pr-2">{r.responseRatio == null ? "—" : String(r.responseRatio)}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <RunMeasurementsTable rows={(measurements.data ?? []) as Record<string, unknown>[]} />
           ) : null}
         </div>
       </Card>
