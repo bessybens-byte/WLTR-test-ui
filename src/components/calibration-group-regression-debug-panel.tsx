@@ -1,7 +1,8 @@
 "use client";
 
 import { JsonPrettyView } from "@/components/json-pretty-view";
-import { Button, Card, Input, Label, Select } from "@/components/ui";
+import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { Button, Card, Label, Select } from "@/components/ui";
 import {
   getCalibrationGroupRegressionDebug,
   getCalibrationGroupRegressionInputs,
@@ -39,7 +40,7 @@ export function CalibrationGroupRegressionDebugPanel({
   readonly selectedWeightingMode?: unknown;
 }) {
   const labInJwt = me?.laboratoryId;
-  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
+  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState(getRememberedLabId());
   const [selectedAnalyteId, setSelectedAnalyteId] = useState("");
   const [userPickedVariantKey, setUserPickedVariantKey] = useState<string | null>(null);
   const needPlatformLab = !labInJwt;
@@ -189,15 +190,9 @@ export function CalibrationGroupRegressionDebugPanel({
       <div className="space-y-5 p-5">
         {needPlatformLab ? (
           <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50/50 p-4 dark:border-neutral-700 dark:bg-neutral-900/30">
-            <Label htmlFor="rdLab">Laboratory ID</Label>
+            <Label htmlFor="rdLab">Laboratory</Label>
             <p className="mb-2 text-[11px] text-neutral-500 dark:text-neutral-400">Required for platform operators.</p>
-            <Input
-              id="rdLab"
-              value={laboratoryIdOverride}
-              onChange={(e) => setLaboratoryIdOverride(e.target.value)}
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="font-mono text-xs"
-            />
+            <LabPicker id="rdLab" value={laboratoryIdOverride} onChange={setLaboratoryIdOverride} />
           </div>
         ) : (
           <div className="rounded-lg bg-neutral-100/70 px-3 py-2 text-[11px] text-neutral-600 dark:bg-neutral-900/60 dark:text-neutral-400">

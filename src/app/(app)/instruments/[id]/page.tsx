@@ -1,10 +1,12 @@
 "use client";
 
 import { InstrumentSuppressedAnalytesPanel } from "@/components/instrument-suppressed-analytes-panel";
+import { ConfirmDialog } from "@/components/modal";
 import { Badge, Button, Card, Input, Label, PageHeader, Textarea } from "@/components/ui";
 import { deleteInstrument, getInstrument, updateInstrument } from "@/lib/api/wltr-api";
 import { hasPermission, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -41,7 +43,9 @@ export default function InstrumentDetailPage() {
   const { me } = useAuth();
   const router = useRouter();
   const qc = useQueryClient();
+  const toast = useToast();
   const canEdit = hasPermission(me, PERMS.configEdit);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const q = useQuery({
     queryKey: ["instrument", id],
@@ -82,15 +86,19 @@ export default function InstrumentDetailPage() {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["instrument", id] });
       await qc.invalidateQueries({ queryKey: ["instruments"] });
+      toast.success("Instrument saved");
     },
+    onError: (err: unknown) => toast.error("Save failed", err instanceof Error ? err.message : undefined),
   });
 
   const del = useMutation({
     mutationFn: async () => deleteInstrument(id),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["instruments"] });
+      toast.success("Instrument deleted");
       router.replace("/instruments");
     },
+    onError: (err: unknown) => toast.error("Delete failed", err instanceof Error ? err.message : undefined),
   });
 
   const title = q.isSuccess && form.name.trim() ? form.name : "Instrument";
@@ -225,7 +233,7 @@ export default function InstrumentDetailPage() {
                   <Button type="submit" disabled={save.isPending}>
                     Save changes
                   </Button>
-                  <Button type="button" variant="danger" disabled={del.isPending} onClick={() => del.mutate()}>
+                  <Button type="button" variant="danger" disabled={del.isPending} onClick={() => setConfirmDelete(true)}>
                     Delete instrument
                   </Button>
                 </div>
@@ -240,6 +248,20 @@ export default function InstrumentDetailPage() {
       </Card>
 
       {q.isSuccess ? <InstrumentSuppressedAnalytesPanel instrumentId={id} canEdit={canEdit} /> : null}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          del.mutate();
+        }}
+        title="Delete this instrument?"
+        message="Runs and calibration groups built against it may be affected. This cannot be undone."
+        confirmLabel="Delete instrument"
+        danger
+        busy={del.isPending}
+      />
     </div>
   );
 }

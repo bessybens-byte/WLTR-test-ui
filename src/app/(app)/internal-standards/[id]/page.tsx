@@ -1,9 +1,11 @@
 "use client";
 
+import { ConfirmDialog } from "@/components/modal";
 import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
 import { deleteInternalStandard, getInternalStandard, updateInternalStandard } from "@/lib/api/wltr-api";
 import { PERMS, hasPermission } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -13,7 +15,9 @@ export default function InternalStandardDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { me } = useAuth();
   const qc = useQueryClient();
+  const toast = useToast();
   const canEdit = hasPermission(me, PERMS.configEdit);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const q = useQuery({
     queryKey: ["internal-standard", id],
@@ -44,15 +48,19 @@ export default function InternalStandardDetailPage() {
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["internal-standard", id] });
       await qc.invalidateQueries({ queryKey: ["internal-standards"] });
+      toast.success("Internal standard saved");
     },
+    onError: (err: unknown) => toast.error("Save failed", err instanceof Error ? err.message : undefined),
   });
 
   const del = useMutation({
     mutationFn: async () => deleteInternalStandard(id),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["internal-standards"] });
+      toast.success("Internal standard deleted");
       window.location.href = "/internal-standards";
     },
+    onError: (err: unknown) => toast.error("Delete failed", err instanceof Error ? err.message : undefined),
   });
 
   const displayName = q.isSuccess ? String((q.data as Record<string, unknown>).name ?? "").trim() : "";
@@ -125,7 +133,7 @@ export default function InternalStandardDetailPage() {
                 <Button type="submit" disabled={save.isPending}>
                   Save
                 </Button>
-                <Button type="button" variant="danger" disabled={del.isPending} onClick={() => del.mutate()}>
+                <Button type="button" variant="danger" disabled={del.isPending} onClick={() => setConfirmDelete(true)}>
                   Delete
                 </Button>
               </div>
@@ -162,6 +170,20 @@ export default function InternalStandardDetailPage() {
           )}
         </Card>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          del.mutate();
+        }}
+        title="Delete this internal standard?"
+        message="Analytes that reference it as their default will lose the assignment. This cannot be undone."
+        confirmLabel="Delete"
+        danger
+        busy={del.isPending}
+      />
     </div>
   );
 }

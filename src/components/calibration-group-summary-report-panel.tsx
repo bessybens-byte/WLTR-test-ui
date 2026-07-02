@@ -131,8 +131,8 @@ export function CalibrationGroupSummaryReportPanel({
                     </tr>
                   </thead>
                   <tbody>
-                    {executive.map((row) => {
-                      const id = String(row.analyteId ?? row.analyteName ?? Math.random());
+                    {executive.map((row, idx) => {
+                      const id = String(row.analyteId ?? row.analyteName ?? `row-${idx}`);
                       const failures = Array.isArray(row.failureReasons)
                         ? (row.failureReasons as string[]).join("; ")
                         : "";

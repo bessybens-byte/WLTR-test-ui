@@ -20,6 +20,7 @@ export const navSections: NavSection[] = [
     items: [
       { href: "/dashboard", label: "Dashboard", description: "Your account and system status" },
       { href: "/account", label: "My profile", description: "Update your technician profile" },
+      { href: "/technicians/me", label: "Technician record", description: "Your read-only technician profile" },
     ],
   },
   {

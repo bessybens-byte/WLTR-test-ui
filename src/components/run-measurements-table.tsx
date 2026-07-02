@@ -34,8 +34,8 @@ export function RunMeasurementsTable({ rows }: { readonly rows: Record<string, u
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => {
-            const mid = String(r.id ?? r.rawCompoundName ?? Math.random());
+          {rows.map((r, idx) => {
+            const mid = String(r.id ?? r.rawCompoundName ?? `row-${idx}`);
             return (
               <tr key={mid} className="border-b border-neutral-100 dark:border-neutral-900">
                 <td className="py-2 pr-2">{String(r.rawCompoundName ?? "")}</td>

@@ -1,6 +1,7 @@
 "use client";
 
-import { Badge, Button, Card, Input, Label, Select, Textarea } from "@/components/ui";
+import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { Badge, Button, Card, Label, Select, Textarea } from "@/components/ui";
 import {
   excludeCalibrationPoint,
   getCalibrationGroupRegressionInputs,
@@ -345,7 +346,7 @@ export function CalibrationGroupRegressionInputsPanel({
   readonly selectedWeightingMode?: unknown;
 }) {
   const labInJwt = me?.laboratoryId;
-  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
+  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState(getRememberedLabId());
   /** `null` = follow first analyte in the latest payload; otherwise user-picked `key`. */
   const [userPickedKey, setUserPickedKey] = useState<string | null>(null);
   const [userPickedVariantKey, setUserPickedVariantKey] = useState<string | null>(null);
@@ -459,14 +460,10 @@ export function CalibrationGroupRegressionInputsPanel({
       </p>
       {needPlatformLab ? (
         <div className="mt-4">
-          <Label htmlFor="regressionInputsLab">Laboratory ID (required for platform users)</Label>
-          <Input
-            id="regressionInputsLab"
-            value={laboratoryIdOverride}
-            onChange={(e) => setLaboratoryIdOverride(e.target.value)}
-            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            className="mt-1 font-mono text-xs"
-          />
+          <Label htmlFor="regressionInputsLab">Laboratory (required for platform users)</Label>
+          <div className="mt-1">
+            <LabPicker id="regressionInputsLab" value={laboratoryIdOverride} onChange={setLaboratoryIdOverride} />
+          </div>
         </div>
       ) : (
         <p className="mt-4 text-xs text-neutral-600 dark:text-neutral-400">

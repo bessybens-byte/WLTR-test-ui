@@ -1,6 +1,7 @@
 "use client";
 
-import { Button, Card, Input, Label } from "@/components/ui";
+import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { Button, Card, Label } from "@/components/ui";
 import { ApiError } from "@/lib/api/errors";
 import { computeCalibrationGroup, getCalibrationGroupReadiness } from "@/lib/api/wltr-api";
 import type { MeResponse } from "@/lib/types/wltr";
@@ -18,7 +19,7 @@ export function CalibrationGroupComputePanel({
 }) {
   const qc = useQueryClient();
   const labInJwt = me?.laboratoryId;
-  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
+  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState(getRememberedLabId());
   const needPlatformLab = !labInJwt;
 
   const effectiveLaboratoryId = labInJwt || laboratoryIdOverride.trim() || undefined;
@@ -71,14 +72,10 @@ export function CalibrationGroupComputePanel({
 
       {needPlatformLab ? (
         <div className="mt-4">
-          <Label htmlFor="computeLab">Laboratory ID (required for platform users)</Label>
-          <Input
-            id="computeLab"
-            value={laboratoryIdOverride}
-            onChange={(e) => setLaboratoryIdOverride(e.target.value)}
-            placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-            className="mt-1 font-mono text-xs"
-          />
+          <Label htmlFor="computeLab">Laboratory (required for platform users)</Label>
+          <div className="mt-1">
+            <LabPicker id="computeLab" value={laboratoryIdOverride} onChange={setLaboratoryIdOverride} />
+          </div>
           <p className="mt-1 text-xs text-neutral-500">
             Use the same laboratory ID as readiness and charts — compute is scoped to that lab.
           </p>

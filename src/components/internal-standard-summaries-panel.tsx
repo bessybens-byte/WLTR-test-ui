@@ -1,5 +1,6 @@
 "use client";
 
+import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
 import { Badge, Button, Card, Input, Label } from "@/components/ui";
 import {
   downloadInternalStandardSummariesCsv,
@@ -26,7 +27,7 @@ export function InternalStandardSummariesPanel({
   me: MeResponse | null | undefined;
 }) {
   const labInJwt = me?.laboratoryId;
-  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
+  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState(getRememberedLabId());
   const [methodConfigId, setMethodConfigId] = useState("");
 
   const effectiveLaboratoryId = labInJwt || laboratoryIdOverride.trim() || undefined;
@@ -70,14 +71,10 @@ export function InternalStandardSummariesPanel({
       <div className="mt-4 space-y-3">
         {needPlatformLab ? (
           <div>
-            <Label htmlFor="isLab">Laboratory ID (required for platform users)</Label>
-            <Input
-              id="isLab"
-              value={laboratoryIdOverride}
-              onChange={(e) => setLaboratoryIdOverride(e.target.value)}
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="mt-1 font-mono text-xs"
-            />
+            <Label htmlFor="isLab">Laboratory (required for platform users)</Label>
+            <div className="mt-1">
+              <LabPicker id="isLab" value={laboratoryIdOverride} onChange={setLaboratoryIdOverride} />
+            </div>
           </div>
         ) : (
           <p className="text-xs text-neutral-600 dark:text-neutral-400">

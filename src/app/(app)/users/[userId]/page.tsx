@@ -1,6 +1,7 @@
 "use client";
 
-import { Badge, Button, Card, Input, Label, PageHeader } from "@/components/ui";
+import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { Badge, Button, Card, Label, PageHeader } from "@/components/ui";
 import {
   assignRoles,
   deactivateUser,
@@ -11,6 +12,7 @@ import {
 } from "@/lib/api/wltr-api";
 import { hasPermission, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -44,9 +46,10 @@ export default function UserDetailPage() {
   const decodedUserId = decodeURIComponent(userId);
   const { me } = useAuth();
   const qc = useQueryClient();
+  const toast = useToast();
   const platform = !me?.laboratoryId;
   const canManageRoles = hasPermission(me, PERMS.rolesManageLab);
-  const [lab, setLab] = useState(me?.laboratoryId ?? "");
+  const [lab, setLab] = useState(me?.laboratoryId ?? getRememberedLabId());
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
 
   const labParam = platform && lab.trim() ? lab.trim() : undefined;
@@ -105,7 +108,9 @@ export default function UserDetailPage() {
     onSuccess: async () => {
       setSelectedRoleIds([]);
       await invalidateUser();
+      toast.success("Roles assigned", "Effective on the user's next sign-in.");
     },
+    onError: (err: unknown) => toast.error("Could not assign roles", err instanceof Error ? err.message : undefined),
   });
 
   const remove = useMutation({
@@ -117,17 +122,27 @@ export default function UserDetailPage() {
     onSuccess: async () => {
       setSelectedRoleIds([]);
       await invalidateUser();
+      toast.success("Roles removed");
     },
+    onError: (err: unknown) => toast.error("Could not remove roles", err instanceof Error ? err.message : undefined),
   });
 
   const deactivate = useMutation({
     mutationFn: async () => deactivateUser(decodedUserId, labParam),
-    onSuccess: invalidateUser,
+    onSuccess: async () => {
+      await invalidateUser();
+      toast.warn("User deactivated");
+    },
+    onError: (err: unknown) => toast.error("Deactivate failed", err instanceof Error ? err.message : undefined),
   });
 
   const reactivate = useMutation({
     mutationFn: async () => reactivateUser(decodedUserId, labParam),
-    onSuccess: invalidateUser,
+    onSuccess: async () => {
+      await invalidateUser();
+      toast.success("User reactivated");
+    },
+    onError: (err: unknown) => toast.error("Reactivate failed", err instanceof Error ? err.message : undefined),
   });
 
   const toggleRoleSelection = (roleId: string) => {
@@ -155,8 +170,10 @@ export default function UserDetailPage() {
 
       {platform ? (
         <Card>
-          <Label htmlFor="lab">Laboratory id (platform)</Label>
-          <Input id="lab" value={lab} onChange={(e) => setLab(e.target.value)} placeholder="uuid" className="mt-1" />
+          <Label htmlFor="lab">Laboratory (platform)</Label>
+          <div className="mt-1">
+            <LabPicker value={lab} onChange={setLab} />
+          </div>
           <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
             Required when loading or managing users as a platform operator.
           </p>

@@ -1,6 +1,7 @@
 "use client";
 
-import { Badge, Button, Card, Input, Label } from "@/components/ui";
+import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { Badge, Button, Card, Label } from "@/components/ui";
 import { getCalibrationGroupReadiness } from "@/lib/api/wltr-api";
 import type { MeResponse } from "@/lib/types/wltr";
 import { useQuery } from "@tanstack/react-query";
@@ -100,7 +101,7 @@ export function CalibrationGroupReadinessPanel({
   me: MeResponse | null | undefined;
 }) {
   const labInJwt = me?.laboratoryId;
-  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
+  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState(getRememberedLabId());
 
   const effectiveLaboratoryId = labInJwt || laboratoryIdOverride.trim() || undefined;
   const queryParams = useMemo(
@@ -137,14 +138,10 @@ export function CalibrationGroupReadinessPanel({
       <div className="mt-4 space-y-3">
         {needPlatformLab ? (
           <div>
-            <Label htmlFor="readinessLab">Laboratory ID (required for platform users)</Label>
-            <Input
-              id="readinessLab"
-              value={laboratoryIdOverride}
-              onChange={(e) => setLaboratoryIdOverride(e.target.value)}
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="mt-1 font-mono text-xs"
-            />
+            <Label htmlFor="readinessLab">Laboratory (required for platform users)</Label>
+            <div className="mt-1">
+              <LabPicker id="readinessLab" value={laboratoryIdOverride} onChange={setLaboratoryIdOverride} />
+            </div>
           </div>
         ) : (
           <p className="text-xs text-neutral-600 dark:text-neutral-400">Scoped to your laboratory from the access token.</p>

@@ -4,7 +4,9 @@ import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
 import { getTechnician, updateTechnician } from "@/lib/api/wltr-api";
 import { PERMS, hasPermission } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -12,6 +14,7 @@ export default function TechnicianDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { me } = useAuth();
   const qc = useQueryClient();
+  const toast = useToast();
   const q = useQuery({
     queryKey: ["technician", id],
     queryFn: () => getTechnician(id),
@@ -49,14 +52,25 @@ export default function TechnicianDetailPage() {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["technician", id] });
+      toast.success("Technician saved");
     },
+    onError: (err: unknown) => toast.error("Save failed", err instanceof Error ? err.message : undefined),
   });
 
   const canEdit = hasPermission(me, PERMS.usersManageLab);
+  const fullName = [form.firstName, form.lastName].filter(Boolean).join(" ");
 
   return (
     <div>
-      <PageHeader title="Technician" description={id} />
+      <PageHeader
+        title={fullName || "Technician"}
+        description={<span className="font-mono text-xs">{id}</span>}
+        actions={
+          <Link href="/technicians">
+            <Button variant="secondary" type="button">All technicians</Button>
+          </Link>
+        }
+      />
       <Card>
         {q.isLoading ? <div className="text-sm">Loading…</div> : null}
         {q.isError ? <div className="text-sm text-red-600">{(q.error as Error).message}</div> : null}

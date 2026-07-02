@@ -4,7 +4,9 @@ import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
 import { getLaboratory, updateLaboratory } from "@/lib/api/wltr-api";
 import { PERMS, hasPermission } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -12,6 +14,7 @@ export default function LaboratoryDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { me } = useAuth();
   const qc = useQueryClient();
+  const toast = useToast();
   const q = useQuery({
     queryKey: ["laboratory", id],
     queryFn: () => getLaboratory(id),
@@ -53,14 +56,24 @@ export default function LaboratoryDetailPage() {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["laboratory", id] });
+      toast.success("Laboratory saved");
     },
+    onError: (err: unknown) => toast.error("Save failed", err instanceof Error ? err.message : undefined),
   });
 
   const canEdit = hasPermission(me, PERMS.laboratoriesManage);
 
   return (
     <div>
-      <PageHeader title="Laboratory" description={id} />
+      <PageHeader
+        title={form.name || "Laboratory"}
+        description={<span className="font-mono text-xs">{id}</span>}
+        actions={
+          <Link href="/laboratories">
+            <Button variant="secondary" type="button">All laboratories</Button>
+          </Link>
+        }
+      />
       <Card>
         {q.isLoading ? <div className="text-sm">Loading…</div> : null}
         {q.isError ? <div className="text-sm text-red-600">{(q.error as Error).message}</div> : null}

@@ -2,11 +2,13 @@
 
 import { MethodConfigAnalyteCriteriaPanel } from "@/components/method-config-analyte-criteria-panel";
 import { MethodConfigFormFields, type MethodConfigFormState } from "@/components/method-config-form-fields";
+import { ConfirmDialog } from "@/components/modal";
 import { ViewOnlyNotice } from "@/components/view-only-notice";
 import { Button, Card, PageHeader } from "@/components/ui";
 import { deleteMethodConfig, getMethodConfig, updateMethodConfig } from "@/lib/api/wltr-api";
 import { hasPermission, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -37,6 +39,7 @@ export default function MethodConfigDetailPage() {
   const { me } = useAuth();
   const canEdit = hasPermission(me, PERMS.configEdit);
   const qc = useQueryClient();
+  const toast = useToast();
   const q = useQuery({
     queryKey: ["method-config", id],
     queryFn: () => getMethodConfig(id),
@@ -44,6 +47,7 @@ export default function MethodConfigDetailPage() {
   });
   const [form, setForm] = useState<MethodConfigFormState>(defaultForm);
   const [versionNote, setVersionNote] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     if (!q.data) return;
@@ -83,17 +87,22 @@ export default function MethodConfigDetailPage() {
           form.internalStandardResponseMax === "" ? null : Number(form.internalStandardResponseMax),
       }),
     onSuccess: async (data) => {
-      setVersionNote(`currentVersion: ${String((data as { currentVersion?: number }).currentVersion ?? "—")}`);
+      const version = String((data as { currentVersion?: number }).currentVersion ?? "—");
+      setVersionNote(`Saved — current version ${version}`);
       await qc.invalidateQueries({ queryKey: ["method-config", id] });
+      toast.success("Method configuration saved", `Now at version ${version}.`);
     },
+    onError: (err: unknown) => toast.error("Save failed", err instanceof Error ? err.message : undefined),
   });
 
   const del = useMutation({
     mutationFn: async () => deleteMethodConfig(id),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["method-configs"] });
+      toast.success("Method configuration deleted");
       window.location.href = "/method-configs";
     },
+    onError: (err: unknown) => toast.error("Delete failed", err instanceof Error ? err.message : undefined),
   });
 
   return (
@@ -128,7 +137,7 @@ export default function MethodConfigDetailPage() {
                 <Button type="submit" disabled={save.isPending}>
                   Save changes
                 </Button>
-                <Button type="button" variant="danger" disabled={del.isPending} onClick={() => del.mutate()}>
+                <Button type="button" variant="danger" disabled={del.isPending} onClick={() => setConfirmDelete(true)}>
                   Delete
                 </Button>
               </div>
@@ -139,6 +148,20 @@ export default function MethodConfigDetailPage() {
         ) : null}
       </Card>
       <MethodConfigAnalyteCriteriaPanel methodConfigId={id} canEdit={canEdit} />
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          del.mutate();
+        }}
+        title="Delete this method configuration?"
+        message="Calibration groups already computed keep their frozen snapshot, but no new groups can use this config. This cannot be undone."
+        confirmLabel="Delete"
+        danger
+        busy={del.isPending}
+      />
     </div>
   );
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { CalibrationPlotlyChart } from "@/components/calibration-plotly-chart";
-import { Button, Card, Input, Label, Select } from "@/components/ui";
+import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { Button, Card, Label, Select } from "@/components/ui";
 import {
   getCalibrationGroupChart,
   getCalibrationGroupRegressionDebug,
@@ -19,7 +20,6 @@ import {
 } from "@/lib/calibration-variant-utils";
 import {
   analyteCalStatusLabel,
-  analyteCalStatusTone,
   hasComputedRegressionOutputs,
   regressionPointPredictedResponse,
   regressionTypeLabel,
@@ -137,10 +137,6 @@ function MetricsTable({
   );
 }
 
-function regressionTypeLabelLocal(v: unknown): string {
-  return regressionTypeLabel(v);
-}
-
 function weightingLabel(v: unknown): string {
   return weightingModeLabel(v);
 }
@@ -173,7 +169,7 @@ export function CalibrationGroupRegressionResultsPanel({
   selectedWeightingMode?: unknown;
 }>) {
   const labInJwt = me?.laboratoryId;
-  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState("");
+  const [laboratoryIdOverride, setLaboratoryIdOverride] = useState(getRememberedLabId());
   const [userPickedKey, setUserPickedKey] = useState<string | null>(null);
   const [userPickedVariantKey, setUserPickedVariantKey] = useState<string | null>(null);
   const needPlatformLab = !labInJwt;
@@ -396,17 +392,13 @@ export function CalibrationGroupRegressionResultsPanel({
       <div className="space-y-5 p-5">
         {needPlatformLab ? (
           <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50/50 p-4 dark:border-neutral-700 dark:bg-neutral-900/30">
-            <Label htmlFor="rrLab">Laboratory ID</Label>
+            <Label htmlFor="rrLab">Laboratory</Label>
             <p className="mb-2 text-[11px] text-neutral-500 dark:text-neutral-400">
               Required for platform operators to load chart and QA metrics.
             </p>
-            <Input
-              id="rrLab"
-              className="mt-1 max-w-md"
-              value={laboratoryIdOverride}
-              onChange={(e) => setLaboratoryIdOverride(e.target.value)}
-              placeholder="UUID"
-            />
+            <div className="max-w-md">
+              <LabPicker id="rrLab" value={laboratoryIdOverride} onChange={setLaboratoryIdOverride} />
+            </div>
           </div>
         ) : null}
 

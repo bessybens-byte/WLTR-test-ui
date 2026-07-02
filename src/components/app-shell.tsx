@@ -1,5 +1,6 @@
 "use client";
 
+import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Button } from "@/components/ui";
 import { canSeeNavItem, navSections } from "@/lib/nav";
 import { cn } from "@/lib/cn";
@@ -112,7 +113,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1">
+        <Breadcrumbs />
+        {children}
+      </main>
     </div>
   );
 }

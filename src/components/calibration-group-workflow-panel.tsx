@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfirmDialog } from "@/components/modal";
 import { Badge, Button, Card, Label, Textarea } from "@/components/ui";
 import {
   approveCalibrationGroup,
@@ -21,6 +22,7 @@ import {
   PERMS,
   type MeResponse,
 } from "@/lib/types/wltr";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -53,8 +55,10 @@ export function CalibrationGroupWorkflowPanel({
   readonly me: MeResponse | null | undefined;
 }) {
   const qc = useQueryClient();
+  const toast = useToast();
   const canApprove = hasPermission(me, PERMS.groupsApprove);
-  const canSelectModel = canApprove;
+  // The API authorizes model selection under perm.runs.upload; approvers can also select.
+  const canSelectModel = hasPermission(me, PERMS.runsUpload) || canApprove;
   const isComputed = groupStatus === CalibrationGroupStatus.Computed;
   const isTerminal =
     groupStatus === CalibrationGroupStatus.Approved || groupStatus === CalibrationGroupStatus.Rejected;
@@ -70,6 +74,12 @@ export function CalibrationGroupWorkflowPanel({
       return {};
     },
   });
+
+  // Derived report-card values — declared before effects that depend on them.
+  const card = reportCard.data;
+  const stale = Boolean(computationStale ?? card?.isComputationStale);
+  const suggested = suggestedModelFromReportCard(card);
+  const variants = Array.isArray(card?.variants) ? (card.variants as Record<string, unknown>[]) : [];
 
   const sessionKey = `wltr:sel:${groupId}`;
 
@@ -91,7 +101,7 @@ export function CalibrationGroupWorkflowPanel({
     }
   }
 
-  /** Per-analyte selection state: analyteId → variantKey ("rt:wm"). Persisted in sessionStorage. */
+  /** Per-analyte selection state: analyteId → variantKey ("rt:wm"). */
   const [selectedByAnalyte, setSelectedByAnalyte] = useState<Map<string, string>>(loadSelections);
 
   // Clear stale selections whenever the group is recomputed or reverts below Computed.
@@ -106,6 +116,38 @@ export function CalibrationGroupWorkflowPanel({
       setSelectedByAnalyte(new Map());
     }
   }, [stale, groupStatus, sessionKey]);
+
+  // Hydrate selections from the server report card so "✓ Selected" survives refresh.
+  // Any analyte row the API marks as the selected model seeds local state.
+  useEffect(() => {
+    if (!variants.length) return;
+    const fromServer = new Map<string, string>();
+    for (const v of variants) {
+      const rows = Array.isArray(v.analytes) ? (v.analytes as Record<string, unknown>[]) : [];
+      for (const a of rows) {
+        const aId = typeof a.analyteId === "string" ? a.analyteId : "";
+        const selected = a.isSelectedModel === true || a.isSelected === true;
+        if (aId && selected) {
+          fromServer.set(aId, variantKey(v.regressionType, v.weightingMode));
+        }
+      }
+    }
+    if (fromServer.size === 0) return;
+    setSelectedByAnalyte((prev) => {
+      const next = new Map(prev);
+      let changed = false;
+      fromServer.forEach((key, id) => {
+        if (next.get(id) !== key) {
+          next.set(id, key);
+          changed = true;
+        }
+      });
+      if (!changed) return prev;
+      saveSelections(next);
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [card]);
 
   const selectModel = useMutation({
     mutationFn: async (args: { regressionType: string; weightingMode: string; analyteIds: string[] }) => {
@@ -131,6 +173,12 @@ export function CalibrationGroupWorkflowPanel({
         qc.invalidateQueries({ queryKey: ["calibration-group-report-card", groupId] }),
         qc.invalidateQueries({ queryKey: ["calibration-group-summary-report", groupId] }),
       ]);
+      toast.success(
+        args.analyteIds.length > 1 ? `Model applied to ${args.analyteIds.length} analytes` : "Model selected",
+      );
+    },
+    onError: (err: unknown) => {
+      toast.error("Could not select model", err instanceof Error ? err.message : undefined);
     },
   });
 
@@ -141,11 +189,16 @@ export function CalibrationGroupWorkflowPanel({
   );
 
   const [qaComment, setQaComment] = useState("");
+  const [confirmReject, setConfirmReject] = useState(false);
 
   const approve = useMutation({
     mutationFn: () => approveCalibrationGroup(groupId, qaComment.trim() ? { comment: qaComment.trim() } : undefined),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["calibration-groups", groupId] });
+      toast.success("Calibration group approved", "The group is now locked for reporting.");
+    },
+    onError: (err: unknown) => {
+      toast.error("Approval failed", err instanceof Error ? err.message : undefined);
     },
   });
 
@@ -153,13 +206,12 @@ export function CalibrationGroupWorkflowPanel({
     mutationFn: () => rejectCalibrationGroup(groupId, qaComment.trim() ? { comment: qaComment.trim() } : undefined),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["calibration-groups", groupId] });
+      toast.warn("Calibration group rejected", "Recorded in the audit trail.");
+    },
+    onError: (err: unknown) => {
+      toast.error("Rejection failed", err instanceof Error ? err.message : undefined);
     },
   });
-
-  const card = reportCard.data;
-  const stale = Boolean(computationStale ?? card?.isComputationStale);
-  const suggested = suggestedModelFromReportCard(card);
-  const variants = Array.isArray(card?.variants) ? (card.variants as Record<string, unknown>[]) : [];
 
   const allReportCardAnalyteIds = useMemo(
     () =>
@@ -467,7 +519,12 @@ export function CalibrationGroupWorkflowPanel({
             >
               {approve.isPending ? "Approving…" : "Approve calibration"}
             </Button>
-            <Button type="button" variant="danger" disabled={reject.isPending} onClick={() => reject.mutate()}>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={reject.isPending}
+              onClick={() => setConfirmReject(true)}
+            >
               {reject.isPending ? "Rejecting…" : "Reject"}
             </Button>
           </div>
@@ -476,6 +533,20 @@ export function CalibrationGroupWorkflowPanel({
           )}
         </Card>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmReject}
+        onCancel={() => setConfirmReject(false)}
+        onConfirm={() => {
+          setConfirmReject(false);
+          reject.mutate();
+        }}
+        title="Reject this calibration group?"
+        message="Rejection is terminal and recorded in the audit trail. You'll need to create a new group to try again."
+        confirmLabel="Reject group"
+        danger
+        busy={reject.isPending}
+      />
     </div>
   );
 }

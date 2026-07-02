@@ -1,13 +1,21 @@
 "use client";
 
-import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
-import { createInvitation } from "@/lib/api/wltr-api";
+import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
+import { createInvitation, listRoles } from "@/lib/api/wltr-api";
 import { buildInvitationAcceptUrl } from "@/lib/invite-links";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
+
+function s(v: unknown, fallback = ""): string {
+  return typeof v === "string" ? v : fallback;
+}
 
 export default function InvitationsPage() {
   const { me } = useAuth();
+  const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rawToken, setRawToken] = useState<string | null>(null);
@@ -15,10 +23,22 @@ export default function InvitationsPage() {
   const [expires, setExpires] = useState<string | null>(null);
   const [form, setForm] = useState({
     email: "",
-    laboratoryId: me?.laboratoryId ?? "",
+    laboratoryId: me?.laboratoryId ?? getRememberedLabId(),
     expiresInDays: 7,
     initialRoleId: "",
   });
+
+  const isPlatform = !me?.laboratoryId;
+  const roleLabId = me?.laboratoryId ?? (form.laboratoryId.trim() || undefined);
+  const rolesQuery = useQuery({
+    queryKey: ["roles", "picker", roleLabId ?? ""],
+    queryFn: () => listRoles({ pageSize: 200, sort: "name:asc", laboratoryId: roleLabId }),
+    enabled: !isPlatform || !!roleLabId,
+  });
+  const roleOptions = useMemo(
+    () => (rolesQuery.data?.items ?? []).map((r) => ({ id: s(r.id), name: s(r.name, s(r.id)) })),
+    [rolesQuery.data],
+  );
 
   const invitationUrl = useMemo(
     () => (rawToken ? buildInvitationAcceptUrl(rawToken) : null),
@@ -44,19 +64,28 @@ export default function InvitationsPage() {
       const id = res.invitationId;
       setInvitationId(typeof id === "string" ? id : null);
       setExpires(typeof res.expiresAtUtc === "string" ? res.expiresAtUtc : null);
+      toast.success("Invitation created", `Acceptance link ready for ${form.email}.`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed");
+      const msg = err instanceof Error ? err.message : "Failed";
+      setError(msg);
+      toast.error("Could not create invitation", msg);
     } finally {
       setBusy(false);
     }
   }
 
+  function resetResult() {
+    setRawToken(null);
+    setInvitationId(null);
+    setExpires(null);
+    setForm((f) => ({ ...f, email: "", initialRoleId: "" }));
+  }
+
   async function copyText(value: string | null) {
     if (!value) return;
     await navigator.clipboard.writeText(value);
+    toast.info("Copied to clipboard");
   }
-
-  const isPlatform = !me?.laboratoryId;
 
   return (
     <div className="space-y-6">
@@ -128,14 +157,11 @@ export default function InvitationsPage() {
           </div>
           {isPlatform ? (
             <div>
-              <Label htmlFor="laboratoryId">Laboratory ID</Label>
-              <Input
-                id="laboratoryId"
+              <Label htmlFor="laboratoryId">Target laboratory</Label>
+              <LabPicker
                 value={form.laboratoryId}
-                onChange={(e) => setForm({ ...form, laboratoryId: e.target.value })}
-                placeholder="Target laboratory UUID"
+                onChange={(labId) => setForm((f) => ({ ...f, laboratoryId: labId }))}
                 required
-                className="font-mono text-xs"
               />
             </div>
           ) : null}
@@ -152,14 +178,23 @@ export default function InvitationsPage() {
               />
             </div>
             <div>
-              <Label htmlFor="initialRoleId">Initial role id (optional)</Label>
-              <Input
+              <Label htmlFor="initialRoleId">Initial role (optional)</Label>
+              <Select
                 id="initialRoleId"
                 value={form.initialRoleId}
                 onChange={(e) => setForm({ ...form, initialRoleId: e.target.value })}
-                placeholder="ASP.NET Identity role id → Viewer if empty"
-                className="font-mono text-xs"
-              />
+                disabled={rolesQuery.isLoading || (isPlatform && !roleLabId)}
+              >
+                <option value="">Default (Viewer)</option>
+                {roleOptions.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </Select>
+              {isPlatform && !roleLabId ? (
+                <p className="mt-1 text-xs text-neutral-500">Select a laboratory to load its roles.</p>
+              ) : null}
             </div>
           </div>
           {error ? <div className="text-sm text-red-600">{error}</div> : null}
@@ -206,6 +241,12 @@ export default function InvitationsPage() {
               </pre>
               <Button type="button" variant="secondary" className="!text-xs" onClick={() => void copyText(rawToken)}>
                 Copy raw token
+              </Button>
+            </div>
+
+            <div className="border-t border-amber-200/60 pt-4 dark:border-amber-900/40">
+              <Button type="button" variant="secondary" className="!text-xs" onClick={resetResult}>
+                Create another invitation
               </Button>
             </div>
           </div>

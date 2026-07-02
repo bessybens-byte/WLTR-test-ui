@@ -187,11 +187,70 @@ export function PageHeader({
   );
 }
 
-export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+export function EmptyState({
+  title,
+  hint,
+  action,
+}: {
+  title: string;
+  hint?: ReactNode;
+  action?: ReactNode;
+}) {
   return (
     <div className="rounded-xl border border-dashed border-neutral-300 p-8 text-center text-sm text-neutral-600 dark:border-neutral-700 dark:text-neutral-400">
       <div className="font-medium text-neutral-900 dark:text-neutral-100">{title}</div>
       {hint ? <div className="mt-2">{hint}</div> : null}
+      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
+    </div>
+  );
+}
+
+/** Animated placeholder block for loading states. */
+export function Skeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "animate-pulse rounded-md bg-neutral-200/70 dark:bg-neutral-800/70",
+        className,
+      )}
+    />
+  );
+}
+
+/** Stacked skeleton lines, useful while a card's content loads. */
+export function SkeletonLines({ lines = 3, className }: { lines?: number; className?: string }) {
+  return (
+    <div className={cn("space-y-2", className)}>
+      {Array.from({ length: lines }).map((_, i) => (
+        <Skeleton key={i} className={cn("h-4", i === lines - 1 ? "w-2/3" : "w-full")} />
+      ))}
+    </div>
+  );
+}
+
+const CALLOUT_TONES = {
+  info: "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100",
+  ok: "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100",
+  warn: "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100",
+  bad: "border-red-200 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950/40 dark:text-red-100",
+} as const;
+
+/** Colored inline message box for hints, warnings, and errors. */
+export function Callout({
+  tone = "info",
+  title,
+  children,
+  className,
+}: {
+  tone?: keyof typeof CALLOUT_TONES;
+  title?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("rounded-lg border px-4 py-3 text-sm", CALLOUT_TONES[tone], className)}>
+      {title ? <div className="font-semibold">{title}</div> : null}
+      {children ? <div className={cn(title ? "mt-1" : "", "leading-relaxed")}>{children}</div> : null}
     </div>
   );
 }

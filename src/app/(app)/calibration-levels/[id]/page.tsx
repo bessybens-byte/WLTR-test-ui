@@ -1,10 +1,12 @@
 "use client";
 
+import { ConfirmDialog } from "@/components/modal";
 import { ViewOnlyNotice } from "@/components/view-only-notice";
 import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
 import { deleteCalibrationLevel, getCalibrationLevel, updateCalibrationLevel } from "@/lib/api/wltr-api";
 import { hasPermission, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -15,6 +17,8 @@ export default function CalibrationLevelDetailPage() {
   const { me } = useAuth();
   const canEdit = hasPermission(me, PERMS.configEdit);
   const qc = useQueryClient();
+  const toast = useToast();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const q = useQuery({
     queryKey: ["calibration-level", id],
     queryFn: () => getCalibrationLevel(id),
@@ -34,15 +38,21 @@ export default function CalibrationLevelDetailPage() {
 
   const save = useMutation({
     mutationFn: async () => updateCalibrationLevel(id, form),
-    onSuccess: async () => qc.invalidateQueries({ queryKey: ["calibration-level", id] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["calibration-level", id] });
+      toast.success("Calibration level saved");
+    },
+    onError: (err: unknown) => toast.error("Save failed", err instanceof Error ? err.message : undefined),
   });
 
   const del = useMutation({
     mutationFn: async () => deleteCalibrationLevel(id),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["calibration-levels"] });
+      toast.success("Calibration level deleted");
       window.location.href = "/calibration-levels";
     },
+    onError: (err: unknown) => toast.error("Delete failed", err instanceof Error ? err.message : undefined),
   });
 
   const title = q.isSuccess && form.levelName.trim() ? form.levelName : "Calibration level";
@@ -108,7 +118,7 @@ export default function CalibrationLevelDetailPage() {
                 <Button type="submit" disabled={save.isPending}>
                   Save
                 </Button>
-                <Button type="button" variant="danger" disabled={del.isPending} onClick={() => del.mutate()}>
+                <Button type="button" variant="danger" disabled={del.isPending} onClick={() => setConfirmDelete(true)}>
                   Delete
                 </Button>
               </div>
@@ -118,6 +128,20 @@ export default function CalibrationLevelDetailPage() {
           </form>
         ) : null}
       </Card>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          del.mutate();
+        }}
+        title="Delete this calibration level?"
+        message="Runs mapped to this level will need remapping. This cannot be undone."
+        confirmLabel="Delete"
+        danger
+        busy={del.isPending}
+      />
     </div>
   );
 }

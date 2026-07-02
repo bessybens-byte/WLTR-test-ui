@@ -1,6 +1,7 @@
 "use client";
 
 import { AnalyteInternalStandardSelect } from "@/components/analyte-internal-standard-select";
+import { ConfirmDialog } from "@/components/modal";
 import { ViewOnlyNotice } from "@/components/view-only-notice";
 import { Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import {
@@ -13,6 +14,7 @@ import {
 } from "@/lib/api/wltr-api";
 import { ANALYTE_ROLE_LABEL, hasPermission, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -23,6 +25,8 @@ export default function AnalyteDetailPage() {
   const { me } = useAuth();
   const canEdit = hasPermission(me, PERMS.configEdit);
   const qc = useQueryClient();
+  const toast = useToast();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const q = useQuery({
     queryKey: ["analyte", id],
     queryFn: () => getAnalyte(id),
@@ -58,15 +62,21 @@ export default function AnalyteDetailPage() {
         defaultInternalStandardId: form.defaultInternalStandardId || undefined,
       });
     },
-    onSuccess: async () => qc.invalidateQueries({ queryKey: ["analyte", id] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["analyte", id] });
+      toast.success("Analyte saved");
+    },
+    onError: (err: unknown) => toast.error("Save failed", err instanceof Error ? err.message : undefined),
   });
 
   const del = useMutation({
     mutationFn: async () => deleteAnalyte(id),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["analytes"] });
+      toast.success("Analyte deleted");
       window.location.href = "/analytes";
     },
+    onError: (err: unknown) => toast.error("Delete failed", err instanceof Error ? err.message : undefined),
   });
 
   const addAlias = useMutation({
@@ -74,19 +84,31 @@ export default function AnalyteDetailPage() {
     onSuccess: async () => {
       setAliasName("");
       await qc.invalidateQueries({ queryKey: ["analyte", id] });
+      toast.success("Alias added");
     },
+    onError: (err: unknown) => toast.error("Could not add alias", err instanceof Error ? err.message : undefined),
   });
 
   async function saveAlias(aliasId: string) {
     const name = aliasEdits[aliasId];
     if (!name) return;
-    await updateAnalyteAlias(aliasId, { aliasName: name });
-    await qc.invalidateQueries({ queryKey: ["analyte", id] });
+    try {
+      await updateAnalyteAlias(aliasId, { aliasName: name });
+      await qc.invalidateQueries({ queryKey: ["analyte", id] });
+      toast.success("Alias renamed");
+    } catch (err) {
+      toast.error("Rename failed", err instanceof Error ? err.message : undefined);
+    }
   }
 
   async function removeAlias(aliasId: string) {
-    await deleteAnalyteAlias(aliasId);
-    await qc.invalidateQueries({ queryKey: ["analyte", id] });
+    try {
+      await deleteAnalyteAlias(aliasId);
+      await qc.invalidateQueries({ queryKey: ["analyte", id] });
+      toast.success("Alias deleted");
+    } catch (err) {
+      toast.error("Delete failed", err instanceof Error ? err.message : undefined);
+    }
   }
 
   const aliases = ((q.data as { aliases?: { id: string; aliasName?: string | null }[] } | undefined)?.aliases ?? []).filter(
@@ -100,7 +122,15 @@ export default function AnalyteDetailPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Analyte" description={id} />
+      <PageHeader
+        title={form.name.trim() || "Analyte"}
+        description={<span className="font-mono text-xs">{id}</span>}
+        actions={
+          <Link href="/analytes">
+            <Button variant="secondary" type="button">All analytes</Button>
+          </Link>
+        }
+      />
       <Card>
         {q.isLoading ? <div className="text-sm">Loading…</div> : null}
         {q.isError ? <div className="text-sm text-red-600">{(q.error as Error).message}</div> : null}
@@ -187,7 +217,7 @@ export default function AnalyteDetailPage() {
                 <Button type="submit" disabled={save.isPending}>
                   Save
                 </Button>
-                <Button type="button" variant="danger" disabled={del.isPending} onClick={() => del.mutate()}>
+                <Button type="button" variant="danger" disabled={del.isPending} onClick={() => setConfirmDelete(true)}>
                   Delete
                 </Button>
               </div>
@@ -245,6 +275,20 @@ export default function AnalyteDetailPage() {
           {!aliases.length ? <p className="text-sm text-neutral-500">No aliases yet.</p> : null}
         </div>
       </Card>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          del.mutate();
+        }}
+        title="Delete this analyte?"
+        message="Aliases and default IS assignment will be removed. Runs referencing it may become unresolved. This cannot be undone."
+        confirmLabel="Delete"
+        danger
+        busy={del.isPending}
+      />
     </div>
   );
 }

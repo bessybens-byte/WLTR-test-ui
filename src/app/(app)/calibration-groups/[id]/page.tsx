@@ -10,10 +10,13 @@ import { CalibrationGroupRegressionResultsPanel } from "@/components/calibration
 import { CalibrationGroupSummaryReportPanel } from "@/components/calibration-group-summary-report-panel";
 import { CalibrationGroupWorkflowPanel } from "@/components/calibration-group-workflow-panel";
 import { InternalStandardSummariesPanel } from "@/components/internal-standard-summaries-panel";
-import { Badge, Button, Card, Input, Label, PageHeader, Select } from "@/components/ui";
+import { Stepper, Tabs, type StepItem } from "@/components/tabs";
+import { Badge, Button, Callout, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import {
   getCalibrationGroup,
   getCalibrationGroupCandidates,
+  getInstrument,
+  getMethodConfig,
   listMethodConfigs,
   updateCalibrationGroup,
 } from "@/lib/api/wltr-api";
@@ -374,11 +377,13 @@ function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps
 
 type GroupDetailCardProps = Readonly<{
   group: GroupDetail;
+  instrumentName?: string | null;
+  methodName?: string | null;
   showEditButton: boolean;
   onEdit: () => void;
 }>;
 
-function GroupDetailCard({ group, showEditButton, onEdit }: GroupDetailCardProps) {
+function GroupDetailCard({ group, instrumentName, methodName, showEditButton, onEdit }: GroupDetailCardProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -411,17 +416,20 @@ function GroupDetailCard({ group, showEditButton, onEdit }: GroupDetailCardProps
         </div>
         <div>
           <dt className="font-medium text-neutral-700 dark:text-neutral-300">Instrument</dt>
-          <dd className="mt-0.5 font-mono text-xs">
-            <Link className="text-blue-600 underline dark:text-blue-400" href={`/runs?instrumentId=${encodeURIComponent(group.instrumentId)}`}>
-              {group.instrumentId}
+          <dd className="mt-0.5">
+            <Link
+              className="text-blue-600 underline dark:text-blue-400"
+              href={`/instruments/${group.instrumentId}`}
+            >
+              {instrumentName || <span className="font-mono text-xs">{group.instrumentId}</span>}
             </Link>
           </dd>
         </div>
         <div>
           <dt className="font-medium text-neutral-700 dark:text-neutral-300">Method config</dt>
-          <dd className="mt-0.5 font-mono text-xs">
+          <dd className="mt-0.5">
             <Link className="text-blue-600 underline dark:text-blue-400" href={`/method-configs/${group.methodConfigId}`}>
-              {group.methodConfigId}
+              {methodName || <span className="font-mono text-xs">{group.methodConfigId}</span>}
             </Link>
           </dd>
         </div>
@@ -472,6 +480,44 @@ function GroupDetailCard({ group, showEditButton, onEdit }: GroupDetailCardProps
 
 /* ── Page ── */
 
+type GroupTabId = "overview" | "setup" | "compute" | "review" | "debug";
+
+function buildSteps(status: number, stale: boolean): StepItem[] {
+  const computed = status >= CalibrationGroupStatus.Computed;
+  const approved = status === CalibrationGroupStatus.Approved;
+  const rejected = status === CalibrationGroupStatus.Rejected;
+  return [
+    {
+      id: "setup",
+      label: "Setup",
+      state: status === CalibrationGroupStatus.Draft ? "current" : "done",
+    },
+    {
+      id: "compute",
+      label: "Compute",
+      state: computed ? (stale ? "blocked" : "done") : status === CalibrationGroupStatus.Draft ? "todo" : "current",
+    },
+    {
+      id: "model",
+      label: "Model",
+      state: approved ? "done" : computed && !stale ? "current" : "todo",
+    },
+    {
+      id: "approve",
+      label: "QA sign-off",
+      state: approved ? "done" : rejected ? "blocked" : computed && !stale ? "current" : "todo",
+    },
+  ];
+}
+
+/** Maps a stepper step id to the tab that hosts its UI. */
+const STEP_TO_TAB: Record<string, GroupTabId> = {
+  setup: "setup",
+  compute: "compute",
+  model: "compute",
+  approve: "compute",
+};
+
 export default function CalibrationGroupDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { me } = useAuth();
@@ -480,6 +526,7 @@ export default function CalibrationGroupDetailPage() {
   const canViewRegressionDebug = hasPermission(me, PERMS.groupsApprove);
   const canViewCalibrationChart = hasPermission(me, PERMS.view);
   const [editing, setEditing] = useState(false);
+  const [tab, setTab] = useState<GroupTabId>("overview");
 
   const groupQuery = useQuery({
     queryKey: ["calibration-groups", id],
@@ -491,13 +538,50 @@ export default function CalibrationGroupDetailPage() {
     return mapGroupDetail(groupQuery.data, id);
   }, [groupQuery.data, id]);
 
+  const instrumentQuery = useQuery({
+    queryKey: ["instrument", group?.instrumentId],
+    queryFn: () => getInstrument(group!.instrumentId),
+    enabled: !!group?.instrumentId,
+  });
+  const methodQuery = useQuery({
+    queryKey: ["method-config", group?.methodConfigId],
+    queryFn: () => getMethodConfig(group!.methodConfigId),
+    enabled: !!group?.methodConfigId,
+  });
+  const instrumentName = s((instrumentQuery.data as Record<string, unknown> | undefined)?.name) || null;
+  const methodName = s((methodQuery.data as Record<string, unknown> | undefined)?.name) || null;
+
   const canEditGroup = canEdit && group !== null && isEditable(group.status);
+  const computed = !!group && group.status >= CalibrationGroupStatus.Computed;
+
+  const tabs = useMemo(
+    () =>
+      [
+        { id: "overview", label: "Overview" },
+        { id: "setup", label: "Setup & readiness" },
+        { id: "compute", label: "Compute & model" },
+        { id: "review", label: "Review" },
+        ...(canViewRegressionDebug ? [{ id: "debug", label: "QA debug" }] : []),
+      ] as const,
+    [canViewRegressionDebug],
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={group?.name ?? "Calibration group"}
-        description={<span className="font-mono text-sm">{id}</span>}
+        description={
+          group ? (
+            <span className="flex items-center gap-2">
+              <Badge tone={groupStatusTone(group.status)}>
+                {GROUP_STATUS_LABEL[group.status] ?? String(group.status)}
+              </Badge>
+              {group.computationStale ? <Badge tone="warn">Recompute needed</Badge> : null}
+            </span>
+          ) : (
+            <span className="font-mono text-sm">{id}</span>
+          )
+        }
         actions={
           <Link href="/calibration-groups">
             <Button variant="secondary" type="button">All groups</Button>
@@ -505,67 +589,104 @@ export default function CalibrationGroupDetailPage() {
         }
       />
 
-      <Card>
-        {groupQuery.isLoading ? <div className="text-sm text-neutral-500">Loading group…</div> : null}
-        {groupQuery.isError ? <div className="text-sm text-red-600">Failed to load group detail.</div> : null}
-        {group ? (
-          <GroupDetailCard
-            group={group}
-            showEditButton={canEditGroup && !editing}
-            onEdit={() => setEditing(true)}
-          />
-        ) : null}
-      </Card>
-
-      {editing && canEditGroup && group ? (
-        <EditGroupForm
-          groupId={id}
-          group={group}
-          onCancel={() => setEditing(false)}
-          onSaved={() => setEditing(false)}
-        />
+      {groupQuery.isLoading ? <Card><div className="text-sm text-neutral-500">Loading group…</div></Card> : null}
+      {groupQuery.isError ? (
+        <Callout tone="bad" title="Failed to load group">
+          The calibration group could not be loaded. It may not exist or be outside your laboratory.
+        </Callout>
       ) : null}
 
-      <CalibrationGroupReadinessPanel groupId={id} me={me} />
-      <CalibrationGroupTargetAnalytesPanel groupId={id} canEdit={canEdit} />
-      <CalibrationGroupExcludedAnalytesPanel groupId={id} canEdit={canEdit} />
-      {canCompute && group && isEditable(group.status) ? (
-        <CalibrationGroupComputePanel groupId={id} me={me} canCompute />
+      {group ? (
+        <>
+          <Card>
+            <Stepper steps={buildSteps(group.status, group.computationStale)} onSelect={(sid) => setTab(STEP_TO_TAB[sid] ?? "overview")} />
+          </Card>
+
+          <Tabs tabs={tabs} active={tab} onChange={(t) => setTab(t as GroupTabId)} />
+
+          {tab === "overview" ? (
+            <div className="space-y-6">
+              <Card>
+                <GroupDetailCard
+                  group={group}
+                  instrumentName={instrumentName}
+                  methodName={methodName}
+                  showEditButton={canEditGroup && !editing}
+                  onEdit={() => setEditing(true)}
+                />
+              </Card>
+              {editing && canEditGroup ? (
+                <EditGroupForm
+                  groupId={id}
+                  group={group}
+                  onCancel={() => setEditing(false)}
+                  onSaved={() => setEditing(false)}
+                />
+              ) : null}
+              <InternalStandardSummariesPanel variant="calibrationGroup" resourceId={id} me={me} />
+            </div>
+          ) : null}
+
+          {tab === "setup" ? (
+            <div className="space-y-6">
+              <CalibrationGroupReadinessPanel groupId={id} me={me} />
+              <CalibrationGroupTargetAnalytesPanel groupId={id} canEdit={canEdit} />
+              <CalibrationGroupExcludedAnalytesPanel groupId={id} canEdit={canEdit} />
+            </div>
+          ) : null}
+
+          {tab === "compute" ? (
+            <div className="space-y-6">
+              {canCompute && isEditable(group.status) ? (
+                <CalibrationGroupComputePanel groupId={id} me={me} canCompute />
+              ) : null}
+              {computed ? (
+                <CalibrationGroupWorkflowPanel
+                  groupId={id}
+                  groupStatus={group.status}
+                  computationStale={group.computationStale}
+                  me={me}
+                />
+              ) : (
+                <Callout tone="info" title="Not computed yet">
+                  Run regression from the Compute panel (or Setup tab once readiness passes) to compare model variants,
+                  select a model per analyte, and submit for QA sign-off.
+                </Callout>
+              )}
+            </div>
+          ) : null}
+
+          {tab === "review" ? (
+            <div className="space-y-6">
+              {computed ? (
+                <CalibrationGroupSummaryReportPanel groupId={id} groupStatus={group.status} me={me} />
+              ) : (
+                <Callout tone="info" title="No results to review">
+                  Compute the group first to view the summary report, regression inputs, and calibration charts.
+                </Callout>
+              )}
+              <CalibrationGroupRegressionInputsPanel
+                groupId={id}
+                me={me}
+                canManagePoints={Boolean(canEdit && isEditable(group.status))}
+              />
+              {canViewCalibrationChart ? (
+                <CalibrationGroupRegressionResultsPanel
+                  groupId={id}
+                  me={me}
+                  canSummarizeFromDebug={canViewRegressionDebug}
+                />
+              ) : null}
+            </div>
+          ) : null}
+
+          {tab === "debug" && canViewRegressionDebug ? (
+            <div className="space-y-6">
+              <CalibrationGroupRegressionDebugPanel groupId={id} me={me} />
+            </div>
+          ) : null}
+        </>
       ) : null}
-      {group && group.status >= CalibrationGroupStatus.Computed ? (
-        <CalibrationGroupWorkflowPanel
-          groupId={id}
-          groupStatus={group.status}
-          computationStale={group.computationStale}
-          me={me}
-        />
-      ) : null}
-      {group && group.status >= CalibrationGroupStatus.Computed ? (
-        <CalibrationGroupSummaryReportPanel
-          groupId={id}
-          groupStatus={group.status}
-          me={me}
-        />
-      ) : null}
-      <CalibrationGroupRegressionInputsPanel
-        groupId={id}
-        me={me}
-        canManagePoints={Boolean(group && canEdit && isEditable(group.status))}
-      />
-      {canViewCalibrationChart ? (
-        <CalibrationGroupRegressionResultsPanel
-          groupId={id}
-          me={me}
-          canSummarizeFromDebug={canViewRegressionDebug}
-        />
-      ) : null}
-      {canViewRegressionDebug ? (
-        <CalibrationGroupRegressionDebugPanel
-          groupId={id}
-          me={me}
-        />
-      ) : null}
-      <InternalStandardSummariesPanel variant="calibrationGroup" resourceId={id} me={me} />
     </div>
   );
 }

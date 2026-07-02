@@ -1,10 +1,14 @@
 "use client";
 
+import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { ConfirmDialog } from "@/components/modal";
 import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
 import { deleteRole, findRoleById, renameRole, updateRolePermissions } from "@/lib/api/wltr-api";
 import { ALL_PERMISSIONS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -13,10 +17,12 @@ export default function RoleDetailPage() {
   const { me } = useAuth();
   const router = useRouter();
   const qc = useQueryClient();
+  const toast = useToast();
   const platform = !me?.laboratoryId;
-  const [lab, setLab] = useState(me?.laboratoryId ?? "");
+  const [lab, setLab] = useState(me?.laboratoryId ?? getRememberedLabId());
   const [newName, setNewName] = useState("");
   const [perms, setPerms] = useState<string[]>(["perm.view"]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const decodedRoleId = useMemo(() => decodeURIComponent(roleId), [roleId]);
 
@@ -43,7 +49,11 @@ export default function RoleDetailPage() {
       if (platform) body.laboratoryId = lab || undefined;
       await renameRole(roleId, body);
     },
-    onSuccess: async () => qc.invalidateQueries({ queryKey: ["roles"] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["roles"] });
+      toast.success("Role renamed");
+    },
+    onError: (err: unknown) => toast.error("Rename failed", err instanceof Error ? err.message : undefined),
   });
 
   const savePerms = useMutation({
@@ -52,14 +62,22 @@ export default function RoleDetailPage() {
       if (platform) body.laboratoryId = lab || undefined;
       await updateRolePermissions(roleId, body);
     },
-    onSuccess: async () => qc.invalidateQueries({ queryKey: ["roles"] }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["roles"] });
+      toast.success("Permissions saved", "Effective on the user's next sign-in.");
+    },
+    onError: (err: unknown) => toast.error("Could not save permissions", err instanceof Error ? err.message : undefined),
   });
 
   const del = useMutation({
     mutationFn: async () => {
       await deleteRole(roleId, platform ? lab || undefined : undefined);
     },
-    onSuccess: async () => router.replace("/roles"),
+    onSuccess: async () => {
+      toast.success("Role deleted");
+      router.replace("/roles");
+    },
+    onError: (err: unknown) => toast.error("Delete failed", err instanceof Error ? err.message : undefined),
   });
 
   const togglePerm = (p: string) => {
@@ -70,7 +88,12 @@ export default function RoleDetailPage() {
     <div className="space-y-6">
       <PageHeader
         title={typeof role?.name === "string" ? role.name : "Role"}
-        description={decodedRoleId}
+        description={<span className="font-mono text-xs">{decodedRoleId}</span>}
+        actions={
+          <Link href="/roles">
+            <Button variant="secondary" type="button">All roles</Button>
+          </Link>
+        }
       />
 
       {roleQuery.isLoading ? <div className="text-sm text-neutral-500">Loading role…</div> : null}
@@ -87,8 +110,10 @@ export default function RoleDetailPage() {
 
       {platform ? (
         <Card>
-          <Label htmlFor="lab">Laboratory id (platform)</Label>
-          <Input id="lab" value={lab} onChange={(e) => setLab(e.target.value)} />
+          <Label htmlFor="lab">Laboratory (platform)</Label>
+          <div className="mt-1">
+            <LabPicker value={lab} onChange={setLab} />
+          </div>
         </Card>
       ) : null}
 
@@ -156,13 +181,27 @@ export default function RoleDetailPage() {
             Only roles with no assigned users can be deleted.
           </p>
           <div className="mt-3">
-            <Button variant="danger" type="button" disabled={del.isPending} onClick={() => del.mutate()}>
+            <Button variant="danger" type="button" disabled={del.isPending} onClick={() => setConfirmDelete(true)}>
               Delete role
             </Button>
           </div>
           {del.isError ? <div className="mt-2 text-sm text-red-600">{(del.error as Error).message}</div> : null}
         </Card>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          del.mutate();
+        }}
+        title="Delete this role?"
+        message="Only roles with no assigned users can be deleted. This cannot be undone."
+        confirmLabel="Delete role"
+        danger
+        busy={del.isPending}
+      />
     </div>
   );
 }

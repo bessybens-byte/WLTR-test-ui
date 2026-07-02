@@ -5,12 +5,14 @@ import { apiFetch } from "@/lib/api/client";
 import { parseErrorResponse } from "@/lib/api/errors";
 import { putMe } from "@/lib/api/wltr-api";
 import { useAuth } from "@/providers/auth-provider";
+import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 export default function AccountPage() {
   const { me, refreshMe } = useAuth();
   const qc = useQueryClient();
+  const toast = useToast();
   const [profile, setProfile] = useState({
     firstName: "",
     lastName: "",
@@ -44,7 +46,9 @@ export default function AccountPage() {
     onSuccess: async () => {
       await refreshMe();
       await qc.invalidateQueries();
+      toast.success("Profile saved");
     },
+    onError: (err: unknown) => toast.error("Save failed", err instanceof Error ? err.message : undefined),
   });
 
   const changePw = useMutation({
@@ -57,7 +61,9 @@ export default function AccountPage() {
     },
     onSuccess: async () => {
       setPw({ currentPassword: "", newPassword: "" });
+      toast.success("Password updated");
     },
+    onError: (err: unknown) => toast.error("Could not change password", err instanceof Error ? err.message : undefined),
   });
 
   return (
@@ -65,7 +71,7 @@ export default function AccountPage() {
       <PageHeader title="Account" description="Profile and password." />
 
       <Card>
-        <div className="text-sm font-medium">Profile (PUT /api/Auth/me)</div>
+        <div className="text-sm font-medium">Profile</div>
         <form
           className="mt-4 space-y-3"
           onSubmit={(e) => {
@@ -99,10 +105,6 @@ export default function AccountPage() {
               value={profile.hireDate}
               onChange={(e) => setProfile({ ...profile, hireDate: e.target.value })}
             />
-          </div>
-          <div>
-            <Label htmlFor="rowVersion">rowVersion (from GET /me)</Label>
-            <Input id="rowVersion" value={profile.rowVersion} onChange={(e) => setProfile({ ...profile, rowVersion: e.target.value })} />
           </div>
           {saveProfile.isError ? <div className="text-sm text-red-600">{(saveProfile.error as Error).message}</div> : null}
           <Button type="submit" disabled={saveProfile.isPending}>
@@ -141,7 +143,6 @@ export default function AccountPage() {
             />
           </div>
           {changePw.isError ? <div className="text-sm text-red-600">{(changePw.error as Error).message}</div> : null}
-          {changePw.isSuccess ? <div className="text-sm text-emerald-700">Password updated.</div> : null}
           <Button type="submit" disabled={changePw.isPending}>
             Change password
           </Button>
