@@ -2,6 +2,7 @@
 
 import { COMPOUND_CATEGORY_LABEL } from "@/lib/types/wltr";
 import { fmtNum } from "@/components/report-format-utils";
+import { ExcelTh } from "@/components/excel-annotation";
 
 function categoryLabel(v: unknown): string {
   return typeof v === "number" ? (COMPOUND_CATEGORY_LABEL[v] ?? String(v)) : "—";
@@ -17,20 +18,48 @@ export function RunMeasurementsTable({ rows }: { readonly rows: Record<string, u
       <table className="w-full border-collapse text-xs">
         <thead>
           <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
-            <th className="py-2 pr-2">Compound</th>
-            <th className="py-2 pr-2">Category</th>
-            <th className="py-2 pr-2">Analyte</th>
-            <th className="py-2 pr-2">Response</th>
-            <th className="py-2 pr-2">RT</th>
-            <th className="py-2 pr-2">Quant ion</th>
-            <th className="py-2 pr-2">Manual</th>
-            <th className="py-2 pr-2">Calc conc</th>
-            <th className="py-2 pr-2">True conc</th>
-            <th className="py-2 pr-2">IS resp</th>
-            <th className="py-2 pr-2">Ratio</th>
-            <th className="py-2 pr-2">Conc ratio</th>
-            <th className="py-2 pr-2">Conc ratio²</th>
-            <th className="py-2 pr-2">RF</th>
+            <ExcelTh fieldKey="measurement.rawCompoundName" className="py-2 pr-2">
+              Compound
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.compoundCategory" className="py-2 pr-2">
+              Category
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.canonicalAnalyteName" className="py-2 pr-2">
+              Analyte
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.response" className="py-2 pr-2">
+              Response
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.retentionTime" className="py-2 pr-2">
+              RT
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.quantIon" className="py-2 pr-2">
+              Quant ion
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.isManualIntegration" className="py-2 pr-2">
+              Manual
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.calculatedConcentration" className="py-2 pr-2">
+              Calc conc
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.trueConcentration" className="py-2 pr-2">
+              True conc
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.internalStandardResponse" className="py-2 pr-2">
+              IS resp
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.responseRatio" className="py-2 pr-2">
+              Ratio
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.concentrationRatio" className="py-2 pr-2">
+              Conc ratio
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.concentrationRatioSquared" className="py-2 pr-2">
+              Conc ratio²
+            </ExcelTh>
+            <ExcelTh fieldKey="measurement.responseFactor" className="py-2 pr-2">
+              RF
+            </ExcelTh>
           </tr>
         </thead>
         <tbody>

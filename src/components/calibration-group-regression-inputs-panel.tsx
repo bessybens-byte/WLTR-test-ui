@@ -1,6 +1,7 @@
 "use client";
 
 import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { ExcelPageGuide, ExcelSectionHint, ExcelTh } from "@/components/excel-annotation";
 import { Badge, Button, Card, Label, Select, Textarea } from "@/components/ui";
 import {
   excludeCalibrationPoint,
@@ -201,26 +202,66 @@ function RegressionPointsTable({
                 {canManagePoints ? (
                   <th className="whitespace-nowrap px-2 py-2 font-medium">Actions</th>
                 ) : null}
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Level</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">True conc</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Amount ratio (X)</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Std response</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">IS response</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Response ratio (Y)</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">1/X</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">1/X²</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Weight</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">ŷ pred</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Residual</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">% diff</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">RF</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Calc conc</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">In</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Exclusion</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Run</th>
-                <th className="min-w-[6rem] px-2 py-2 font-medium">Run name</th>
-                <th className="whitespace-nowrap px-2 py-2 font-medium">Manual</th>
-                <th className="min-w-[8rem] px-2 py-2 font-medium">Note</th>
+                <ExcelTh fieldKey="regression.level" className="whitespace-nowrap px-2 py-2">
+                  Level
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.trueConc" className="whitespace-nowrap px-2 py-2">
+                  True conc
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.amountRatio" className="whitespace-nowrap px-2 py-2">
+                  Amount ratio (X)
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.stdResponse" className="whitespace-nowrap px-2 py-2">
+                  Std response
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.isResponse" className="whitespace-nowrap px-2 py-2">
+                  IS response
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.responseRatio" className="whitespace-nowrap px-2 py-2">
+                  Response ratio (Y)
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.inverseX" className="whitespace-nowrap px-2 py-2">
+                  1/X
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.inverseXSquared" className="whitespace-nowrap px-2 py-2">
+                  1/X²
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.weight" className="whitespace-nowrap px-2 py-2">
+                  Weight
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.predictedY" className="whitespace-nowrap px-2 py-2">
+                  ŷ pred
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.residual" className="whitespace-nowrap px-2 py-2">
+                  Residual
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.pctDiff" className="whitespace-nowrap px-2 py-2">
+                  % diff
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.rf" className="whitespace-nowrap px-2 py-2">
+                  RF
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.calcConc" className="whitespace-nowrap px-2 py-2">
+                  Calc conc
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.included" className="whitespace-nowrap px-2 py-2">
+                  In
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.exclusion" className="whitespace-nowrap px-2 py-2">
+                  Exclusion
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.sourceRun" className="whitespace-nowrap px-2 py-2">
+                  Run
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.runName" className="min-w-[6rem] px-2 py-2">
+                  Run name
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.manual" className="whitespace-nowrap px-2 py-2">
+                  Manual
+                </ExcelTh>
+                <ExcelTh fieldKey="regression.note" className="min-w-[8rem] px-2 py-2">
+                  Note
+                </ExcelTh>
               </tr>
             </thead>
             <tbody>
@@ -446,6 +487,7 @@ export function CalibrationGroupRegressionInputsPanel({
 
   return (
     <Card>
+      <ExcelPageGuide pageKey="calibration-group-regression" />
       <div className="text-sm font-medium">Regression input tables</div>
       <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
         Per-analyte <strong>X</strong> (true concentration from calibration level), <strong>Y</strong> (response ratio
@@ -458,6 +500,7 @@ export function CalibrationGroupRegressionInputsPanel({
         <code className="rounded bg-neutral-100 px-1 text-[10px] dark:bg-neutral-800">perm.runs.upload</code> and a Draft
         or Computed group. Recomputing clears prior manual include/exclude until set again after compute.
       </p>
+      <ExcelSectionHint sheet="DVD" location="rows 240–247" note="Amount Ratio, Response ratio, weighting, %Diff, Calibration Point Deleter" className="mt-2" />
       {needPlatformLab ? (
         <div className="mt-4">
           <Label htmlFor="regressionInputsLab">Laboratory (required for platform users)</Label>

@@ -1,6 +1,7 @@
 "use client";
 
 import { ConfirmDialog } from "@/components/modal";
+import { ExcelAnnotation, ExcelPageGuide, ExcelSectionHint } from "@/components/excel-annotation";
 import { RunMeasurementsTable } from "@/components/run-measurements-table";
 import { Badge, Button, Callout, Card, Label, PageHeader, Select, SkeletonLines } from "@/components/ui";
 import { InternalStandardSummariesPanel } from "@/components/internal-standard-summaries-panel";
@@ -266,10 +267,11 @@ export default function RunDetailPage() {
       </Card>
 
       <Card>
+        <ExcelPageGuide pageKey="runs-detail" />
         <div className="text-sm font-medium">Measurements</div>
         <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
           Parsed compound rows with instrument fields and IS-derived amount ratios (null when IS concentration is not
-          configured on the default internal standard).
+          configured on the default internal standard). Column headers show Cal/ICV Data and DVD row references.
         </p>
         {unresolvedRows.length > 0 ? (
           <Callout tone="warn" className="mt-3">
@@ -290,6 +292,7 @@ export default function RunDetailPage() {
 
       <Card>
         <div className="text-sm font-medium">Validation</div>
+        <ExcelAnnotation fieldKey="run.validationIssues" compact className="mt-2" />
         <div className="mt-3">
           {validation.isLoading ? <SkeletonLines lines={3} /> : null}
           {validation.isError ? (
@@ -339,6 +342,7 @@ export default function RunDetailPage() {
             Map a raw instrument compound name onto a canonical analyte. Saving as an alias remaps every future run in
             your lab; otherwise the mapping applies to the chosen scope only.
           </p>
+          <ExcelSectionHint sheet="Ref Table" location="F18+ Compound" note="Excel has fixed compound list — no alias layer" className="mt-2" />
           <form
             className="mt-4 space-y-4"
             onSubmit={(e) => {
@@ -348,6 +352,7 @@ export default function RunDetailPage() {
           >
             <div>
               <Label htmlFor="rawCompoundName">Raw compound name</Label>
+              <ExcelAnnotation fieldKey="run.resolve.rawCompoundName" compact />
               {unresolvedNames.length > 0 ? (
                 <Select
                   id="rawCompoundName"
@@ -376,6 +381,7 @@ export default function RunDetailPage() {
             </div>
             <div>
               <Label htmlFor="analyteId">Canonical analyte</Label>
+              <ExcelAnnotation fieldKey="run.resolve.analyteId" compact />
               <Select
                 id="analyteId"
                 className="mt-1"
@@ -391,17 +397,21 @@ export default function RunDetailPage() {
                 ))}
               </Select>
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={resolve.saveAsAlias}
-                onChange={(e) => setResolve({ ...resolve, saveAsAlias: e.target.checked })}
-              />
-              Save as a lab-wide alias (remaps all future runs)
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={resolve.saveAsAlias}
+                  onChange={(e) => setResolve({ ...resolve, saveAsAlias: e.target.checked })}
+                />
+                Save as a lab-wide alias (remaps all future runs)
+              </span>
+              <ExcelAnnotation fieldKey="run.resolve.saveAsAlias" compact />
             </label>
             {!resolve.saveAsAlias ? (
               <div>
                 <Label htmlFor="applyScope">Apply to</Label>
+                <ExcelAnnotation fieldKey="run.resolve.applyScope" compact />
                 <Select
                   id="applyScope"
                   className="mt-1"

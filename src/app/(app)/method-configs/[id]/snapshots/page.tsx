@@ -1,5 +1,6 @@
 "use client";
 
+import { ExcelPageGuide } from "@/components/excel-annotation";
 import { Card, PageHeader } from "@/components/ui";
 import { PaginationBar } from "@/components/pagination";
 import { listMethodConfigSnapshots } from "@/lib/api/wltr-api";
@@ -21,6 +22,7 @@ export default function MethodConfigSnapshotsPage() {
   return (
     <div>
       <PageHeader title="Method config snapshots" description={id} />
+      <ExcelPageGuide pageKey="method-config-snapshots" />
       <Card>
         {q.isLoading ? <div className="text-sm">Loading…</div> : null}
         {q.isError ? <div className="text-sm text-red-600">{(q.error as Error).message}</div> : null}

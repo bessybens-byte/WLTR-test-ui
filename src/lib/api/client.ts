@@ -18,42 +18,46 @@ export async function refreshAccessToken(): Promise<boolean> {
 }
 
 async function tryRefresh(): Promise<boolean> {
-  if (isDirectApi()) {
-    const rt = typeof window !== "undefined" ? sessionStorage.getItem("wltr_refresh") : null;
-    if (!rt) return false;
-    const url = buildApiUrl("Auth/refresh");
-    const res = await fetch(url, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: rt }),
-    });
-    if (!res.ok) return false;
-    const data = (await res.json()) as { accessToken?: string; refreshToken?: string };
-    if (data.accessToken) setAccessToken(data.accessToken);
-    if (data.refreshToken && typeof window !== "undefined") {
-      sessionStorage.setItem("wltr_refresh", data.refreshToken);
+  try {
+    if (isDirectApi()) {
+      const rt = typeof window !== "undefined" ? sessionStorage.getItem("wltr_refresh") : null;
+      if (!rt) return false;
+      const url = buildApiUrl("Auth/refresh");
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken: rt }),
+      });
+      if (!res.ok) return false;
+      const data = (await res.json()) as { accessToken?: string; refreshToken?: string };
+      if (data.accessToken) setAccessToken(data.accessToken);
+      if (data.refreshToken && typeof window !== "undefined") {
+        sessionStorage.setItem("wltr_refresh", data.refreshToken);
+      }
+      return true;
     }
-    return true;
-  }
 
-  if (refreshInFlight) return refreshInFlight;
-  refreshInFlight = (async () => {
-    const url = buildApiUrl("Auth/refresh");
-    const res = await fetch(url, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
+    if (refreshInFlight) return refreshInFlight;
+    refreshInFlight = (async () => {
+      const url = buildApiUrl("Auth/refresh");
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) return false;
+      const data = (await res.json()) as { accessToken?: string };
+      if (data.accessToken) setAccessToken(data.accessToken);
+      return true;
+    })().finally(() => {
+      refreshInFlight = null;
     });
-    if (!res.ok) return false;
-    const data = (await res.json()) as { accessToken?: string };
-    if (data.accessToken) setAccessToken(data.accessToken);
-    return true;
-  })().finally(() => {
-    refreshInFlight = null;
-  });
-  return refreshInFlight;
+    return refreshInFlight;
+  } catch {
+    return false;
+  }
 }
 
 export async function apiFetch(path: string, init?: ApiFetchInit): Promise<Response> {

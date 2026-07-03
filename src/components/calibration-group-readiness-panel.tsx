@@ -1,6 +1,7 @@
 "use client";
 
 import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { ExcelAnnotation } from "@/components/excel-annotation";
 import { Badge, Button, Card, Label } from "@/components/ui";
 import { getCalibrationGroupReadiness } from "@/lib/api/wltr-api";
 import type { MeResponse } from "@/lib/types/wltr";
@@ -134,6 +135,7 @@ export function CalibrationGroupReadinessPanel({
         Evaluates linked <strong>CAL</strong> runs only (not ICV). Blocking issues must be empty before a future compute
         step. Inverse weighting (1/x) positive-X rules apply at compute, not here.
       </p>
+      <ExcelAnnotation fieldKey="readiness.issues" compact className="mt-2" />
 
       <div className="mt-4 space-y-3">
         {needPlatformLab ? (

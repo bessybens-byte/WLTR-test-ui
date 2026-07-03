@@ -1,6 +1,7 @@
 "use client";
 
 import { ViewOnlyNotice } from "@/components/view-only-notice";
+import { ExcelAnnotation, ExcelSectionHint } from "@/components/excel-annotation";
 import { Button, Card, FieldHelp, FieldLabel, Input, LabelWithHelp, Select } from "@/components/ui";
 import { listAnalytes, listMethodAnalyteCriteria, replaceMethodAnalyteCriteria } from "@/lib/api/wltr-api";
 import {
@@ -177,6 +178,7 @@ export function MethodConfigAnalyteCriteriaPanel({
         Per-analyte limits for SPCC, CCC, method blanks (MB), and ICV/LCS recovery (LCL/UCL). Frozen into the method
         snapshot at each config save and used at compute time.
       </p>
+      <ExcelSectionHint sheet="Ref Table" location="columns U–AE" note="Analyte Switch, SPCC, CCC, ICV limits, multipliers" className="mt-2" />
 
       {criteriaQuery.isLoading ? <div className="mt-3 text-sm">Loading criteria…</div> : null}
       {criteriaQuery.isError ? (
@@ -213,6 +215,7 @@ export function MethodConfigAnalyteCriteriaPanel({
                         <LabelWithHelp help={h.analyte}>
                           <FieldLabel {...d.analyte} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.analyte" compact />
                         {canEdit ? (
                           <Select
                             className="mt-1"
@@ -248,11 +251,13 @@ export function MethodConfigAnalyteCriteriaPanel({
                           <FieldLabel {...d.isSpcc} />
                           <FieldHelp help={h.isSpcc} />
                         </label>
+                        <ExcelAnnotation fieldKey="analyteCriteria.isSpcc" compact className="col-span-full -mt-1" />
                       </div>
                       <div>
                         <LabelWithHelp className="text-xs" help={h.minResponseFactor}>
                           <FieldLabel {...d.minResponseFactor} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.minResponseFactor" compact />
                         <Input
                           type="number"
                           step="any"
@@ -273,11 +278,13 @@ export function MethodConfigAnalyteCriteriaPanel({
                           <FieldLabel {...d.isCcc} />
                           <FieldHelp help={h.isCcc} />
                         </label>
+                        <ExcelAnnotation fieldKey="analyteCriteria.isCcc" compact className="col-span-full -mt-1" />
                       </div>
                       <div>
                         <LabelWithHelp className="text-xs" help={h.maxRsdPercent}>
                           <FieldLabel {...d.maxRsdPercent} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.maxRsdPercent" compact />
                         <Input
                           type="number"
                           step="any"
@@ -291,6 +298,7 @@ export function MethodConfigAnalyteCriteriaPanel({
                         <LabelWithHelp className="text-xs" help={h.methodBlankLimit}>
                           <FieldLabel {...d.methodBlankLimit} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.methodBlankLimit" compact />
                         <Input
                           type="number"
                           step="any"
@@ -304,6 +312,7 @@ export function MethodConfigAnalyteCriteriaPanel({
                         <LabelWithHelp className="text-xs" help={h.icvLcsConcentration}>
                           <FieldLabel {...d.icvLcsConcentration} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.icvLcsConcentration" compact />
                         <Input
                           type="number"
                           step="any"
@@ -317,6 +326,7 @@ export function MethodConfigAnalyteCriteriaPanel({
                         <LabelWithHelp className="text-xs" help={h.icvLcsLowerControlLimit}>
                           <FieldLabel {...d.icvLcsLowerControlLimit} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.icvLcsLowerControlLimit" compact />
                         <Input
                           type="number"
                           step="any"
@@ -330,6 +340,7 @@ export function MethodConfigAnalyteCriteriaPanel({
                         <LabelWithHelp className="text-xs" help={h.icvLcsUpperControlLimit}>
                           <FieldLabel {...d.icvLcsUpperControlLimit} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.icvLcsUpperControlLimit" compact />
                         <Input
                           type="number"
                           step="any"
@@ -343,6 +354,7 @@ export function MethodConfigAnalyteCriteriaPanel({
                         <LabelWithHelp className="text-xs" help={h.concentrationMultiplier}>
                           <FieldLabel {...d.concentrationMultiplier} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.concentrationMultiplier" compact />
                         <Input
                           type="number"
                           step="any"
@@ -368,6 +380,7 @@ export function MethodConfigAnalyteCriteriaPanel({
                         <LabelWithHelp className="text-xs" help={h.surrogateSpikeAmount}>
                           <FieldLabel {...d.surrogateSpikeAmount} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.surrogateSpikeAmount" compact />
                         <Input
                           type="number"
                           step="any"
@@ -382,6 +395,7 @@ export function MethodConfigAnalyteCriteriaPanel({
                         <LabelWithHelp className="text-xs" help={h.surrogateRecoveryLowerLimit}>
                           <FieldLabel {...d.surrogateRecoveryLowerLimit} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.surrogateRecoveryLowerLimit" compact />
                         <Input
                           type="number"
                           step="any"
@@ -398,6 +412,7 @@ export function MethodConfigAnalyteCriteriaPanel({
                         <LabelWithHelp className="text-xs" help={h.surrogateRecoveryUpperLimit}>
                           <FieldLabel {...d.surrogateRecoveryUpperLimit} />
                         </LabelWithHelp>
+                        <ExcelAnnotation fieldKey="analyteCriteria.surrogateRecoveryUpperLimit" compact />
                         <Input
                           type="number"
                           step="any"

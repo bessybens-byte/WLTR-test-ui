@@ -1,6 +1,7 @@
 "use client";
 
 import { MethodConfigFormFields, type MethodConfigFormState } from "@/components/method-config-form-fields";
+import { ExcelPageGuide } from "@/components/excel-annotation";
 import { Button, Card, PageHeader } from "@/components/ui";
 import { createMethodConfig } from "@/lib/api/wltr-api";
 import { useRouter } from "next/navigation";
@@ -56,6 +57,7 @@ export default function NewMethodConfigPage() {
   return (
     <div>
       <PageHeader title="New method configuration" />
+      <ExcelPageGuide pageKey="method-configs" />
       <Card>
         <form className="space-y-4" onSubmit={onSubmit}>
           <MethodConfigFormFields form={form} setForm={setForm} nameRequired />

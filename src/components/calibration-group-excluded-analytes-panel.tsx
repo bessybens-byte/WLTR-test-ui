@@ -1,6 +1,7 @@
 "use client";
 
 import { ViewOnlyNotice } from "@/components/view-only-notice";
+import { ExcelSectionHint } from "@/components/excel-annotation";
 import { Button, Card, Input, Label, Select } from "@/components/ui";
 import {
   excludeGroupAnalyte,
@@ -122,6 +123,12 @@ export function CalibrationGroupExcludedAnalytesPanel({
         is kept when you change run membership; recompute after changes. Requires{" "}
         <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">perm.runs.upload</code>.
       </p>
+      <ExcelSectionHint
+        sheet="Ref Table / DVD"
+        location="Analyte Switch Off + Calibration Point Deleter"
+        note="WLTR group-level list; Excel combines Ref Table switch and DVD point deleter"
+        className="mt-2"
+      />
 
       {excludedQuery.isLoading ? <div className="mt-3 text-sm text-neutral-500">Loading exclusions…</div> : null}
       {excludedQuery.isError ? (

@@ -62,16 +62,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       setLoading(true);
-      if (!getAccessToken()) {
-        await refreshAccessToken();
+      try {
+        if (!getAccessToken()) {
+          await refreshAccessToken();
+        }
+        if (!cancelled && getAccessToken()) {
+          await refreshMe();
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      if (getAccessToken()) {
-        await refreshMe();
-      }
-      setLoading(false);
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [refreshMe]);
 
   const login = useCallback(

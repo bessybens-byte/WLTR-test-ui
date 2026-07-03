@@ -1,5 +1,6 @@
 "use client";
 
+import { ExcelAnnotation, ExcelPageGuide } from "@/components/excel-annotation";
 import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
 import { createCalibrationLevel } from "@/lib/api/wltr-api";
 import { useRouter } from "next/navigation";
@@ -33,15 +34,18 @@ export default function NewCalibrationLevelPage() {
   return (
     <div>
       <PageHeader title="New calibration level" />
+      <ExcelPageGuide pageKey="calibration-levels" />
       <Card>
         <form className="space-y-4" onSubmit={onSubmit}>
           <div>
             <Label htmlFor="levelName">Level name</Label>
+            <ExcelAnnotation fieldKey="calLevel.levelName" />
             <Input id="levelName" value={form.levelName} onChange={(e) => setForm({ ...form, levelName: e.target.value })} required />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label htmlFor="trueConcentration">True concentration</Label>
+              <ExcelAnnotation fieldKey="calLevel.trueConcentration" />
               <Input
                 id="trueConcentration"
                 type="number"
@@ -52,6 +56,7 @@ export default function NewCalibrationLevelPage() {
             </div>
             <div>
               <Label htmlFor="sortOrder">Sort order</Label>
+              <ExcelAnnotation fieldKey="calLevel.sortOrder" />
               <Input
                 id="sortOrder"
                 type="number"

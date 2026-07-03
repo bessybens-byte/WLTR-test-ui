@@ -1,5 +1,6 @@
 "use client";
 
+import { ExcelPageGuide, ExcelSectionHint, ExcelTh, ExcelModelVariantTable, ExcelAnnotation } from "@/components/excel-annotation";
 import { ConfirmDialog } from "@/components/modal";
 import { Badge, Button, Card, Label, Textarea } from "@/components/ui";
 import {
@@ -308,7 +309,9 @@ export function CalibrationGroupWorkflowPanel({
         </p>
 
         {suggested ? (
-          <div className="mt-2 flex items-center justify-between gap-4 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900/50">
+          <div className="mt-2 space-y-2">
+            <ExcelAnnotation fieldKey="reportCard.suggestedModel" compact />
+            <div className="flex items-center justify-between gap-4 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900/50">
             <p className="text-xs text-neutral-600 dark:text-neutral-400">
               <span className="font-medium text-neutral-800 dark:text-neutral-200">Suggested variant</span>{" "}
               (highest pass-count):{" "}
@@ -335,15 +338,24 @@ export function CalibrationGroupWorkflowPanel({
               </Button>
             ) : null}
           </div>
+          </div>
         ) : null}
       </Card>
 
       {(isComputed || isTerminal) && (
         <Card>
+          <ExcelPageGuide pageKey="calibration-group-report-card" />
           <div className="text-sm font-medium">Report card — model comparison</div>
           <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
             All supported regression and weighting combinations computed in one pass, ranked by pass-count per analyte.
           </p>
+          <ExcelSectionHint
+            sheet="DVD"
+            location="FF247; rows 246–267"
+            note="Low level Extrapolation + ICV Ranking → Report Card; Point Total in BI:BP"
+            className="mt-2"
+          />
+          <ExcelModelVariantTable className="mt-3" />
 
           {reportCard.isLoading ? <div className="mt-3 text-sm text-neutral-500">Loading report card…</div> : null}
           {reportCard.isError ? (
@@ -367,17 +379,21 @@ export function CalibrationGroupWorkflowPanel({
                     }`}
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900/50">
-                      <div className="text-sm font-medium">
-                        {modelLabel(rt, wm)}
-                        {v.isSuggestedModel ? (
-                          <Badge tone="ok" className="ml-2">
-                            Suggested
-                          </Badge>
-                        ) : null}
+                      <div>
+                        <div className="text-sm font-medium">
+                          {modelLabel(rt, wm)}
+                          {v.isSuggestedModel ? (
+                            <Badge tone="ok" className="ml-2">
+                              Suggested
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <ExcelAnnotation fieldKey="reportCard.modelVariant" compact className="mt-1 max-w-lg" />
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                        <span>
+                        <span title="Pass-count ranking; full Point Total in QA debug (DVD BI:BP)">
                           Score: <span className="font-mono">{cell(v.reportCardScore)}</span>
+                          <span className="ml-1 text-[9px] text-violet-700 dark:text-violet-300">(DVD Point Total family)</span>
                         </span>
                         <span>
                           Analytes: <span className="font-mono">{cell(v.totalAnalytes ?? analyteRows.length)}</span>
@@ -413,13 +429,25 @@ export function CalibrationGroupWorkflowPanel({
                         <table className="w-full border-collapse text-left text-xs">
                           <thead>
                             <tr className="border-b border-neutral-100 dark:border-neutral-900">
-                              <th className="px-3 py-2 font-medium">Analyte</th>
-                              <th className="px-3 py-2 font-medium">R²</th>
-                              <th className="px-3 py-2 font-medium">Cal</th>
-                              <th className="px-3 py-2 font-medium">ICV</th>
-                              <th className="px-3 py-2 font-medium">Missed pts</th>
+                              <ExcelTh fieldKey="reportCard.analyte" className="px-3 py-2">
+                                Analyte
+                              </ExcelTh>
+                              <ExcelTh fieldKey="reportCard.rSquared" className="px-3 py-2">
+                                R²
+                              </ExcelTh>
+                              <ExcelTh fieldKey="reportCard.calStatus" className="px-3 py-2">
+                                Cal
+                              </ExcelTh>
+                              <ExcelTh fieldKey="reportCard.icvPassed" className="px-3 py-2">
+                                ICV
+                              </ExcelTh>
+                              <ExcelTh fieldKey="reportCard.missedPointCount" className="px-3 py-2">
+                                Missed pts
+                              </ExcelTh>
                               {canSelectModel && !isTerminal && !stale ? (
-                                <th className="px-3 py-2 font-medium">Model</th>
+                                <ExcelTh fieldKey="reportCard.selectModel" className="px-3 py-2">
+                                  Model
+                                </ExcelTh>
                               ) : null}
                             </tr>
                           </thead>
@@ -501,8 +529,10 @@ export function CalibrationGroupWorkflowPanel({
           <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
             Approve locks the group for reporting. Reject is terminal. Optional comment is stored in the audit trail.
           </p>
+          <ExcelAnnotation fieldKey="workflow.approveReject" compact className="mt-2" />
           <div className="mt-3">
             <Label htmlFor="qa-comment">Comment (optional)</Label>
+            <ExcelAnnotation fieldKey="workflow.qaComment" compact />
             <Textarea
               id="qa-comment"
               className="min-h-[72px] font-sans"

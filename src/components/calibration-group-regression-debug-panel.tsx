@@ -2,6 +2,7 @@
 
 import { JsonPrettyView } from "@/components/json-pretty-view";
 import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { ExcelAnnotation, ExcelModelVariantTable, ExcelPageGuide } from "@/components/excel-annotation";
 import { Button, Card, Label, Select } from "@/components/ui";
 import {
   getCalibrationGroupRegressionDebug,
@@ -188,6 +189,14 @@ export function CalibrationGroupRegressionDebugPanel({
       </div>
 
       <div className="space-y-5 p-5">
+        <ExcelPageGuide pageKey="calibration-group-regression-debug" />
+        <ExcelModelVariantTable />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <ExcelAnnotation fieldKey="debug.variantComparison" compact />
+          <ExcelAnnotation fieldKey="debug.extrapolationProbes" compact />
+          <ExcelAnnotation fieldKey="debug.pointTotal" compact />
+          <ExcelAnnotation fieldKey="debug.externalQuadratic" compact />
+        </div>
         {needPlatformLab ? (
           <div className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50/50 p-4 dark:border-neutral-700 dark:bg-neutral-900/30">
             <Label htmlFor="rdLab">Laboratory</Label>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ExcelAnnotation, ExcelPageGuide } from "@/components/excel-annotation";
 import { Button, Card, Input, Label, PageHeader, Select, Textarea } from "@/components/ui";
 import { createRun, listCalibrationLevels, listInstruments } from "@/lib/api/wltr-api";
 import { MANUAL_INSTRUMENT_VALUE, pushRecentInstrument, pushRecentRun } from "@/lib/client-recent";
@@ -96,10 +97,12 @@ function UploadForm() {
 
   return (
     <Card>
+      <ExcelPageGuide pageKey="runs-upload" />
       <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); void onSubmit(); }}>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <Label htmlFor="runType">Run type</Label>
+            <ExcelAnnotation fieldKey="run.runType" />
             <Select
               id="runType"
               value={String(form.runType)}
@@ -112,6 +115,7 @@ function UploadForm() {
           {form.runType === 0 ? (
             <div>
               <Label htmlFor="level">Calibration level</Label>
+              <ExcelAnnotation fieldKey="run.level" />
               {levelsQuery.isLoading ? <div className="mt-2 text-sm text-neutral-500">Loading levels…</div> : null}
               {levelsQuery.isError ? (
                 <div className="mt-2 text-sm text-amber-700 dark:text-amber-300">
@@ -155,6 +159,7 @@ function UploadForm() {
         </div>
         <div>
           <Label htmlFor="instrumentPick">Instrument</Label>
+          <ExcelAnnotation fieldKey="run.instrumentId" />
           {instrumentsQuery.isLoading ? (
             <div className="mt-2 text-sm text-neutral-500">Loading instruments…</div>
           ) : null}
@@ -190,6 +195,7 @@ function UploadForm() {
         </div>
         <div>
           <Label htmlFor="runDate">Run date</Label>
+          <ExcelAnnotation fieldKey="run.runDate" />
           <Input
             id="runDate"
             type="datetime-local"
@@ -199,6 +205,7 @@ function UploadForm() {
         </div>
         <div>
           <Label htmlFor="runName">Name (optional)</Label>
+          <ExcelAnnotation fieldKey="run.name" />
           <Input
             id="runName"
             value={form.name}
@@ -210,6 +217,7 @@ function UploadForm() {
         </div>
         <div>
           <Label htmlFor="rawText">Raw text</Label>
+          <ExcelAnnotation fieldKey="run.rawText" />
           <Textarea id="rawText" value={form.rawText} onChange={(e) => setForm({ ...form, rawText: e.target.value })} />
         </div>
         {error ? <div className="text-sm text-red-600">{error}</div> : null}

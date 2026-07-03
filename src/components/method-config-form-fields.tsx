@@ -1,5 +1,6 @@
 "use client";
 
+import { ExcelAnnotation } from "@/components/excel-annotation";
 import { FieldLabel, Input, LabelWithHelp, Select } from "@/components/ui";
 import { METHOD_CONFIG_FIELD_DISPLAY, METHOD_CONFIG_FIELD_HELP } from "@/lib/method-config-field-help";
 import { LABEL_MODE_LABEL, LabelMode, QUANTITATION_MODE_LABEL, QuantitationMode } from "@/lib/types/wltr";
@@ -46,6 +47,7 @@ export function MethodConfigFormFields({
         <LabelWithHelp htmlFor="name" help={h.name}>
           <FieldLabel {...d.name} />
         </LabelWithHelp>
+        <ExcelAnnotation fieldKey="methodConfig.name" />
         <Input
           id="name"
           value={form.name}
@@ -58,14 +60,25 @@ export function MethodConfigFormFields({
       <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">
         <div className="mb-3 text-sm font-medium">Methodology</div>
         <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
-          Regression type and weighting are chosen per calibration group on the report card. This section sets how curves
-          are built (Y axis) and how pass/fail is labeled.
+          Regression type and weighting are chosen per calibration group on the report card (DVD rows 246–262). This
+          section sets how curves are built (Y axis) and how pass/fail is labeled.
         </p>
+        <ExcelAnnotation
+          annotation={{
+            sheet: "DVD + Summary Report",
+            location: "rows 246–262; G11",
+            excelLabel: "Nine model variants; COD / correlation threshold",
+            status: "partial",
+            note: "Regression type/weighting per group on Report Card; label mode affects Summary Report G11 comparison.",
+          }}
+          className="mb-3"
+        />
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <LabelWithHelp htmlFor="lm" help={h.labelMode}>
               <FieldLabel {...d.labelMode} />
             </LabelWithHelp>
+            <ExcelAnnotation fieldKey="methodConfig.labelMode" />
             <Select
               id="lm"
               value={form.labelMode}
@@ -83,6 +96,7 @@ export function MethodConfigFormFields({
             <LabelWithHelp htmlFor="qm" help={h.quantitationMode}>
               <FieldLabel {...d.quantitationMode} />
             </LabelWithHelp>
+            <ExcelAnnotation fieldKey="methodConfig.quantitationMode" />
             <Select
               id="qm"
               value={form.quantitationMode}
@@ -104,6 +118,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="minCorrelation" help={h.minCorrelation}>
             <FieldLabel {...d.minCorrelation} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.minCorrelation" />
           <Input
             id="minCorrelation"
             type="number"
@@ -118,6 +133,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="maxRSE" help={h.maxRSE}>
             <FieldLabel {...d.maxRSE} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.maxRSE" />
           <Input
             id="maxRSE"
             type="number"
@@ -132,6 +148,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="pctDiffLowBound" help={h.pctDiffLowBound}>
             <FieldLabel {...d.pctDiffLowBound} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.pctDiffLowBound" />
           <Input
             id="pctDiffLowBound"
             type="number"
@@ -146,6 +163,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="pctDiffHighBound" help={h.pctDiffHighBound}>
             <FieldLabel {...d.pctDiffHighBound} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.pctDiffHighBound" />
           <Input
             id="pctDiffHighBound"
             type="number"
@@ -160,6 +178,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="minPointsRequired" help={h.minPointsRequired}>
             <FieldLabel {...d.minPointsRequired} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.minPointsRequired" />
           <Input
             id="minPointsRequired"
             type="number"
@@ -173,6 +192,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="maxMissedPoints" help={h.maxMissedPoints}>
             <FieldLabel {...d.maxMissedPoints} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.maxMissedPoints" />
           <Input
             id="maxMissedPoints"
             type="number"
@@ -186,6 +206,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="icvLimitPercent" help={h.icvLimitPercent}>
             <FieldLabel {...d.icvLimitPercent} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.icvLimitPercent" />
           <Input
             id="icvLimitPercent"
             type="number"
@@ -200,6 +221,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="rsdPercentLimit" help={h.rsdPercentLimit}>
             <FieldLabel {...d.rsdPercentLimit} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.rsdPercentLimit" />
           <Input
             id="rsdPercentLimit"
             type="number"
@@ -214,6 +236,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="isRsdPercentLimit" help={h.isRsdPercentLimit}>
             <FieldLabel {...d.isRsdPercentLimit} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.isRsdPercentLimit" />
           <Input
             id="isRsdPercentLimit"
             type="number"
@@ -228,6 +251,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="icvCdsParityPercent" help={h.icvCdsParityPercent}>
             <FieldLabel {...d.icvCdsParityPercent} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.icvCdsParityPercent" />
           <Input
             id="icvCdsParityPercent"
             type="number"
@@ -242,6 +266,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="soilDilutionFactor" help={h.soilDilutionFactor}>
             <FieldLabel {...d.soilDilutionFactor} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.soilDilutionFactor" />
           <Input
             id="soilDilutionFactor"
             type="number"
@@ -256,6 +281,7 @@ export function MethodConfigFormFields({
           <LabelWithHelp htmlFor="aqueousDilutionFactor" help={h.aqueousDilutionFactor}>
             <FieldLabel {...d.aqueousDilutionFactor} />
           </LabelWithHelp>
+          <ExcelAnnotation fieldKey="methodConfig.aqueousDilutionFactor" />
           <Input
             id="aqueousDilutionFactor"
             type="number"
@@ -275,6 +301,7 @@ export function MethodConfigFormFields({
         <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
           Warn when mean internal-standard response drifts outside these inclusive bounds. Leave blank to disable.
         </p>
+        <ExcelAnnotation fieldKey="methodConfig.internalStandardResponseMin" className="mt-2" />
         <div className="mt-3 grid gap-4 md:grid-cols-2">
           <div>
             <LabelWithHelp htmlFor="isMin" help={h.internalStandardResponseMin}>
@@ -293,6 +320,7 @@ export function MethodConfigFormFields({
             <LabelWithHelp htmlFor="isMax" help={h.internalStandardResponseMax}>
               <FieldLabel {...d.internalStandardResponseMax} />
             </LabelWithHelp>
+            <ExcelAnnotation fieldKey="methodConfig.internalStandardResponseMax" compact />
             <Input
               id="isMax"
               type="number"

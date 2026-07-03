@@ -1,6 +1,7 @@
 "use client";
 
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { ExcelDevBanner } from "@/components/excel-annotation";
 import { Button } from "@/components/ui";
 import { canSeeNavItem, navSections } from "@/lib/nav";
 import { cn } from "@/lib/cn";
@@ -115,6 +116,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <main className="min-w-0 flex-1">
         <Breadcrumbs />
+        <ExcelDevBanner />
         {children}
       </main>
     </div>

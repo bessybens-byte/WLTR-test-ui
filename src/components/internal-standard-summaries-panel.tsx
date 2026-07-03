@@ -1,6 +1,7 @@
 "use client";
 
 import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { ExcelPageGuide, ExcelSectionHint, ExcelTh } from "@/components/excel-annotation";
 import { Badge, Button, Card, Input, Label } from "@/components/ui";
 import {
   downloadInternalStandardSummariesCsv,
@@ -67,6 +68,12 @@ export function InternalStandardSummariesPanel({
         {variant === "run" ? "this run" : "CAL runs linked to this group; ICV excluded"}). Optional method config
         supplies mean-response bounds for warning flags.
       </p>
+      <ExcelSectionHint
+        sheet="Summary Report"
+        location="Internal Standard Evaluation"
+        note="Excel IS %RSD at report time; WLTR aggregates across runs (partial match)"
+        className="mt-2"
+      />
 
       <div className="mt-4 space-y-3">
         {needPlatformLab ? (
@@ -122,16 +129,36 @@ export function InternalStandardSummariesPanel({
             <table className="w-full border-collapse text-xs">
               <thead>
                 <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
-                  <th className="py-2 pr-2">Compound</th>
-                  <th className="py-2 pr-2">Min</th>
-                  <th className="py-2 pr-2">Max</th>
-                  <th className="py-2 pr-2">Mean</th>
-                  <th className="py-2 pr-2">%RSD</th>
-                  <th className="py-2 pr-2">RSD limit</th>
-                  <th className="py-2 pr-2">RSD pass</th>
-                  <th className="py-2 pr-2">Count</th>
-                  <th className="py-2 pr-2">Runs</th>
-                  <th className="py-2 pr-2">Warn</th>
+                  <ExcelTh fieldKey="isSummary.compound" className="py-2 pr-2">
+                    Compound
+                  </ExcelTh>
+                  <ExcelTh fieldKey="isSummary.min" className="py-2 pr-2">
+                    Min
+                  </ExcelTh>
+                  <ExcelTh fieldKey="isSummary.max" className="py-2 pr-2">
+                    Max
+                  </ExcelTh>
+                  <ExcelTh fieldKey="isSummary.mean" className="py-2 pr-2">
+                    Mean
+                  </ExcelTh>
+                  <ExcelTh fieldKey="isSummary.rsdPercent" className="py-2 pr-2">
+                    %RSD
+                  </ExcelTh>
+                  <ExcelTh fieldKey="isSummary.rsdLimit" className="py-2 pr-2">
+                    RSD limit
+                  </ExcelTh>
+                  <ExcelTh fieldKey="isSummary.rsdPass" className="py-2 pr-2">
+                    RSD pass
+                  </ExcelTh>
+                  <ExcelTh fieldKey="isSummary.count" className="py-2 pr-2">
+                    Count
+                  </ExcelTh>
+                  <ExcelTh fieldKey="isSummary.runs" className="py-2 pr-2">
+                    Runs
+                  </ExcelTh>
+                  <ExcelTh fieldKey="isSummary.warn" className="py-2 pr-2">
+                    Warn
+                  </ExcelTh>
                 </tr>
               </thead>
               <tbody>

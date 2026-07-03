@@ -9,6 +9,7 @@ import { CalibrationGroupRegressionInputsPanel } from "@/components/calibration-
 import { CalibrationGroupRegressionResultsPanel } from "@/components/calibration-group-regression-results-panel";
 import { CalibrationGroupSummaryReportPanel } from "@/components/calibration-group-summary-report-panel";
 import { CalibrationGroupWorkflowPanel } from "@/components/calibration-group-workflow-panel";
+import { ExcelAnnotation, ExcelPageGuide } from "@/components/excel-annotation";
 import { InternalStandardSummariesPanel } from "@/components/internal-standard-summaries-panel";
 import { Stepper, Tabs, type StepItem } from "@/components/tabs";
 import { Badge, Button, Callout, Card, Input, Label, PageHeader, Select } from "@/components/ui";
@@ -296,6 +297,7 @@ function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps
       <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); void onSave(); }}>
         <div>
           <Label htmlFor="editName">Group name</Label>
+          <ExcelAnnotation fieldKey="group.name" compact />
           <Input
             id="editName"
             className="mt-1"
@@ -307,6 +309,7 @@ function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps
 
         <div>
           <Label htmlFor="editMethod">Method configuration</Label>
+          <ExcelAnnotation fieldKey="group.methodConfigId" compact />
           <Select
             id="editMethod"
             className="mt-1"
@@ -323,6 +326,7 @@ function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps
 
         <div>
           <div className="mb-1 text-sm font-medium">CAL runs</div>
+          <ExcelAnnotation fieldKey="group.calRunIds" compact className="mb-2" />
           <EditCalRuns
             isLoading={candidatesLoading}
             candidates={calCandidates}
@@ -334,6 +338,7 @@ function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps
 
         <div>
           <Label htmlFor="editIcvPick">ICV run (optional)</Label>
+          <ExcelAnnotation fieldKey="group.icvRunId" compact />
           <Select
             id="editIcvPick"
             className="mt-1"
@@ -387,15 +392,24 @@ function GroupDetailCard({ group, instrumentName, methodName, showEditButton, on
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Badge tone={groupStatusTone(group.status)}>
-            {GROUP_STATUS_LABEL[group.status] ?? String(group.status)}
-          </Badge>
+        <div className="flex flex-wrap items-center gap-3">
+          <div>
+            <Badge tone={groupStatusTone(group.status)}>
+              {GROUP_STATUS_LABEL[group.status] ?? String(group.status)}
+            </Badge>
+            <ExcelAnnotation fieldKey="group.status" compact className="mt-1" />
+          </div>
           {group.computedAt ? (
-            <span className="text-xs text-neutral-500">Computed {formatDate(group.computedAt)}</span>
+            <div>
+              <span className="text-xs text-neutral-500">Computed {formatDate(group.computedAt)}</span>
+              <ExcelAnnotation fieldKey="group.computedAt" compact className="mt-1" />
+            </div>
           ) : null}
           {group.computationStale ? (
-            <Badge tone="warn">Computation stale — recompute</Badge>
+            <div>
+              <Badge tone="warn">Computation stale — recompute</Badge>
+              <ExcelAnnotation fieldKey="group.computationStale" compact className="mt-1" />
+            </div>
           ) : null}
         </div>
         {showEditButton ? (
@@ -406,6 +420,7 @@ function GroupDetailCard({ group, instrumentName, methodName, showEditButton, on
       <dl className="grid gap-3 text-sm sm:grid-cols-2">
         <div className="sm:col-span-2">
           <dt className="font-medium text-neutral-700 dark:text-neutral-300">Display name</dt>
+          <ExcelAnnotation fieldKey="group.name" compact className="mt-1" />
           <dd className="mt-0.5">
             {group.name ?? (
               <span className="text-neutral-500">
@@ -416,6 +431,7 @@ function GroupDetailCard({ group, instrumentName, methodName, showEditButton, on
         </div>
         <div>
           <dt className="font-medium text-neutral-700 dark:text-neutral-300">Instrument</dt>
+          <ExcelAnnotation fieldKey="group.instrumentId" compact className="mt-1" />
           <dd className="mt-0.5">
             <Link
               className="text-blue-600 underline dark:text-blue-400"
@@ -427,6 +443,7 @@ function GroupDetailCard({ group, instrumentName, methodName, showEditButton, on
         </div>
         <div>
           <dt className="font-medium text-neutral-700 dark:text-neutral-300">Method config</dt>
+          <ExcelAnnotation fieldKey="group.methodConfigId" compact className="mt-1" />
           <dd className="mt-0.5">
             <Link className="text-blue-600 underline dark:text-blue-400" href={`/method-configs/${group.methodConfigId}`}>
               {methodName || <span className="font-mono text-xs">{group.methodConfigId}</span>}
@@ -436,6 +453,7 @@ function GroupDetailCard({ group, instrumentName, methodName, showEditButton, on
         {group.methodConfigSnapshotId ? (
           <div>
             <dt className="font-medium text-neutral-700 dark:text-neutral-300">Snapshot</dt>
+            <ExcelAnnotation fieldKey="group.methodConfigSnapshotId" compact className="mt-1" />
             <dd className="mt-0.5 font-mono text-xs">{group.methodConfigSnapshotId}</dd>
           </div>
         ) : null}
@@ -446,6 +464,7 @@ function GroupDetailCard({ group, instrumentName, methodName, showEditButton, on
         {group.computationVersion ? (
           <div>
             <dt className="font-medium text-neutral-700 dark:text-neutral-300">Computation version</dt>
+            <ExcelAnnotation fieldKey="group.computationVersion" compact className="mt-1" />
             <dd className="mt-0.5 font-mono text-xs">{group.computationVersion}</dd>
           </div>
         ) : null}
@@ -453,6 +472,7 @@ function GroupDetailCard({ group, instrumentName, methodName, showEditButton, on
 
       <div>
         <div className="mb-2 text-sm font-medium">CAL runs ({group.calRunIds.length})</div>
+        <ExcelAnnotation fieldKey="group.calRunIds" compact className="mb-2" />
         <ul className="space-y-1">
           {group.calRunIds.map((runId) => (
             <li key={runId}>
@@ -467,6 +487,7 @@ function GroupDetailCard({ group, instrumentName, methodName, showEditButton, on
       {group.icvRunId ? (
         <div>
           <div className="mb-1 text-sm font-medium">ICV run</div>
+          <ExcelAnnotation fieldKey="group.icvRunId" compact className="mb-2" />
           <Link className="font-mono text-xs text-blue-600 underline dark:text-blue-400" href={`/runs/${group.icvRunId}`}>
             {group.icvRunId}
           </Link>
@@ -588,6 +609,8 @@ export default function CalibrationGroupDetailPage() {
           </Link>
         }
       />
+
+      <ExcelPageGuide pageKey="calibration-groups" />
 
       {groupQuery.isLoading ? <Card><div className="text-sm text-neutral-500">Loading group…</div></Card> : null}
       {groupQuery.isError ? (

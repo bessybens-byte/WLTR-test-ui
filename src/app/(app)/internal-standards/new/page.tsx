@@ -1,5 +1,6 @@
 "use client";
 
+import { ExcelAnnotation, ExcelPageGuide } from "@/components/excel-annotation";
 import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
 import { createInternalStandard } from "@/lib/api/wltr-api";
 import { PERMS, hasPermission } from "@/lib/types/wltr";
@@ -53,18 +54,30 @@ export default function NewInternalStandardPage() {
           </Link>
         }
       />
+      <ExcelPageGuide pageKey="internal-standards" />
       <Card>
         <form className="space-y-4" onSubmit={onSubmit}>
           <div>
             <Label htmlFor="name">Name</Label>
+            <ExcelAnnotation fieldKey="internalStandard.name" compact />
             <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </div>
           <div>
             <Label htmlFor="casNumber">CAS number</Label>
+            <ExcelAnnotation
+              annotation={{
+                sheet: "Ref Table",
+                excelLabel: "Compound",
+                status: "partial",
+                note: "Excel lists IS compound names; no CAS column in preload Ref Table.",
+              }}
+              compact
+            />
             <Input id="casNumber" value={form.casNumber} onChange={(e) => setForm({ ...form, casNumber: e.target.value })} />
           </div>
           <div>
             <Label htmlFor="concentration">Spike concentration</Label>
+            <ExcelAnnotation fieldKey="internalStandard.concentration" compact />
             <Input
               id="concentration"
               type="number"

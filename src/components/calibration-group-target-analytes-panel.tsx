@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge, Button, Card } from "@/components/ui";
+import { ExcelSectionHint } from "@/components/excel-annotation";
 import {
   excludeGroupAnalyte,
   listTargetGroupAnalytes,
@@ -87,6 +88,12 @@ export function CalibrationGroupTargetAnalytesPanel({
         skipped during regression compute.{" "}
         {canEdit ? "Toggle an analyte's exclusion state below." : null}
       </p>
+      <ExcelSectionHint
+        sheet="Ref Table"
+        location="Analyte Switch = 1"
+        note="WLTR derives targets from measurements; exclusions mirror Switch Off + DVD point deleter"
+        className="mt-2"
+      />
 
       {targetQuery.isLoading ? (
         <div className="mt-3 text-sm text-neutral-500">Loading analytes…</div>

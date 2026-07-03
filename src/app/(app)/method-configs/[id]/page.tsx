@@ -2,6 +2,7 @@
 
 import { MethodConfigAnalyteCriteriaPanel } from "@/components/method-config-analyte-criteria-panel";
 import { MethodConfigFormFields, type MethodConfigFormState } from "@/components/method-config-form-fields";
+import { ExcelPageGuide } from "@/components/excel-annotation";
 import { ConfirmDialog } from "@/components/modal";
 import { ViewOnlyNotice } from "@/components/view-only-notice";
 import { Button, Card, PageHeader } from "@/components/ui";
@@ -118,6 +119,7 @@ export default function MethodConfigDetailPage() {
           </Link>
         }
       />
+      <ExcelPageGuide pageKey="method-configs" />
       <Card>
         {q.isLoading ? <div className="text-sm">Loading…</div> : null}
         {q.isError ? <div className="text-sm text-red-600">{(q.error as Error).message}</div> : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
+import { ExcelAnnotation, ExcelPageGuide } from "@/components/excel-annotation";
 import { Button, Card, Label } from "@/components/ui";
 import { ApiError } from "@/lib/api/errors";
 import { computeCalibrationGroup, getCalibrationGroupReadiness } from "@/lib/api/wltr-api";
@@ -63,12 +64,14 @@ export function CalibrationGroupComputePanel({
 
   return (
     <Card>
+      <ExcelPageGuide pageKey="calibration-group-compute" />
       <div className="text-sm font-medium">Run regression</div>
       <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
         Computes all supported regression and weighting variants for every analyte in one pass. Requires{" "}
         <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">perm.runs.upload</code>. Recompute clears
         manual point exclusions and any prior model selection.
       </p>
+      <ExcelAnnotation fieldKey="compute.runRegression" className="mt-2" />
 
       {needPlatformLab ? (
         <div className="mt-4">

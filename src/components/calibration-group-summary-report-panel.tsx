@@ -1,5 +1,6 @@
 "use client";
 
+import { ExcelAnnotation, ExcelPageGuide, ExcelSectionHint, ExcelTh } from "@/components/excel-annotation";
 import { Card } from "@/components/ui";
 import { ApiError } from "@/lib/api/errors";
 import { getCalibrationGroupSummaryReport } from "@/lib/api/wltr-api";
@@ -13,19 +14,20 @@ import {
 import { useQuery } from "@tanstack/react-query";
 
 function AdminTable({ admin }: { readonly admin: Record<string, unknown> }) {
-  const rows: { label: string; value: string }[] = [
-    { label: "Method config name", value: cell(admin.methodConfigName) },
-    { label: "Computed at", value: cell(admin.computedAt) },
-    { label: "Computation version", value: cell(admin.computationVersion) },
-    { label: "Target %RSD limit", value: fmtNum(admin.rsdPercentLimit, 2) },
-    { label: "IS/surrogate %RSD limit", value: fmtNum(admin.isRsdPercentLimit, 2) },
-    { label: "ICV vs true limit (%)", value: fmtNum(admin.icvLimitPercent, 2) },
-    { label: "ICV CDS parity (%)", value: fmtNum(admin.icvCdsParityPercent, 4) },
-    { label: "Soil dilution factor", value: fmtNum(admin.soilDilutionFactor, 4) },
-    { label: "Aqueous dilution factor", value: fmtNum(admin.aqueousDilutionFactor, 4) },
+  const rows: { label: string; value: string; fieldKey: string }[] = [
+    { label: "Method config name", value: cell(admin.methodConfigName), fieldKey: "summary.admin.methodConfigName" },
+    { label: "Computed at", value: cell(admin.computedAt), fieldKey: "summary.admin.computedAt" },
+    { label: "Computation version", value: cell(admin.computationVersion), fieldKey: "summary.admin.computationVersion" },
+    { label: "Target %RSD limit", value: fmtNum(admin.rsdPercentLimit, 2), fieldKey: "summary.admin.rsdPercentLimit" },
+    { label: "IS/surrogate %RSD limit", value: fmtNum(admin.isRsdPercentLimit, 2), fieldKey: "summary.admin.isRsdPercentLimit" },
+    { label: "ICV vs true limit (%)", value: fmtNum(admin.icvLimitPercent, 2), fieldKey: "summary.admin.icvLimitPercent" },
+    { label: "ICV CDS parity (%)", value: fmtNum(admin.icvCdsParityPercent, 4), fieldKey: "summary.admin.icvCdsParityPercent" },
+    { label: "Soil dilution factor", value: fmtNum(admin.soilDilutionFactor, 4), fieldKey: "summary.admin.soilDilutionFactor" },
+    { label: "Aqueous dilution factor", value: fmtNum(admin.aqueousDilutionFactor, 4), fieldKey: "summary.admin.aqueousDilutionFactor" },
     {
       label: "Computation stale",
       value: admin.isComputationStale ? "Yes" : "No",
+      fieldKey: "summary.admin.computationStale",
     },
   ];
 
@@ -34,6 +36,7 @@ function AdminTable({ admin }: { readonly admin: Record<string, unknown> }) {
       {rows.map((r) => (
         <div key={r.label}>
           <dt className="text-xs font-medium text-neutral-600 dark:text-neutral-400">{r.label}</dt>
+          <ExcelAnnotation fieldKey={r.fieldKey} compact className="mt-0.5" />
           <dd className="mt-0.5 font-mono text-xs">{r.value}</dd>
         </div>
       ))}
@@ -83,12 +86,14 @@ export function CalibrationGroupSummaryReportPanel({
 
   return (
     <Card>
+      <ExcelPageGuide pageKey="calibration-group-summary" />
       <div>
         <div className="text-sm font-medium">Summary report</div>
         <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
           Four-table ICAL report built from each analyte&apos;s selected model — frozen snapshot thresholds at compute
           time.
         </p>
+        <ExcelSectionHint sheet="Summary Report" note="Report Writer sheet is print layout only — same four tables" className="mt-2" />
       </div>
 
       {report.isLoading ? <div className="mt-4 text-sm text-neutral-500">Loading summary report…</div> : null}
@@ -108,7 +113,8 @@ export function CalibrationGroupSummaryReportPanel({
           </section>
 
           <section>
-            <h3 className="mb-3 text-sm font-semibold">2. Executive summary</h3>
+            <h3 className="mb-1 text-sm font-semibold">2. Executive summary</h3>
+            <ExcelAnnotation fieldKey="summary.executive.failureReasons" compact className="mb-3" />
             {executive.length === 0 ? (
               <p className="text-sm text-neutral-500">No analytes in report.</p>
             ) : (
@@ -116,18 +122,42 @@ export function CalibrationGroupSummaryReportPanel({
                 <table className="w-full border-collapse text-xs">
                   <thead>
                     <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
-                      <th className="py-2 pr-2">Analyte</th>
-                      <th className="py-2 pr-2">Status</th>
-                      <th className="py-2 pr-2">R²</th>
-                      <th className="py-2 pr-2">r</th>
-                      <th className="py-2 pr-2">RSE</th>
-                      <th className="py-2 pr-2">RF mean</th>
-                      <th className="py-2 pr-2">RF %RSD</th>
-                      <th className="py-2 pr-2">ICV</th>
-                      <th className="py-2 pr-2">ICV CDS</th>
-                      <th className="py-2 pr-2">ICV/LCS</th>
-                      <th className="py-2 pr-2">SPCC RF</th>
-                      <th className="py-2 pr-2">CCC RSD</th>
+                      <ExcelTh fieldKey="summary.executive.analyte" className="py-2 pr-2">
+                        Analyte
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.status" className="py-2 pr-2">
+                        Status
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.rSquared" className="py-2 pr-2">
+                        R²
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.correlationR" className="py-2 pr-2">
+                        r
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.rse" className="py-2 pr-2">
+                        RSE
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.meanResponseFactor" className="py-2 pr-2">
+                        RF mean
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.responseFactorRsd" className="py-2 pr-2">
+                        RF %RSD
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.icvPassed" className="py-2 pr-2">
+                        ICV
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.icvCdsPassed" className="py-2 pr-2">
+                        ICV CDS
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.icvLcsRecoveryPassed" className="py-2 pr-2">
+                        ICV/LCS
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.spccMinRfPassed" className="py-2 pr-2">
+                        SPCC RF
+                      </ExcelTh>
+                      <ExcelTh fieldKey="summary.executive.cccRsdPassed" className="py-2 pr-2">
+                        CCC RSD
+                      </ExcelTh>
                     </tr>
                   </thead>
                   <tbody>
@@ -165,7 +195,8 @@ export function CalibrationGroupSummaryReportPanel({
           </section>
 
           <section>
-            <h3 className="mb-3 text-sm font-semibold">3. Response factor summary</h3>
+            <h3 className="mb-1 text-sm font-semibold">3. Response factor summary</h3>
+            <ExcelAnnotation fieldKey="summary.rf.section" compact className="mb-3" />
             {responseFactors.length === 0 ? (
               <p className="text-sm text-neutral-500">No response factor data.</p>
             ) : (
@@ -191,10 +222,18 @@ export function CalibrationGroupSummaryReportPanel({
                           <table className="w-full border-collapse text-xs">
                             <thead>
                               <tr className="text-left text-neutral-600 dark:text-neutral-400">
-                                <th className="py-1 pr-2">X</th>
-                                <th className="py-1 pr-2">Y</th>
-                                <th className="py-1 pr-2">RF</th>
-                                <th className="py-1 pr-2">Included</th>
+                                <ExcelTh fieldKey="summary.rf.x" className="py-1 pr-2">
+                                  X
+                                </ExcelTh>
+                                <ExcelTh fieldKey="summary.rf.y" className="py-1 pr-2">
+                                  Y
+                                </ExcelTh>
+                                <ExcelTh fieldKey="summary.rf.rf" className="py-1 pr-2">
+                                  RF
+                                </ExcelTh>
+                                <ExcelTh fieldKey="summary.rf.included" className="py-1 pr-2">
+                                  Included
+                                </ExcelTh>
                               </tr>
                             </thead>
                             <tbody>
@@ -218,7 +257,8 @@ export function CalibrationGroupSummaryReportPanel({
           </section>
 
           <section>
-            <h3 className="mb-3 text-sm font-semibold">4. Linear dynamic range</h3>
+            <h3 className="mb-1 text-sm font-semibold">4. Linear dynamic range</h3>
+            <ExcelAnnotation fieldKey="summary.ldr.header" compact className="mb-3" />
             {ldr.length === 0 ? (
               <p className="text-sm text-neutral-500">No LDR data.</p>
             ) : (
@@ -252,13 +292,27 @@ export function CalibrationGroupSummaryReportPanel({
                           <table className="w-full border-collapse text-xs">
                             <thead>
                               <tr className="text-left text-neutral-600 dark:text-neutral-400">
-                                <th className="py-1 pr-2">X</th>
-                                <th className="py-1 pr-2">Y</th>
-                                <th className="py-1 pr-2">Predicted Y</th>
-                                <th className="py-1 pr-2">Residual</th>
-                                <th className="py-1 pr-2">%Diff</th>
-                                <th className="py-1 pr-2">Incl.</th>
-                                <th className="py-1 pr-2">Accept</th>
+                                <ExcelTh fieldKey="summary.rf.x" className="py-1 pr-2">
+                                  X
+                                </ExcelTh>
+                                <ExcelTh fieldKey="summary.rf.y" className="py-1 pr-2">
+                                  Y
+                                </ExcelTh>
+                                <ExcelTh fieldKey="regression.predictedY" className="py-1 pr-2">
+                                  Predicted Y
+                                </ExcelTh>
+                                <ExcelTh fieldKey="regression.residual" className="py-1 pr-2">
+                                  Residual
+                                </ExcelTh>
+                                <ExcelTh fieldKey="regression.pctDiff" className="py-1 pr-2">
+                                  %Diff
+                                </ExcelTh>
+                                <ExcelTh fieldKey="summary.rf.included" className="py-1 pr-2">
+                                  Incl.
+                                </ExcelTh>
+                                <ExcelTh fieldKey="summary.ldr.accept" className="py-1 pr-2">
+                                  Accept
+                                </ExcelTh>
                               </tr>
                             </thead>
                             <tbody>
