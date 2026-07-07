@@ -4,6 +4,7 @@ import { ExcelAnnotation, ExcelPageGuide, ExcelSectionHint, ExcelTh } from "@/co
 import { Card } from "@/components/ui";
 import { ApiError } from "@/lib/api/errors";
 import { getCalibrationGroupSummaryReport } from "@/lib/api/wltr-api";
+import { fmtIcvNum, icvPassLabel, parseIcvSnapshot } from "@/lib/icv-calculator";
 import { CalibrationGroupStatus, type MeResponse } from "@/lib/types/wltr";
 import {
   calStatusBadge,
@@ -284,6 +285,19 @@ export function CalibrationGroupSummaryReportPanel({
                             {fmtNum(analyte.icvPercentDiff, 2)} CDS %Diff=
                             {fmtNum(analyte.icvCdsPercentDiff, 4)}{" "}
                             {passFailBadge(analyte.icvPassed)} / CDS {passFailBadge(analyte.icvCdsPassed)}
+                            {(() => {
+                              const icv = parseIcvSnapshot(analyte as Record<string, unknown>);
+                              if (icv.lowerControlLimit == null && icv.upperControlLimit == null) return null;
+                              return (
+                                <>
+                                  {" "}
+                                  · LCL={fmtIcvNum(icv.lowerControlLimit, 1)} UCL=
+                                  {fmtIcvNum(icv.upperControlLimit, 1)} recovery=
+                                  {fmtIcvNum(icv.recoveryPercent, 1)}%{" "}
+                                  {passFailBadge(icv.recoveryPassed)}
+                                </>
+                              );
+                            })()}
                           </span>
                         ) : null}
                       </div>

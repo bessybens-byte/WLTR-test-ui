@@ -1,6 +1,7 @@
 "use client";
 
-import { ExcelPageGuide, ExcelSectionHint, ExcelTh, ExcelModelVariantTable, ExcelAnnotation } from "@/components/excel-annotation";
+import { CalibrationGroupReportCardTable } from "@/components/calibration-group-report-card-table";
+import { ExcelPageGuide, ExcelSectionHint, ExcelModelVariantTable, ExcelAnnotation } from "@/components/excel-annotation";
 import { ConfirmDialog } from "@/components/modal";
 import { Badge, Button, Card, Label, Textarea } from "@/components/ui";
 import {
@@ -12,8 +13,6 @@ import {
 import { suggestedModelFromReportCard } from "@/lib/calibration-variant-utils";
 import {
   modelVariantLabel,
-  normalizeRegressionType,
-  normalizeWeightingMode,
   variantKey,
 } from "@/lib/regression-wire";
 import {
@@ -26,18 +25,6 @@ import {
 import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
-
-function cell(v: unknown): string {
-  if (v == null) return "—";
-  if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") return String(v);
-  return "—";
-}
-
-function calStatusTone(v: unknown): "ok" | "bad" | "neutral" {
-  if (v === "Pass" || v === 1) return "ok";
-  if (v === "Fail" || v === 0) return "bad";
-  return "neutral";
-}
 
 function modelLabel(regressionType: unknown, weightingMode: unknown): string {
   return modelVariantLabel(regressionType, weightingMode);
@@ -365,156 +352,24 @@ export function CalibrationGroupWorkflowPanel({
             </p>
           ) : null}
 
-          {variants.length ? (
-            <div className="mt-4 space-y-4">
-              {variants.map((v, vi) => {
-                const rt = v.regressionType;
-                const wm = v.weightingMode;
-                const analyteRows = Array.isArray(v.analytes) ? (v.analytes as Record<string, unknown>[]) : [];
-                return (
-                  <div
-                    key={`${String(rt)}-${String(wm)}-${vi}`}
-                    className={`rounded-lg border dark:border-neutral-800 ${
-                      v.isSuggestedModel ? "border-blue-300 dark:border-blue-800" : "border-neutral-200"
-                    }`}
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-900/50">
-                      <div>
-                        <div className="text-sm font-medium">
-                          {modelLabel(rt, wm)}
-                          {v.isSuggestedModel ? (
-                            <Badge tone="ok" className="ml-2">
-                              Suggested
-                            </Badge>
-                          ) : null}
-                        </div>
-                        <ExcelAnnotation fieldKey="reportCard.modelVariant" compact className="mt-1 max-w-lg" />
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                        <span title="Pass-count ranking; full Point Total in QA debug (DVD BI:BP)">
-                          Score: <span className="font-mono">{cell(v.reportCardScore)}</span>
-                          <span className="ml-1 text-[9px] text-violet-700 dark:text-violet-300">(DVD Point Total family)</span>
-                        </span>
-                        <span>
-                          Analytes: <span className="font-mono">{cell(v.totalAnalytes ?? analyteRows.length)}</span>
-                        </span>
-                        {canSelectModel && !isTerminal && !stale ? (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            className="py-1 text-xs"
-                            disabled={
-                              selectModel.isPending ||
-                              !normalizeRegressionType(rt) ||
-                              !normalizeWeightingMode(wm) ||
-                              analyteRows.length === 0
-                            }
-                            onClick={() => {
-                              const regressionType = normalizeRegressionType(rt);
-                              const weightingMode = normalizeWeightingMode(wm);
-                              if (!regressionType || !weightingMode) return;
-                              const analyteIds = analyteRows
-                                .map((a) => (typeof a.analyteId === "string" ? a.analyteId : ""))
-                                .filter(Boolean);
-                              selectModel.mutate({ regressionType, weightingMode, analyteIds });
-                            }}
-                          >
-                            Select for all analytes
-                          </Button>
-                        ) : null}
-                      </div>
-                    </div>
-                    {analyteRows.length ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse text-left text-xs">
-                          <thead>
-                            <tr className="border-b border-neutral-100 dark:border-neutral-900">
-                              <ExcelTh fieldKey="reportCard.analyte" className="px-3 py-2">
-                                Analyte
-                              </ExcelTh>
-                              <ExcelTh fieldKey="reportCard.rSquared" className="px-3 py-2">
-                                R²
-                              </ExcelTh>
-                              <ExcelTh fieldKey="reportCard.calStatus" className="px-3 py-2">
-                                Cal
-                              </ExcelTh>
-                              <ExcelTh fieldKey="reportCard.icvPassed" className="px-3 py-2">
-                                ICV
-                              </ExcelTh>
-                              <ExcelTh fieldKey="reportCard.missedPointCount" className="px-3 py-2">
-                                Missed pts
-                              </ExcelTh>
-                              {canSelectModel && !isTerminal && !stale ? (
-                                <ExcelTh fieldKey="reportCard.selectModel" className="px-3 py-2">
-                                  Model
-                                </ExcelTh>
-                              ) : null}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {analyteRows.map((a, ai) => {
-                              const aId = typeof a.analyteId === "string" ? a.analyteId : "";
-                              const thisKey = variantKey(rt, wm);
-                              const isSelected = !!aId && selectedByAnalyte.get(aId) === thisKey;
-                              const regressionType = normalizeRegressionType(rt);
-                              const weightingMode = normalizeWeightingMode(wm);
-                              return (
-                                <tr
-                                  key={`${cell(a.analyteId)}-${ai}`}
-                                  className={`border-b border-neutral-50 last:border-b-0 dark:border-neutral-900 ${isSelected ? "bg-emerald-50/40 dark:bg-emerald-950/20" : ""}`}
-                                >
-                                  <td className="px-3 py-2">{cell(a.analyteName)}</td>
-                                  <td className="px-3 py-2 font-mono">
-                                    {typeof a.rSquared === "number" ? a.rSquared.toFixed(4) : "—"}
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    <Badge tone={calStatusTone(a.calStatus)}>
-                                      {a.calStatus === 1 ? "Pass" : a.calStatus === 0 ? "Fail" : "—"}
-                                    </Badge>
-                                  </td>
-                                  <td className="px-3 py-2">
-                                    {a.icvPassed === true ? "Pass" : a.icvPassed === false ? "Fail" : "—"}
-                                  </td>
-                                  <td className="px-3 py-2 font-mono">{cell(a.missedPointCount)}</td>
-                                  {canSelectModel && !isTerminal && !stale ? (
-                                    <td className="px-3 py-2">
-                                      {isSelected ? (
-                                        <span className="font-medium text-emerald-700 dark:text-emerald-400">
-                                          ✓ Selected
-                                        </span>
-                                      ) : (
-                                        <Button
-                                          type="button"
-                                          variant="secondary"
-                                          className="!px-2 !py-0.5 !text-[10px]"
-                                          disabled={
-                                            selectModel.isPending || !aId || !regressionType || !weightingMode
-                                          }
-                                          onClick={() => {
-                                            if (!aId || !regressionType || !weightingMode) return;
-                                            selectOneAnalyte(aId, regressionType, weightingMode);
-                                          }}
-                                        >
-                                          Select
-                                        </Button>
-                                      )}
-                                    </td>
-                                  ) : null}
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <p className="px-3 py-2 text-xs text-neutral-500">No analyte curves for this variant.</p>
-                    )}
-                  </div>
-                );
-              })}
+          {reportCard.isSuccess ? (
+            <div className="mt-4">
+              {suggested ? (
+                <p className="mb-3 text-xs text-neutral-600 dark:text-neutral-400">
+                  Group suggested model:{" "}
+                  <span className="font-semibold text-blue-700 dark:text-blue-300">
+                    {modelLabel(suggested.regressionType, suggested.weightingMode)}
+                  </span>
+                </p>
+              ) : null}
+              <CalibrationGroupReportCardTable
+                reportCard={card}
+                selectedByAnalyte={selectedByAnalyte}
+                canSelect={canSelectModel && !isTerminal && !stale}
+                selectBusy={selectModel.isPending}
+                onSelectModel={selectOneAnalyte}
+              />
             </div>
-          ) : reportCard.isSuccess ? (
-            <p className="mt-3 text-sm text-neutral-500">No analyte variants yet — run regression first.</p>
           ) : null}
 
           {selectModel.isError ? (

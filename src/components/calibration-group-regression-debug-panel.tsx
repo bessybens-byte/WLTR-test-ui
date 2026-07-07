@@ -1,10 +1,12 @@
 "use client";
 
 import { JsonPrettyView } from "@/components/json-pretty-view";
+import { IcvCalculatorTable } from "@/components/icv-calculator-table";
 import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
 import { ExcelAnnotation, ExcelModelVariantTable, ExcelPageGuide } from "@/components/excel-annotation";
 import { Button, Card, Label, Select } from "@/components/ui";
 import {
+  getCalibrationGroupAnalyteCurves,
   getCalibrationGroupRegressionDebug,
   getCalibrationGroupRegressionInputs,
   getCalibrationGroupReportCard,
@@ -162,6 +164,20 @@ export function CalibrationGroupRegressionDebugPanel({
     enabled: canLoad,
   });
 
+  const curvesQ = useQuery({
+    queryKey: ["calibration-group-analyte-curves", groupId, selectedAnalyteId, effectiveLaboratoryId ?? ""],
+    queryFn: () => getCalibrationGroupAnalyteCurves(groupId, selectedAnalyteId, scopeParams),
+    enabled: canLoad,
+  });
+
+  const curveRows = useMemo(
+    () =>
+      (Array.isArray(curvesQ.data) ? curvesQ.data : []).filter(
+        (c): c is Record<string, unknown> => typeof c === "object" && c !== null,
+      ),
+    [curvesQ.data],
+  );
+
   return (
     <Card className="overflow-hidden p-0 shadow-sm ring-1 ring-black/[0.03] dark:ring-white/[0.04]">
       <div className="border-b border-neutral-200 bg-gradient-to-br from-neutral-50 to-white px-5 py-4 dark:border-neutral-800 dark:from-neutral-900/70 dark:to-neutral-950">
@@ -295,6 +311,22 @@ export function CalibrationGroupRegressionDebugPanel({
 
         {debugQ.isLoading && canLoad ? (
           <div className="text-sm text-neutral-500">Loading regression snapshot…</div>
+        ) : null}
+
+        {curvesQ.isLoading && canLoad ? (
+          <div className="text-sm text-neutral-500">Loading ICV calculator…</div>
+        ) : null}
+
+        {curvesQ.isSuccess && curveRows.length > 0 ? (
+          <IcvCalculatorTable
+            curves={curveRows}
+            highlightVariantKey={effectiveVariantKey || null}
+            referenceCurve={
+              debugQ.data && typeof debugQ.data === "object"
+                ? (debugQ.data as Record<string, unknown>)
+                : null
+            }
+          />
         ) : null}
 
         {debugQ.isSuccess && debugQ.data ? (

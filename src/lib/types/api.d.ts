@@ -74,6 +74,10 @@ export interface paths {
          *     the error detail.
          *     On success the response body contains the new analyte's GUID and the `Location` header
          *     points to `GET /api/analytes/{id}`.
+         *     The optional `role` field (`Target` / `InternalStandard` / `Surrogate`, default
+         *     `Target`) sets the analyte's QC role. Use `Surrogate` for spiked surrogate / system-monitoring
+         *     compounds so uploaded rows are categorized for recovery and %RSD monitoring even when the instrument
+         *     export lists them under a mismatched section header.
          */
         post: {
             parameters: {
@@ -82,7 +86,7 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            /** @description Canonical analyte name. */
+            /** @description Canonical analyte name, optional CAS number, default internal standard, and QC role. */
             requestBody?: {
                 content: {
                     "application/json": components["schemas"]["CreateAnalyteRequest"];
@@ -328,6 +332,10 @@ export interface paths {
          * @description Applies the same name normalization and per-laboratory uniqueness check as create.
          *     Returns <strong>400</strong> when the analyte is not found, has been deleted, or belongs to another laboratory.
          *     Cross-lab ids are treated as not-found rather than forbidden.
+         *
+         *     This is a full replacement: the `role` field defaults to `Target` when omitted, so include it
+         *     to preserve a non-default role. Changing the role re-categorizes future uploads and triggers a laboratory
+         *     measurement remap so existing rows reflect the new role.
          */
         put: {
             parameters: {
@@ -339,7 +347,7 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            /** @description Replacement canonical name. */
+            /** @description Replacement canonical name, optional CAS number, default internal standard, and QC role. */
             requestBody?: {
                 content: {
                     "application/json": components["schemas"]["UpdateAnalyteRequest"];
@@ -2116,6 +2124,107 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/calibration-groups/{id}/analytes/{analyteId}/variant-comparison": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns the per-analyte variant-comparison deck (Excel "DVD"): one row per calibration level with the back-calculated concentration and %Diff from every computed regression variant side-by-side.
+         * @description Each row anchors on the level's true concentration (`standardConcentration`) and the Average-RF-predicted
+         *                 response ratio (`calculatedResponseRatio`), then lists `(CalcConc, %Diff)` pairs for the Average RF,
+         *                 Linear (equal / 1x / 1x²), Linear forced-zero, Quadratic (equal / 1x / 1x²), and Quadratic forced-zero models.
+         *                 A variant's columns are `null` when it did not compute for the analyte or the inversion was undefined.
+         *
+         *     <strong>Prerequisite:</strong> the group must have been computed. Draft groups return <strong>409</strong>;
+         *                 a missing/out-of-scope group or an analyte with no computed curves returns <strong>404</strong>.
+         *
+         *     <strong>Permissions:</strong>
+         *       `perm.groups.approve`. Platform operators must pass `laboratoryId`.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Required for platform operators; ignored for lab users. */
+                    laboratoryId?: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                    /** @description Analyte identifier (UUID) whose comparison deck should be returned. */
+                    analyteId: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["VariantComparisonResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/calibration-groups/{id}/analytes/{analyteId}/chart": {
         parameters: {
             query?: never;
@@ -2573,6 +2682,16 @@ export interface paths {
          *                 `calStatus == Pass`), per-analyte diagnostics, and an `isSuggestedModel` flag set on the top-ranked
          *                 variant. Variants are ordered by descending score, breaking ties toward the simpler model.
          *
+         *     <strong>Per-analyte ranking breakdown</strong>: each analyte row includes `pointTotal` (the workbook
+         *                 composite score, lower is better), `modelRank` (1 = best within the analyte), and a `rankingBreakdown`
+         *                 object exposing the individual addends that sum to `pointTotal` — mirroring the workbook's explicit
+         *                 `SUM(BF:BP)` columns:
+         *                 <c>pointTotal = passGate + pointsBelowLowerBound + pointsAboveUpperBound + failTotalDoubleCounted
+         *                 + probeDeviationRankSum + overallDeviationRank + negativeAreaRank + icvRank</c>.
+         *                 The breakdown is recomputed deterministically from the stored curves, points, and method-config snapshot, so it
+         *                 always reconciles with the persisted `pointTotal`; it is `null` for variants that could not be ranked
+         *                 (for example, an analyte with no low-level probe ladder).
+         *
          *     Returns <strong>409 Conflict</strong> when the group has not been computed, and <strong>404</strong> when the
          *                 group is missing or outside the caller's laboratory scope.
          */
@@ -2807,7 +2926,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/calibration-groups/{id}/select-model": {
+    "/api/calibration-groups/{id}/analytes/{analyteId}/select-model": {
         parameters: {
             query?: never;
             header?: never;
@@ -2817,10 +2936,105 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Selects the regression model variant a QA reviewer will sign off on.
-         * @description Requires the group to be `Computed` and not stale, and the `(regressionType, weightingMode)` pair to
-         *                 exist among the computed curves. Selection is cleared automatically on every recompute. A model must be selected
-         *                 before the group can be approved.
+         * Selects the regression model variant a QA reviewer will sign off on for a single analyte.
+         * @description Workbook-parity per-analyte model choice. Requires the group to be `Computed` and not stale, and a computed
+         *                 curve to exist for the analyte under the chosen variant. Cleared automatically on every recompute.
+         *
+         *     <strong>Permissions:</strong>
+         *       `perm.groups.approve`.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Calibration group identifier (UUID). */
+                    id: string;
+                    /** @description Analyte identifier (UUID). */
+                    analyteId: string;
+                };
+                cookie?: never;
+            };
+            /** @description The variant to select. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["SelectModelRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-groups/{id}/select-recommended-models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Applies each analyte's low-level-extrapolation recommended model as its selection.
+         * @description Requires the group to be `Computed` and not stale. Sets every analyte's selection to its recommended model
+         *                 (overall, or the recommended non-forced-zero model when `excludeForcedZero` is true).
          *
          *     <strong>Permissions:</strong>
          *       `perm.groups.approve`.
@@ -2835,10 +3049,10 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            /** @description The variant to select. */
+            /** @description Recommendation options. */
             requestBody?: {
                 content: {
-                    "application/json": components["schemas"]["SelectModelRequest"];
+                    "application/json": components["schemas"]["SelectRecommendedModelsRequest"];
                 };
             };
             responses: {
@@ -5876,12 +6090,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Returns per-analyte acceptance limits configured for the method. */
+        /**
+         * Returns per-analyte acceptance limits configured for the method.
+         * @description Returns all rows for the method config as a flat list (not paginated). Each row covers one analyte and
+         *     includes all acceptance criteria fields: response factor, %RSD, CCC/SPCC flags, ICV/LCS limits,
+         *     `concentrationMultiplier` (default `1`), and — for surrogates — spike amount and recovery bounds.
+         *     An empty array means no per-analyte overrides have been saved yet.
+         *
+         *     Returns <strong>404</strong> when the config does not exist, has been soft-deleted, or belongs to another laboratory.
+         *     Cross-lab ids are treated as not-found to prevent existence disclosure.
+         */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Method config GUID. */
                     id: string;
                 };
                 cookie?: never;
@@ -5897,6 +6121,24 @@ export interface paths {
                         "application/json": components["schemas"]["MethodAnalyteCriteriaDto"][];
                     };
                 };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
                 /** @description Not Found */
                 404: {
                     headers: {
@@ -5908,16 +6150,36 @@ export interface paths {
                 };
             };
         };
-        /** Replaces the full per-analyte criteria set for the method configuration. */
+        /**
+         * Replaces the full per-analyte criteria set for the method configuration.
+         * @description This is a full replacement — all existing rows are deleted and replaced atomically with the rows in the
+         *     request body. Send an empty `rows` array to clear all per-analyte criteria.
+         *
+         *     If the submitted rows are identical to what is already stored, the operation is a no-op: no database
+         *     writes occur, no new method config snapshot is created, and the version number is not incremented.
+         *     Otherwise, a new `MethodConfigSnapshot` is appended and the config version is incremented.
+         *     <strong>concentrationMultiplier</strong> (optional, default `1`): scales the analyte's true
+         *     concentration before regression fitting. Set to a value other than `1` when the instrument
+         *     reports concentrations in different units from the workbook standard. Must be `> 0`.
+         *     <strong>Surrogate / SMC fields</strong> (`surrogateSpikeAmount`, `surrogateRecoveryLowerLimit`,
+         *     `surrogateRecoveryUpperLimit`): applicable only to analytes whose role is `Surrogate`
+         *     (set on the analyte via `POST/PUT /api/analytes`). Omit or send `null` for non-surrogate analytes.
+         *     `surrogateRecoveryUpperLimit` must be strictly greater than `surrogateRecoveryLowerLimit` when both are provided.
+         *     Returns <strong>400</strong> for validation errors: duplicate analyte ids, analyte not found or in another lab,
+         *     `concentrationMultiplier ≤ 0`, or invalid surrogate limit ordering.
+         *     Returns <strong>404</strong> when the config does not exist, has been soft-deleted, or belongs to another laboratory.
+         */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
+                    /** @description Method config GUID. */
                     id: string;
                 };
                 cookie?: never;
             };
+            /** @description Full replacement set of per-analyte criteria rows. */
             requestBody?: {
                 content: {
                     "application/json": components["schemas"]["ReplaceMethodAnalyteCriteriaRequest"];
@@ -5933,6 +6195,24 @@ export interface paths {
                 };
                 /** @description Bad Request */
                 400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -7452,6 +7732,7 @@ export interface components {
             defaultInternalStandardId?: string | null;
             /** @description Display name of the default internal standard, or `null` when none is assigned. */
             defaultInternalStandardName?: string | null;
+            role?: components["schemas"]["AnalyteRole"];
             /** @description Raw-name alias mappings for this analyte, sorted by alias name. */
             aliases?: components["schemas"]["AnalyteAliasItemDto"][] | null;
         };
@@ -7463,6 +7744,7 @@ export interface components {
             casNumber?: string | null;
             /** Format: date-time */
             createdAt?: string;
+            role?: components["schemas"]["AnalyteRole"];
         };
         /**
          * @description Scope for applying a one-off analyte assignment when not saving an alias.
@@ -7481,6 +7763,8 @@ export interface components {
             /** @description Optional CAS registry number. */
             casNumber?: string | null;
         };
+        /** @enum {string} */
+        AnalyteRole: "Target" | "InternalStandard" | "Surrogate";
         /** @description One ranked canonical analyte candidate for fuzzy matching raw compound text. */
         AnalyteSuggestionItemDto: {
             /**
@@ -7688,8 +7972,6 @@ export interface components {
              *     The group must be recomputed before it can be approved.
              */
             isComputationStale?: boolean;
-            selectedRegressionType?: components["schemas"]["RegressionType"];
-            selectedWeightingMode?: components["schemas"]["WeightingMode"];
             approval?: components["schemas"]["ApprovalRecordResponse"];
         };
         /** @description Summary row returned by `GET /api/calibration-groups`. */
@@ -7765,10 +8047,12 @@ export interface components {
         CalibrationGroupReportCardDto: {
             /** @description True when calibration data changed after the last compute; the card may be out of date. */
             isComputationStale?: boolean;
-            selectedRegressionType?: components["schemas"]["RegressionType"];
-            selectedWeightingMode?: components["schemas"]["WeightingMode"];
             /** @description Variants ordered by rank (descending score, simplest-model tie-break). */
             variants?: components["schemas"]["ReportCardVariantDto"][] | null;
+            /** @description Workbook-parity per-analyte model recommendation driven by the low-level extrapolation Point Total. */
+            analyteRecommendations?: components["schemas"]["ReportCardAnalyteRecommendationDto"][] | null;
+            /** @description Current QA-selected model per analyte. */
+            analyteSelections?: components["schemas"]["ReportCardAnalyteSelectionDto"][] | null;
         };
         /** @enum {string} */
         CalibrationGroupStatus: "Draft" | "Computed" | "Approved" | "Rejected";
@@ -7785,8 +8069,6 @@ export interface components {
             methodConfigSnapshotId?: string | null;
             /** Format: int32 */
             methodConfigVersion?: number | null;
-            selectedRegressionType?: components["schemas"]["RegressionType"];
-            selectedWeightingMode?: components["schemas"]["WeightingMode"];
             administrative?: components["schemas"]["SummaryReportAdministrativeDto"];
             executive?: components["schemas"]["SummaryReportExecutiveAnalyteDto"][] | null;
             responseFactors?: components["schemas"]["SummaryReportResponseFactorAnalyteDto"][] | null;
@@ -7936,6 +8218,7 @@ export interface components {
              * @description Optional default internal standard for methods that use IS normalization.
              */
             defaultInternalStandardId?: string | null;
+            role?: components["schemas"]["AnalyteRole"];
         };
         /** @description Response for successful analyte creation. */
         CreateAnalyteResponse: {
@@ -8506,6 +8789,15 @@ export interface components {
             isRsdPassed?: boolean | null;
             isWarning?: boolean;
             warningMessages?: string[] | null;
+            /** Format: double */
+            recoveryMinPercent?: number | null;
+            /** Format: double */
+            recoveryMaxPercent?: number | null;
+            /** Format: double */
+            recoveryLowerLimit?: number | null;
+            /** Format: double */
+            recoveryUpperLimit?: number | null;
+            recoveryPassed?: boolean | null;
         };
         /** @description Response payload for invitation creation. */
         InvitationsController_InviteCreatedResponse: {
@@ -8586,25 +8878,113 @@ export interface components {
             /** @description Whether the laboratory is active. */
             isActive?: boolean;
         };
+        /**
+         * @description Ranking summary for one fitted curve's behavior between zero and the lowest calibration point. The per-probe
+         *     back-calculation rows are merged into the curve's point list (flagged `LowLevelExtrapolation`).
+         */
+        LowLevelExtrapolationResponse: {
+            /**
+             * Format: double
+             * @description Anchor X — lowest included calibration concentration (amount ratio).
+             */
+            lowestCalibrationConcentration?: number;
+            /**
+             * Format: double
+             * @description Anchor Y — response at the lowest calibration point.
+             */
+            lowestCalibrationResponse?: number;
+            /**
+             * Format: int32
+             * @description Composite ranking score (lower is better); `null` when ranking was not computed.
+             */
+            pointTotal?: number | null;
+            /**
+             * Format: int32
+             * @description Ascending rank of this variant within the analyte (1 = best); `null` when not computed.
+             */
+            modelRank?: number | null;
+            /**
+             * Format: int32
+             * @description Count (0-3) of the three lowest probes that back-calculate a negative concentration.
+             */
+            negativeAreaPenalty?: number | null;
+            /**
+             * Format: double
+             * @description Sum of absolute deviation across the probes; `null` when not computed.
+             */
+            overallDeviation?: number | null;
+            /** @description `true` on the analyte's overall recommended variant. */
+            isRecommendedModel?: boolean;
+            /** @description `true` on the recommended variant among non-forced-zero models. */
+            isRecommendedNonForcedZeroModel?: boolean;
+            /** @description `true` when the recommendation is a quadratic inverse-weighted model (workbook "check instrument COD" caution). */
+            quadraticInverseCaution?: boolean;
+        };
         /** @description Per-analyte acceptance limits for a method configuration. */
         MethodAnalyteCriteriaDto: {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Analyte GUID.
+             */
             analyteId?: string;
+            /** @description Display name of the analyte. */
             analyteName?: string | null;
+            /** @description Whether the analyte is treated as a surrogate/positive-control compound (SPCC). */
             isSpcc?: boolean;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Minimum acceptable response factor; `null` disables the gate.
+             */
             minResponseFactor?: number | null;
+            /** @description Whether the analyte is a continuing-calibration-check (CCC) compound. */
             isCcc?: boolean;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Maximum acceptable %RSD across calibration levels; `null` disables the gate.
+             */
             maxRsdPercent?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Upper limit for method-blank response; `null` disables the gate.
+             */
             methodBlankLimit?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Expected ICV/LCS concentration for acceptance testing.
+             */
             icvLcsConcentration?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Lower control limit for ICV/LCS recovery acceptance.
+             */
             icvLcsLowerControlLimit?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Upper control limit for ICV/LCS recovery acceptance.
+             */
             icvLcsUpperControlLimit?: number | null;
+            /**
+             * Format: double
+             * @description Per-analyte true-concentration multiplier applied before regression fitting.
+             *     Defaults to `1` (no scaling). Use when the instrument reports raw peak area that must be
+             *     scaled to match the workbook's expected concentration units.
+             */
+            concentrationMultiplier?: number;
+            /**
+             * Format: double
+             * @description Nominal spiked amount for surrogate/SMC compounds; denominator for recovery calculation. `null` if not a surrogate.
+             */
+            surrogateSpikeAmount?: number | null;
+            /**
+             * Format: double
+             * @description Lower acceptance limit (%) for surrogate recovery; `null` disables the gate.
+             */
+            surrogateRecoveryLowerLimit?: number | null;
+            /**
+             * Format: double
+             * @description Upper acceptance limit (%) for surrogate recovery; `null` disables the gate.
+             */
+            surrogateRecoveryUpperLimit?: number | null;
         };
         /**
          * @description Full method-config detail returned from read endpoints. Regression type and weighting mode are no
@@ -8976,16 +9356,22 @@ export interface components {
         RegressionDebugPointResponse: {
             /**
              * Format: uuid
-             * @description Calibration point identifier.
+             * @description Calibration point identifier; `null` for synthetic low-level extrapolation rows.
              */
-            id?: string;
+            id?: string | null;
             /**
              * Format: uuid
-             * @description Source CAL run identifier.
+             * @description Source CAL run identifier; `null` for synthetic low-level extrapolation rows.
              */
-            calibrationRunId?: string;
-            /** @description Display name of the source CAL run. */
+            calibrationRunId?: string | null;
+            /** @description Display name of the source CAL run, or the probe label for extrapolation rows. */
             runName?: string | null;
+            kind?: components["schemas"]["RegressionPointKind"];
+            /**
+             * Format: double
+             * @description `|CalcConcentration − StandardConcentration|` for extrapolation rows; `null` for calibration rows.
+             */
+            deviation?: number | null;
             /**
              * Format: uuid
              * @description Calibration level that supplied the true concentration; `null` when the run had no level.
@@ -8995,16 +9381,16 @@ export interface components {
             levelName?: string | null;
             /**
              * Format: double
-             * @description Absolute true concentration from the calibration level (e.g. µg/L) — Excel "True Conct".
-             *     `null` when no level is linked. Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is derived as
-             *     `TrueConcentration / IS_conc` for ISTD methods.
+             * @description Absolute true standard concentration from the calibration level (e.g. µg/L) — Excel
+             *     "True Conct" / "Standard Concentration". `null` when no level is linked.
+             *     Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is derived as `StandardConcentration / IS_conc` for ISTD methods.
              */
-            trueConcentration?: number | null;
+            standardConcentration?: number | null;
             /**
              * Format: double
              * @description Regression X-axis value (Excel "Amount Ratio (X-Value)"). For ISTD methods:
              *     `analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not configured:
-             *     the raw true concentration.
+             *     the raw standard concentration.
              */
             amountRatio?: number;
             /**
@@ -9052,8 +9438,8 @@ export interface components {
             responseFactor?: number | null;
             /**
              * Format: double
-             * @description Back-calculated absolute concentration (Excel "Calc Conct") = Wltr.Api.Models.RegressionDebugPointResponse.TrueConcentration × (1 + Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff / 100);
-             *     `null` when Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff or Wltr.Api.Models.RegressionDebugPointResponse.TrueConcentration is `null`.
+             * @description Back-calculated absolute concentration (Excel "Calc Conct") = Wltr.Api.Models.RegressionDebugPointResponse.StandardConcentration × (1 + Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff / 100);
+             *     `null` when Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff or Wltr.Api.Models.RegressionDebugPointResponse.StandardConcentration is `null`.
              */
             calcConcentration?: number | null;
             /**
@@ -9079,6 +9465,13 @@ export interface components {
              *     `null` when Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is zero.
              */
             inverseAmountRatioSquared?: number | null;
+            /**
+             * Format: double
+             * @description Average-RF-predicted response ratio (Excel DVD row 244) = `MeanResponseFactor × AmountRatio`;
+             *     the Y-value the Average RF model predicts at this point's X-position regardless of the curve's model.
+             *     `null` when the Average RF mean response factor was not available or Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is zero.
+             */
+            calculatedResponseRatio?: number | null;
         };
         /**
          * @description Full regression debug snapshot for one analyte curve as returned by
@@ -9228,8 +9621,19 @@ export interface components {
             cccRsdPassed?: boolean | null;
             /** @description `true` when ICV/LCS recovery is within the per-analyte LCL/UCL; `null` when limits are not configured. */
             icvLcsRecoveryPassed?: boolean | null;
+            /**
+             * Format: double
+             * @description Per-analyte lower control limit the ICV/LCS recovery is judged against; `null` when not configured.
+             */
+            icvLcsLowerControlLimit?: number | null;
+            /**
+             * Format: double
+             * @description Per-analyte upper control limit the ICV/LCS recovery is judged against; `null` when not configured.
+             */
+            icvLcsUpperControlLimit?: number | null;
             /** @description Per-point debug data ordered by true concentration ascending. */
             points?: components["schemas"]["RegressionDebugPointResponse"][] | null;
+            lowLevelExtrapolation?: components["schemas"]["LowLevelExtrapolationResponse"];
         };
         /**
          * @description One (X, Y) data point assembled for regression traceability, as returned by
@@ -9238,11 +9642,17 @@ export interface components {
         RegressionInputPointResponse: {
             /**
              * Format: uuid
-             * @description Calibration run that contributed this point.
+             * @description Calibration run that contributed this point; `null` for synthetic low-level extrapolation rows.
              */
-            sourceRunId?: string;
-            /** @description Display name of the source run. */
+            sourceRunId?: string | null;
+            /** @description Display name of the source run, or the probe label for extrapolation rows. */
             sourceRunName?: string | null;
+            kind?: components["schemas"]["RegressionPointKind"];
+            /**
+             * Format: double
+             * @description `|CalcConcentration − StandardConcentration|` for extrapolation rows; `null` for calibration rows.
+             */
+            deviation?: number | null;
             /**
              * Format: uuid
              * @description Calibration level linked to the source run; `null` when the run has no level.
@@ -9252,16 +9662,16 @@ export interface components {
             levelName?: string | null;
             /**
              * Format: double
-             * @description Absolute true concentration from the calibration level (e.g. µg/L) — Excel "True Conct".
-             *     `null` when no level is linked. Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is derived as
-             *     `TrueConcentration / IS_conc` for ISTD methods.
+             * @description Absolute true standard concentration from the calibration level (e.g. µg/L) — Excel
+             *     "True Conct" / "Standard Concentration". `null` when no level is linked.
+             *     Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is derived as `StandardConcentration / IS_conc` for ISTD methods.
              */
-            trueConcentration?: number | null;
+            standardConcentration?: number | null;
             /**
              * Format: double
              * @description Regression X-axis value (Excel "Amount Ratio (X-Value)"). For ISTD methods:
              *     `analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not
-             *     configured: the raw true concentration.
+             *     configured: the raw standard concentration.
              */
             amountRatio?: number;
             /**
@@ -9308,8 +9718,8 @@ export interface components {
             responseFactor?: number | null;
             /**
              * Format: double
-             * @description Back-calculated absolute concentration (Excel "Calc Conct") = Wltr.Api.Models.RegressionInputPointResponse.TrueConcentration × (1 + Wltr.Api.Models.RegressionInputPointResponse.PercentDiff / 100);
-             *     `null` when Wltr.Api.Models.RegressionInputPointResponse.PercentDiff or Wltr.Api.Models.RegressionInputPointResponse.TrueConcentration is `null`.
+             * @description Back-calculated absolute concentration (Excel "Calc Conct") = Wltr.Api.Models.RegressionInputPointResponse.StandardConcentration × (1 + Wltr.Api.Models.RegressionInputPointResponse.PercentDiff / 100);
+             *     `null` when Wltr.Api.Models.RegressionInputPointResponse.PercentDiff or Wltr.Api.Models.RegressionInputPointResponse.StandardConcentration is `null`.
              */
             calcConcentration?: number | null;
             /**
@@ -9335,6 +9745,14 @@ export interface components {
              *     `null` when Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is zero.
              */
             inverseAmountRatioSquared?: number | null;
+            /**
+             * Format: double
+             * @description Average-RF-predicted response ratio (Excel DVD row 244) = `MeanResponseFactor × AmountRatio`;
+             *     the Y-value the Average RF model predicts at this point's X-position. `null` when the group has
+             *     not been computed, Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is zero, or the Average RF mean response factor was
+             *     not available.
+             */
+            calculatedResponseRatio?: number | null;
         };
         /**
          * @description Assembled regression input for one analyte, as returned by
@@ -9350,9 +9768,16 @@ export interface components {
             analyteName?: string | null;
             /** @description Per-level, per-run data points sorted by true concentration (X) ascending. */
             points?: components["schemas"]["RegressionInputPointResponse"][] | null;
+            lowLevelExtrapolation?: components["schemas"]["LowLevelExtrapolationResponse"];
         };
+        /**
+         * @description Distinguishes real calibration points from synthetic low-level extrapolation probes that share the same
+         *     point table (matching the Excel workbook, which lists the extrapolated rows alongside the cal points).
+         * @enum {string}
+         */
+        RegressionPointKind: "Calibration" | "LowLevelExtrapolation";
         /** @enum {string} */
-        RegressionType: "Average" | "Linear" | "LinearForcedZero" | "Quadratic";
+        RegressionType: "Average" | "Linear" | "LinearForcedZero" | "Quadratic" | "QuadraticForcedZero";
         /** @description Request body for rejecting a calibration group; the comment is mandatory. */
         RejectCalibrationGroupRequest: {
             /** @description Mandatory reviewer comment explaining the rejection. */
@@ -9367,6 +9792,11 @@ export interface components {
         };
         /** @description Replaces the full per-analyte criteria set for a method configuration. */
         ReplaceMethodAnalyteCriteriaRequest: {
+            /**
+             * @description Complete list of per-analyte criteria rows. This is a full replacement — any existing rows
+             *     not present here are removed. Send an empty array to clear all per-analyte criteria.
+             *     Each analyte id must be unique within this list and must belong to the same laboratory as the config.
+             */
             rows?: components["schemas"]["SaveMethodAnalyteCriteriaRequest"][] | null;
         };
         /** @description Per-analyte acceptance summary for a single Report Card variant. */
@@ -9390,6 +9820,100 @@ export interface components {
              */
             missedPointCount?: number;
             icvPassed?: boolean | null;
+            /**
+             * Format: int32
+             * @description Workbook composite ranking score for this variant within the analyte (lower is better); null until ranked.
+             */
+            pointTotal?: number | null;
+            /**
+             * Format: int32
+             * @description Ascending rank of PointTotal within the analyte (1 = best); null until ranked.
+             */
+            modelRank?: number | null;
+            /**
+             * Format: int32
+             * @description Count (0-3) of the three lowest probes back-calculating a negative concentration.
+             */
+            negativeAreaPenalty?: number | null;
+            /** @description True when this is the analyte's overall recommended variant. */
+            isRecommendedModel?: boolean;
+            /** @description True when this is the analyte's recommended non-forced-zero variant. */
+            isRecommendedNonForcedZeroModel?: boolean;
+            rankingBreakdown?: components["schemas"]["ReportCardRankingBreakdownDto"];
+        };
+        /** @description Per-analyte model recommendation: the lowest-Point-Total variant overall and among non-forced-zero models. */
+        ReportCardAnalyteRecommendationDto: {
+            /** Format: uuid */
+            analyteId?: string;
+            analyteName?: string | null;
+            recommendedRegressionType?: components["schemas"]["RegressionType"];
+            recommendedWeightingMode?: components["schemas"]["WeightingMode"];
+            /**
+             * Format: int32
+             * @description Point Total of the overall recommended variant, or null when unranked.
+             */
+            recommendedPointTotal?: number | null;
+            nonForcedZeroRegressionType?: components["schemas"]["RegressionType"];
+            nonForcedZeroWeightingMode?: components["schemas"]["WeightingMode"];
+            /** @description True when the recommendation is a quadratic inverse-weighted pick ("check instrument COD"). */
+            quadraticInverseCaution?: boolean;
+        };
+        /** @description Current QA-selected model for a single analyte within the group. */
+        ReportCardAnalyteSelectionDto: {
+            /** Format: uuid */
+            analyteId?: string;
+            analyteName?: string | null;
+            regressionType?: components["schemas"]["RegressionType"];
+            weightingMode?: components["schemas"]["WeightingMode"];
+        };
+        /**
+         * @description The individual ranker addends that sum to a variant's Point Total, mirroring the workbook's explicit
+         *     `SUM(BF:BP)` columns: <c>PointTotal = PassGate + PointsBelowLowerBound + PointsAboveUpperBound +
+         *     FailTotalDoubleCounted + ProbeDeviationRankSum + OverallDeviationRank + NegativeAreaRank + IcvRank</c>.
+         */
+        ReportCardRankingBreakdownDto: {
+            /**
+             * Format: int32
+             * @description 1 when the variant passes its primary criterion, otherwise 100.
+             */
+            passGate?: number;
+            /**
+             * Format: int32
+             * @description Included points whose %Diff fell below the lower bound.
+             */
+            pointsBelowLowerBound?: number;
+            /**
+             * Format: int32
+             * @description Included points whose %Diff exceeded the upper bound.
+             */
+            pointsAboveUpperBound?: number;
+            /**
+             * Format: int32
+             * @description The below+above failure total, added a second time per the workbook double-count.
+             */
+            failTotalDoubleCounted?: number;
+            /** @description Ascending rank (1 = best) of each low-level probe's deviation, in probe-ladder order. */
+            probeDeviationRanks?: number[] | null;
+            /**
+             * Format: int32
+             * @description Sum of ProbeDeviationRanks.
+             */
+            probeDeviationRankSum?: number;
+            /**
+             * Format: int32
+             * @description Ascending rank of the summed probe deviation.
+             */
+            overallDeviationRank?: number;
+            /**
+             * Format: int32
+             * @description Ascending rank of the negative-area penalty.
+             */
+            negativeAreaRank?: number;
+            /**
+             * Format: int32
+             * @description Ascending rank of the absolute ICV %Diff.
+             */
+            icvRank?: number;
         };
         /** @description One regression variant on the Report Card with its per-analyte breakdown and aggregate score. */
         ReportCardVariantDto: {
@@ -9588,27 +10112,86 @@ export interface components {
         };
         /** @description Per-analyte criteria row in a replace request. */
         SaveMethodAnalyteCriteriaRequest: {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description GUID of the analyte this row applies to. Must belong to the same laboratory as the method config.
+             */
             analyteId?: string;
+            /**
+             * @description Marks this analyte as a Surrogate/Positive-Control Compound (SPCC).
+             *     SPCC analytes are flagged in summary reports and evaluated separately from standard target analytes.
+             */
             isSpcc?: boolean;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Minimum acceptable response factor for this analyte; `null` disables the gate.
+             *     The response factor is the ratio of instrument response to known concentration.
+             *     Must be greater than `0` when provided.
+             */
             minResponseFactor?: number | null;
+            /**
+             * @description Marks this analyte as a Continuing Calibration Check (CCC) compound.
+             *     CCC analytes are subject to additional QC acceptance checks during group computation.
+             */
             isCcc?: boolean;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Maximum acceptable %RSD (relative standard deviation) across calibration levels for this analyte;
+             *     `null` disables the gate. Must be greater than `0` when provided.
+             */
             maxRsdPercent?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Per-analyte true-concentration multiplier; omit or send `1` for no scaling. Must be greater than 0.
+             */
+            concentrationMultiplier?: number;
+            /**
+             * Format: double
+             * @description Upper limit for the method-blank response for this analyte; `null` disables the gate.
+             *     Used to flag when a blank sample produces an unexpectedly high signal.
+             */
             methodBlankLimit?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Expected true concentration of the ICV/LCS standard for this analyte.
+             *     Required when `icvLcsLowerControlLimit` or `icvLcsUpperControlLimit` are set.
+             */
             icvLcsConcentration?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Lower control limit (%) for ICV/LCS recovery acceptance; `null` disables the lower bound.
+             */
             icvLcsLowerControlLimit?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Upper control limit (%) for ICV/LCS recovery acceptance; `null` disables the upper bound.
+             */
             icvLcsUpperControlLimit?: number | null;
+            /**
+             * Format: double
+             * @description Nominal spiked amount for a surrogate / system-monitoring compound; denominator for recovery.
+             */
+            surrogateSpikeAmount?: number | null;
+            /**
+             * Format: double
+             * @description Lower control limit (%) for surrogate / SMC recovery acceptance; omit to disable the gate.
+             */
+            surrogateRecoveryLowerLimit?: number | null;
+            /**
+             * Format: double
+             * @description Upper control limit (%) for surrogate / SMC recovery acceptance; omit to disable the gate.
+             */
+            surrogateRecoveryUpperLimit?: number | null;
         };
         /** @description Request body for selecting the regression model variant a QA reviewer will sign off on. */
         SelectModelRequest: {
             regressionType?: components["schemas"]["RegressionType"];
             weightingMode?: components["schemas"]["WeightingMode"];
+        };
+        /** @description Request body for applying each analyte's low-level-extrapolation recommended model. */
+        SelectRecommendedModelsRequest: {
+            /** @description When true, applies each analyte's recommended non-forced-zero model instead of the overall recommendation. */
+            excludeForcedZero?: boolean;
         };
         SummaryReportAdministrativeDto: {
             methodConfigName?: string | null;
@@ -9633,6 +10216,8 @@ export interface components {
             /** Format: uuid */
             analyteId?: string;
             analyteName?: string | null;
+            selectedRegressionType?: components["schemas"]["RegressionType"];
+            selectedWeightingMode?: components["schemas"]["WeightingMode"];
             calStatus?: components["schemas"]["AnalyteCalStatus"];
             failureReasons?: string[] | null;
             /** Format: double */
@@ -9669,6 +10254,10 @@ export interface components {
             icvCdsPercentDiff?: number | null;
             icvPassed?: boolean | null;
             icvCdsPassed?: boolean | null;
+            /** Format: double */
+            icvLcsLowerControlLimit?: number | null;
+            /** Format: double */
+            icvLcsUpperControlLimit?: number | null;
             points?: components["schemas"]["SummaryReportLdrPointDto"][] | null;
         };
         SummaryReportLdrPointDto: {
@@ -9773,6 +10362,7 @@ export interface components {
              * @description Optional default internal standard.
              */
             defaultInternalStandardId?: string | null;
+            role?: components["schemas"]["AnalyteRole"];
         };
         /** @description Request body for updating a draft or computed (will reset) calibration group. */
         UpdateCalibrationGroupRequest: {
@@ -10012,6 +10602,139 @@ export interface components {
              *                 null when LaboratoryId is null, when no laboratory matches, or when the row is filtered out.
              */
             laboratoryName?: string | null;
+        };
+        /**
+         * @description Per-analyte variant-comparison deck (Excel "DVD") as returned by
+         *     `GET /api/calibration-groups/{id}/analytes/{analyteId}/variant-comparison`.
+         */
+        VariantComparisonResponse: {
+            /**
+             * Format: uuid
+             * @description Canonical analyte identifier.
+             */
+            analyteId?: string;
+            /** @description Canonical analyte display name. */
+            analyteName?: string | null;
+            /** @description Per-level comparison rows ordered by standard concentration ascending. */
+            rows?: components["schemas"]["VariantComparisonRowResponse"][] | null;
+        };
+        /**
+         * @description One row of the variant-comparison deck as returned by
+         *     `GET /api/calibration-groups/{id}/analytes/{analyteId}/variant-comparison`.
+         */
+        VariantComparisonRowResponse: {
+            /**
+             * Format: uuid
+             * @description Source CAL run identifier for this level.
+             */
+            calibrationRunId?: string;
+            /**
+             * Format: uuid
+             * @description Calibration level that supplied the true concentration; `null` when the run had no level.
+             */
+            calibrationLevelId?: string | null;
+            /** @description Display name of the calibration level (e.g. `Cal_10ppb`); `null` when no level is linked. */
+            levelName?: string | null;
+            /**
+             * Format: double
+             * @description Absolute true standard concentration for the level (Excel "Standard Concentration"); `null` when no level is linked.
+             */
+            standardConcentration?: number | null;
+            /**
+             * Format: double
+             * @description Average-RF-predicted response ratio (Excel DVD row 244) = `MeanRF × AmountRatio`; `null` when not computable.
+             */
+            calculatedResponseRatio?: number | null;
+            /**
+             * Format: double
+             * @description Calculated concentration from the Average RF model.
+             */
+            averageRf?: number | null;
+            /**
+             * Format: double
+             * @description %Diff for the Average RF model.
+             */
+            averageRfDiff?: number | null;
+            /**
+             * Format: double
+             * @description Calculated concentration from Linear least-squares, equal weighting.
+             */
+            leastEqualWeighting?: number | null;
+            /**
+             * Format: double
+             * @description %Diff for Linear, equal weighting.
+             */
+            leastEqualWeightingDiff?: number | null;
+            /**
+             * Format: double
+             * @description Calculated concentration from Linear least-squares, 1/x weighting.
+             */
+            leastInverseConct?: number | null;
+            /**
+             * Format: double
+             * @description %Diff for Linear, 1/x weighting.
+             */
+            leastInverseConctDiff?: number | null;
+            /**
+             * Format: double
+             * @description Calculated concentration from Linear least-squares, 1/x² weighting.
+             */
+            leastInverseSq?: number | null;
+            /**
+             * Format: double
+             * @description %Diff for Linear, 1/x² weighting.
+             */
+            leastInverseSqDiff?: number | null;
+            /**
+             * Format: double
+             * @description Calculated concentration from Linear forced-zero least-squares, equal weighting.
+             */
+            leastForced?: number | null;
+            /**
+             * Format: double
+             * @description %Diff for Linear forced-zero, equal weighting.
+             */
+            leastForcedDiff?: number | null;
+            /**
+             * Format: double
+             * @description Calculated concentration from Quadratic regression, equal weighting.
+             */
+            quadraticEqualWeighting?: number | null;
+            /**
+             * Format: double
+             * @description %Diff for Quadratic, equal weighting.
+             */
+            quadraticEqualWeightingDiff?: number | null;
+            /**
+             * Format: double
+             * @description Calculated concentration from Quadratic regression, 1/x weighting.
+             */
+            quadraticInverseConct?: number | null;
+            /**
+             * Format: double
+             * @description %Diff for Quadratic, 1/x weighting.
+             */
+            quadraticInverseConctDiff?: number | null;
+            /**
+             * Format: double
+             * @description Calculated concentration from Quadratic regression, 1/x² weighting.
+             */
+            quadraticInverseSq?: number | null;
+            /**
+             * Format: double
+             * @description %Diff for Quadratic, 1/x² weighting.
+             */
+            quadraticInverseSqDiff?: number | null;
+            /**
+             * Format: double
+             * @description Calculated concentration from Quadratic forced-zero regression, equal weighting.
+             */
+            quadraticForced?: number | null;
+            /**
+             * Format: double
+             * @description %Diff for Quadratic forced-zero, equal weighting.
+             */
+            quadraticForcedDiff?: number | null;
         };
         /**
          * @description **Weighted least-squares** mode for calibration curves. JSON strings (enum names; ordinal in parentheses): `None` (0, w=1 for each included point), `InverseX` (1, w=1/X), `InverseXSquared` (2, w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute; a variant with an included X ≤ 0 is skipped (no curve), it does not fail the whole compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**.

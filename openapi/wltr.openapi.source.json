@@ -82,9 +82,9 @@
           "Analytes"
         ],
         "summary": "Creates a canonical analyte for the caller's laboratory.",
-        "description": "The laboratory is derived from the `LaboratoryId` JWT claim. Returns <strong>400</strong>\r\nwhen the caller's token has no laboratory claim.\r\n\r\nNames are normalized before the uniqueness check — `Benzene`, `BENZENE`, and `ben-zene`\r\nare treated as the same name. A duplicate returns <strong>400</strong> with the conflicting name in\r\nthe error detail.\r\nOn success the response body contains the new analyte's GUID and the `Location` header\r\npoints to `GET /api/analytes/{id}`.",
+        "description": "The laboratory is derived from the `LaboratoryId` JWT claim. Returns <strong>400</strong>\r\nwhen the caller's token has no laboratory claim.\r\n\r\nNames are normalized before the uniqueness check — `Benzene`, `BENZENE`, and `ben-zene`\r\nare treated as the same name. A duplicate returns <strong>400</strong> with the conflicting name in\r\nthe error detail.\r\nOn success the response body contains the new analyte's GUID and the `Location` header\r\npoints to `GET /api/analytes/{id}`.\r\nThe optional `role` field (`Target` / `InternalStandard` / `Surrogate`, default\r\n`Target`) sets the analyte's QC role. Use `Surrogate` for spiked surrogate / system-monitoring\r\ncompounds so uploaded rows are categorized for recovery and %RSD monitoring even when the instrument\r\nexport lists them under a mismatched section header.",
         "requestBody": {
-          "description": "Canonical analyte name.",
+          "description": "Canonical analyte name, optional CAS number, default internal standard, and QC role.",
           "content": {
             "application/json": {
               "schema": {
@@ -274,6 +274,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -293,16 +303,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       },
@@ -311,7 +311,7 @@
           "Analytes"
         ],
         "summary": "Updates a canonical analyte name.",
-        "description": "Applies the same name normalization and per-laboratory uniqueness check as create.\r\nReturns <strong>400</strong> when the analyte is not found, has been deleted, or belongs to another laboratory.\r\nCross-lab ids are treated as not-found rather than forbidden.",
+        "description": "Applies the same name normalization and per-laboratory uniqueness check as create.\r\nReturns <strong>400</strong> when the analyte is not found, has been deleted, or belongs to another laboratory.\r\nCross-lab ids are treated as not-found rather than forbidden.\r\n\r\nThis is a full replacement: the `role` field defaults to `Target` when omitted, so include it\r\nto preserve a non-default role. Changing the role re-categorizes future uploads and triggers a laboratory\r\nmeasurement remap so existing rows reflect the new role.",
         "parameters": [
           {
             "name": "id",
@@ -325,7 +325,7 @@
           }
         ],
         "requestBody": {
-          "description": "Replacement canonical name.",
+          "description": "Replacement canonical name, optional CAS number, default internal standard, and QC role.",
           "content": {
             "application/json": {
               "schema": {
@@ -402,6 +402,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -414,16 +424,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -1429,6 +1429,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -1441,16 +1451,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1505,26 +1505,6 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -1537,6 +1517,26 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -1691,6 +1691,21 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -1708,21 +1723,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/csv": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1788,6 +1788,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -1800,16 +1810,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1869,6 +1869,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -1881,16 +1891,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -2104,6 +2104,108 @@
         }
       }
     },
+    "/api/calibration-groups/{id}/analytes/{analyteId}/variant-comparison": {
+      "get": {
+        "tags": [
+          "Calibration groups"
+        ],
+        "summary": "Returns the per-analyte variant-comparison deck (Excel \"DVD\"): one row per calibration level with the back-calculated concentration and %Diff from every computed regression variant side-by-side.",
+        "description": "\r\nEach row anchors on the level's true concentration (`standardConcentration`) and the Average-RF-predicted\r\n            response ratio (`calculatedResponseRatio`), then lists `(CalcConc, %Diff)` pairs for the Average RF,\r\n            Linear (equal / 1x / 1x²), Linear forced-zero, Quadratic (equal / 1x / 1x²), and Quadratic forced-zero models.\r\n            A variant's columns are `null` when it did not compute for the analyte or the inversion was undefined.\r\n\r\n<strong>Prerequisite:</strong> the group must have been computed. Draft groups return <strong>409</strong>;\r\n            a missing/out-of-scope group or an analyte with no computed curves returns <strong>404</strong>.\r\n\r\n<strong>Permissions:</strong>\r\n  `perm.groups.approve`. Platform operators must pass `laboratoryId`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Calibration group identifier (UUID).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "analyteId",
+            "in": "path",
+            "description": "Analyte identifier (UUID) whose comparison deck should be returned.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "laboratoryId",
+            "in": "query",
+            "description": "Required for platform operators; ignored for lab users.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VariantComparisonResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/calibration-groups/{id}/analytes/{analyteId}/chart": {
       "get": {
         "tags": [
@@ -2244,18 +2346,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -2274,8 +2366,18 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -2529,7 +2631,7 @@
           "Calibration groups"
         ],
         "summary": "Returns the ranked Report Card comparing every computed regression variant for the group.",
-        "description": "\r\nEach variant `(regressionType, weightingMode)` carries a `reportCardScore` (count of analytes with\r\n            `calStatus == Pass`), per-analyte diagnostics, and an `isSuggestedModel` flag set on the top-ranked\r\n            variant. Variants are ordered by descending score, breaking ties toward the simpler model.\r\n\r\nReturns <strong>409 Conflict</strong> when the group has not been computed, and <strong>404</strong> when the\r\n            group is missing or outside the caller's laboratory scope.",
+        "description": "\r\nEach variant `(regressionType, weightingMode)` carries a `reportCardScore` (count of analytes with\r\n            `calStatus == Pass`), per-analyte diagnostics, and an `isSuggestedModel` flag set on the top-ranked\r\n            variant. Variants are ordered by descending score, breaking ties toward the simpler model.\r\n\r\n<strong>Per-analyte ranking breakdown</strong>: each analyte row includes `pointTotal` (the workbook\r\n            composite score, lower is better), `modelRank` (1 = best within the analyte), and a `rankingBreakdown`\r\n            object exposing the individual addends that sum to `pointTotal` — mirroring the workbook's explicit\r\n            `SUM(BF:BP)` columns:\r\n            <c>pointTotal = passGate + pointsBelowLowerBound + pointsAboveUpperBound + failTotalDoubleCounted\r\n            + probeDeviationRankSum + overallDeviationRank + negativeAreaRank + icvRank</c>.\r\n            The breakdown is recomputed deterministically from the stored curves, points, and method-config snapshot, so it\r\n            always reconciles with the persisted `pointTotal`; it is `null` for variants that could not be ranked\r\n            (for example, an analyte with no low-level probe ladder).\r\n\r\nReturns <strong>409 Conflict</strong> when the group has not been computed, and <strong>404</strong> when the\r\n            group is missing or outside the caller's laboratory scope.",
         "parameters": [
           {
             "name": "id",
@@ -2549,6 +2651,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CalibrationGroupReportCardDto"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2575,16 +2687,6 @@
           },
           "404": {
             "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -2624,6 +2726,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -2646,16 +2758,6 @@
           },
           "404": {
             "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -2771,18 +2873,28 @@
         }
       }
     },
-    "/api/calibration-groups/{id}/select-model": {
+    "/api/calibration-groups/{id}/analytes/{analyteId}/select-model": {
       "post": {
         "tags": [
           "Calibration groups"
         ],
-        "summary": "Selects the regression model variant a QA reviewer will sign off on.",
-        "description": "\r\nRequires the group to be `Computed` and not stale, and the `(regressionType, weightingMode)` pair to\r\n            exist among the computed curves. Selection is cleared automatically on every recompute. A model must be selected\r\n            before the group can be approved.\r\n\r\n<strong>Permissions:</strong>\r\n  `perm.groups.approve`.",
+        "summary": "Selects the regression model variant a QA reviewer will sign off on for a single analyte.",
+        "description": "\r\nWorkbook-parity per-analyte model choice. Requires the group to be `Computed` and not stale, and a computed\r\n            curve to exist for the analyte under the chosen variant. Cleared automatically on every recompute.\r\n\r\n<strong>Permissions:</strong>\r\n  `perm.groups.approve`.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "description": "Calibration group identifier (UUID).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "analyteId",
+            "in": "path",
+            "description": "Analyte identifier (UUID).",
             "required": true,
             "schema": {
               "type": "string",
@@ -2806,6 +2918,16 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -2843,9 +2965,85 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/calibration-groups/{id}/select-recommended-models": {
+      "post": {
+        "tags": [
+          "Calibration groups"
+        ],
+        "summary": "Applies each analyte's low-level-extrapolation recommended model as its selection.",
+        "description": "\r\nRequires the group to be `Computed` and not stale. Sets every analyte's selection to its recommended model\r\n            (overall, or the recommended non-forced-zero model when `excludeForcedZero` is true).\r\n\r\n<strong>Permissions:</strong>\r\n  `perm.groups.approve`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Calibration group identifier (UUID).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Recommendation options.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectRecommendedModelsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -2900,6 +3098,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -2922,16 +3130,6 @@
           },
           "404": {
             "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -2986,6 +3184,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -3008,16 +3216,6 @@
           },
           "404": {
             "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -3582,6 +3780,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -3594,16 +3802,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -3710,6 +3908,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -3722,16 +3930,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -3917,6 +4115,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -3929,16 +4137,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -3991,6 +4189,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -4013,16 +4221,6 @@
           },
           "404": {
             "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -4465,6 +4663,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -4477,16 +4685,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -4593,6 +4791,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -4605,16 +4813,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -4855,6 +5053,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -4867,16 +5075,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -4970,6 +5168,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -4982,16 +5190,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -5161,6 +5359,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -5173,16 +5381,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -5416,6 +5614,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -5428,16 +5636,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -5497,6 +5695,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -5509,16 +5717,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -5561,6 +5759,16 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -5573,16 +5781,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -5705,6 +5903,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -5724,16 +5932,6 @@
                 }
               }
             }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
           }
         }
       }
@@ -5744,10 +5942,12 @@
           "Method configuration"
         ],
         "summary": "Returns per-analyte acceptance limits configured for the method.",
+        "description": "Returns all rows for the method config as a flat list (not paginated). Each row covers one analyte and\r\nincludes all acceptance criteria fields: response factor, %RSD, CCC/SPCC flags, ICV/LCS limits,\r\n`concentrationMultiplier` (default `1`), and — for surrogates — spike amount and recovery bounds.\r\nAn empty array means no per-analyte overrides have been saved yet.\r\n\r\nReturns <strong>404</strong> when the config does not exist, has been soft-deleted, or belongs to another laboratory.\r\nCross-lab ids are treated as not-found to prevent existence disclosure.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "Method config GUID.",
             "required": true,
             "schema": {
               "type": "string",
@@ -5778,6 +5978,26 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -5786,10 +6006,12 @@
           "Method configuration"
         ],
         "summary": "Replaces the full per-analyte criteria set for the method configuration.",
+        "description": "This is a full replacement — all existing rows are deleted and replaced atomically with the rows in the\r\nrequest body. Send an empty `rows` array to clear all per-analyte criteria.\r\n\r\nIf the submitted rows are identical to what is already stored, the operation is a no-op: no database\r\nwrites occur, no new method config snapshot is created, and the version number is not incremented.\r\nOtherwise, a new `MethodConfigSnapshot` is appended and the config version is incremented.\r\n<strong>concentrationMultiplier</strong> (optional, default `1`): scales the analyte's true\r\nconcentration before regression fitting. Set to a value other than `1` when the instrument\r\nreports concentrations in different units from the workbook standard. Must be `> 0`.\r\n<strong>Surrogate / SMC fields</strong> (`surrogateSpikeAmount`, `surrogateRecoveryLowerLimit`,\r\n`surrogateRecoveryUpperLimit`): applicable only to analytes whose role is `Surrogate`\r\n(set on the analyte via `POST/PUT /api/analytes`). Omit or send `null` for non-surrogate analytes.\r\n`surrogateRecoveryUpperLimit` must be strictly greater than `surrogateRecoveryLowerLimit` when both are provided.\r\nReturns <strong>400</strong> for validation errors: duplicate analyte ids, analyte not found or in another lab,\r\n`concentrationMultiplier ≤ 0`, or invalid surrogate limit ordering.\r\nReturns <strong>404</strong> when the config does not exist, has been soft-deleted, or belongs to another laboratory.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "Method config GUID.",
             "required": true,
             "schema": {
               "type": "string",
@@ -5798,6 +6020,7 @@
           }
         ],
         "requestBody": {
+          "description": "Full replacement set of per-analyte criteria rows.",
           "content": {
             "application/json": {
               "schema": {
@@ -5822,6 +6045,26 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -6446,26 +6689,6 @@
           "204": {
             "description": "No Content"
           },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -6478,6 +6701,26 @@
           },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -6517,8 +6760,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -6527,8 +6770,8 @@
               }
             }
           },
-          "404": {
-            "description": "Not Found",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -6622,6 +6865,21 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -6639,21 +6897,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/csv": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -6703,8 +6946,8 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -6713,8 +6956,8 @@
               }
             }
           },
-          "404": {
-            "description": "Not Found",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "application/json": {
                 "schema": {
@@ -6756,6 +6999,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -6768,16 +7021,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -6998,6 +7241,16 @@
               }
             }
           },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized",
             "content": {
@@ -7010,16 +7263,6 @@
           },
           "403": {
             "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -7232,6 +7475,9 @@
             "description": "Display name of the default internal standard, or `null` when none is assigned.",
             "nullable": true
           },
+          "role": {
+            "$ref": "#/components/schemas/AnalyteRole"
+          },
           "aliases": {
             "type": "array",
             "items": {
@@ -7262,6 +7508,9 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "role": {
+            "$ref": "#/components/schemas/AnalyteRole"
           }
         },
         "additionalProperties": false,
@@ -7296,6 +7545,14 @@
         },
         "additionalProperties": false,
         "description": "Minimal analyte reference for embedding within other detail DTOs."
+      },
+      "AnalyteRole": {
+        "enum": [
+          "Target",
+          "InternalStandard",
+          "Surrogate"
+        ],
+        "type": "string"
       },
       "AnalyteSuggestionItemDto": {
         "type": "object",
@@ -7581,7 +7838,7 @@
         "properties": {
           "data": {
             "type": "array",
-            "items": {},
+            "items": { },
             "description": "Array of Plotly.js trace objects. Up to three traces are present:\r\n<em>Calibration Points</em> (included scatter), <em>Excluded Points</em> (excluded scatter),\r\nand <em>Fitted Curve</em> (line evaluated from the regression equation at 100 evenly-spaced\r\nX values). The fitted curve is omitted for the `Average` regression type or when fewer\r\nthan two included points exist.",
             "nullable": true
           },
@@ -7666,12 +7923,6 @@
           "isComputationStale": {
             "type": "boolean",
             "description": "True when analyte exclusion list or point include/exclude changes have been made after the last compute.\r\nThe group must be recomputed before it can be approved."
-          },
-          "selectedRegressionType": {
-            "$ref": "#/components/schemas/RegressionType"
-          },
-          "selectedWeightingMode": {
-            "$ref": "#/components/schemas/WeightingMode"
           },
           "approval": {
             "$ref": "#/components/schemas/ApprovalRecordResponse"
@@ -7782,18 +8033,28 @@
             "type": "boolean",
             "description": "True when calibration data changed after the last compute; the card may be out of date."
           },
-          "selectedRegressionType": {
-            "$ref": "#/components/schemas/RegressionType"
-          },
-          "selectedWeightingMode": {
-            "$ref": "#/components/schemas/WeightingMode"
-          },
           "variants": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ReportCardVariantDto"
             },
             "description": "Variants ordered by rank (descending score, simplest-model tie-break).",
+            "nullable": true
+          },
+          "analyteRecommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportCardAnalyteRecommendationDto"
+            },
+            "description": "Workbook-parity per-analyte model recommendation driven by the low-level extrapolation Point Total.",
+            "nullable": true
+          },
+          "analyteSelections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportCardAnalyteSelectionDto"
+            },
+            "description": "Current QA-selected model per analyte.",
             "nullable": true
           }
         },
@@ -7837,12 +8098,6 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
-          },
-          "selectedRegressionType": {
-            "$ref": "#/components/schemas/RegressionType"
-          },
-          "selectedWeightingMode": {
-            "$ref": "#/components/schemas/WeightingMode"
           },
           "administrative": {
             "$ref": "#/components/schemas/SummaryReportAdministrativeDto"
@@ -8110,6 +8365,9 @@
             "description": "Optional default internal standard for methods that use IS normalization.",
             "format": "uuid",
             "nullable": true
+          },
+          "role": {
+            "$ref": "#/components/schemas/AnalyteRole"
           }
         },
         "additionalProperties": false,
@@ -9093,6 +9351,30 @@
               "type": "string"
             },
             "nullable": true
+          },
+          "recoveryMinPercent": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "recoveryMaxPercent": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "recoveryLowerLimit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "recoveryUpperLimit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "recoveryPassed": {
+            "type": "boolean",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -9276,50 +9558,136 @@
         "additionalProperties": false,
         "description": "Laboratory summary returned from list endpoints."
       },
+      "LowLevelExtrapolationResponse": {
+        "type": "object",
+        "properties": {
+          "lowestCalibrationConcentration": {
+            "type": "number",
+            "description": "Anchor X — lowest included calibration concentration (amount ratio).",
+            "format": "double"
+          },
+          "lowestCalibrationResponse": {
+            "type": "number",
+            "description": "Anchor Y — response at the lowest calibration point.",
+            "format": "double"
+          },
+          "pointTotal": {
+            "type": "integer",
+            "description": "Composite ranking score (lower is better); `null` when ranking was not computed.",
+            "format": "int32",
+            "nullable": true
+          },
+          "modelRank": {
+            "type": "integer",
+            "description": "Ascending rank of this variant within the analyte (1 = best); `null` when not computed.",
+            "format": "int32",
+            "nullable": true
+          },
+          "negativeAreaPenalty": {
+            "type": "integer",
+            "description": "Count (0-3) of the three lowest probes that back-calculate a negative concentration.",
+            "format": "int32",
+            "nullable": true
+          },
+          "overallDeviation": {
+            "type": "number",
+            "description": "Sum of absolute deviation across the probes; `null` when not computed.",
+            "format": "double",
+            "nullable": true
+          },
+          "isRecommendedModel": {
+            "type": "boolean",
+            "description": "`true` on the analyte's overall recommended variant."
+          },
+          "isRecommendedNonForcedZeroModel": {
+            "type": "boolean",
+            "description": "`true` on the recommended variant among non-forced-zero models."
+          },
+          "quadraticInverseCaution": {
+            "type": "boolean",
+            "description": "`true` when the recommendation is a quadratic inverse-weighted model (workbook \"check instrument COD\" caution)."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Ranking summary for one fitted curve's behavior between zero and the lowest calibration point. The per-probe\r\nback-calculation rows are merged into the curve's point list (flagged `LowLevelExtrapolation`)."
+      },
       "MethodAnalyteCriteriaDto": {
         "type": "object",
         "properties": {
           "analyteId": {
             "type": "string",
+            "description": "Analyte GUID.",
             "format": "uuid"
           },
           "analyteName": {
             "type": "string",
+            "description": "Display name of the analyte.",
             "nullable": true
           },
           "isSpcc": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the analyte is treated as a surrogate/positive-control compound (SPCC)."
           },
           "minResponseFactor": {
             "type": "number",
+            "description": "Minimum acceptable response factor; `null` disables the gate.",
             "format": "double",
             "nullable": true
           },
           "isCcc": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the analyte is a continuing-calibration-check (CCC) compound."
           },
           "maxRsdPercent": {
             "type": "number",
+            "description": "Maximum acceptable %RSD across calibration levels; `null` disables the gate.",
             "format": "double",
             "nullable": true
           },
           "methodBlankLimit": {
             "type": "number",
+            "description": "Upper limit for method-blank response; `null` disables the gate.",
             "format": "double",
             "nullable": true
           },
           "icvLcsConcentration": {
             "type": "number",
+            "description": "Expected ICV/LCS concentration for acceptance testing.",
             "format": "double",
             "nullable": true
           },
           "icvLcsLowerControlLimit": {
             "type": "number",
+            "description": "Lower control limit for ICV/LCS recovery acceptance.",
             "format": "double",
             "nullable": true
           },
           "icvLcsUpperControlLimit": {
             "type": "number",
+            "description": "Upper control limit for ICV/LCS recovery acceptance.",
+            "format": "double",
+            "nullable": true
+          },
+          "concentrationMultiplier": {
+            "type": "number",
+            "description": "Per-analyte true-concentration multiplier applied before regression fitting.\r\nDefaults to `1` (no scaling). Use when the instrument reports raw peak area that must be\r\nscaled to match the workbook's expected concentration units.",
+            "format": "double"
+          },
+          "surrogateSpikeAmount": {
+            "type": "number",
+            "description": "Nominal spiked amount for surrogate/SMC compounds; denominator for recovery calculation. `null` if not a surrogate.",
+            "format": "double",
+            "nullable": true
+          },
+          "surrogateRecoveryLowerLimit": {
+            "type": "number",
+            "description": "Lower acceptance limit (%) for surrogate recovery; `null` disables the gate.",
+            "format": "double",
+            "nullable": true
+          },
+          "surrogateRecoveryUpperLimit": {
+            "type": "number",
+            "description": "Upper acceptance limit (%) for surrogate recovery; `null` disables the gate.",
             "format": "double",
             "nullable": true
           }
@@ -9940,7 +10308,7 @@
             "nullable": true
           }
         },
-        "additionalProperties": {}
+        "additionalProperties": { }
       },
       "QuantitationMode": {
         "enum": [
@@ -9955,17 +10323,28 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Calibration point identifier.",
-            "format": "uuid"
+            "description": "Calibration point identifier; `null` for synthetic low-level extrapolation rows.",
+            "format": "uuid",
+            "nullable": true
           },
           "calibrationRunId": {
             "type": "string",
-            "description": "Source CAL run identifier.",
-            "format": "uuid"
+            "description": "Source CAL run identifier; `null` for synthetic low-level extrapolation rows.",
+            "format": "uuid",
+            "nullable": true
           },
           "runName": {
             "type": "string",
-            "description": "Display name of the source CAL run.",
+            "description": "Display name of the source CAL run, or the probe label for extrapolation rows.",
+            "nullable": true
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RegressionPointKind"
+          },
+          "deviation": {
+            "type": "number",
+            "description": "`|CalcConcentration − StandardConcentration|` for extrapolation rows; `null` for calibration rows.",
+            "format": "double",
             "nullable": true
           },
           "calibrationLevelId": {
@@ -9979,15 +10358,15 @@
             "description": "Display name of the calibration level (e.g. `Cal_10ppb`); `null` when no level is linked.",
             "nullable": true
           },
-          "trueConcentration": {
+          "standardConcentration": {
             "type": "number",
-            "description": "Absolute true concentration from the calibration level (e.g. µg/L) — Excel \"True Conct\".\r\n`null` when no level is linked. Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is derived as\r\n`TrueConcentration / IS_conc` for ISTD methods.",
+            "description": "Absolute true standard concentration from the calibration level (e.g. µg/L) — Excel\r\n\"True Conct\" / \"Standard Concentration\". `null` when no level is linked.\r\nWltr.Api.Models.RegressionDebugPointResponse.AmountRatio is derived as `StandardConcentration / IS_conc` for ISTD methods.",
             "format": "double",
             "nullable": true
           },
           "amountRatio": {
             "type": "number",
-            "description": "Regression X-axis value (Excel \"Amount Ratio (X-Value)\"). For ISTD methods:\r\n`analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not configured:\r\nthe raw true concentration.",
+            "description": "Regression X-axis value (Excel \"Amount Ratio (X-Value)\"). For ISTD methods:\r\n`analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not configured:\r\nthe raw standard concentration.",
             "format": "double"
           },
           "responseRatio": {
@@ -10047,7 +10426,7 @@
           },
           "calcConcentration": {
             "type": "number",
-            "description": "Back-calculated absolute concentration (Excel \"Calc Conct\") = Wltr.Api.Models.RegressionDebugPointResponse.TrueConcentration × (1 + Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff / 100);\r\n`null` when Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff or Wltr.Api.Models.RegressionDebugPointResponse.TrueConcentration is `null`.",
+            "description": "Back-calculated absolute concentration (Excel \"Calc Conct\") = Wltr.Api.Models.RegressionDebugPointResponse.StandardConcentration × (1 + Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff / 100);\r\n`null` when Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff or Wltr.Api.Models.RegressionDebugPointResponse.StandardConcentration is `null`.",
             "format": "double",
             "nullable": true
           },
@@ -10071,6 +10450,12 @@
           "inverseAmountRatioSquared": {
             "type": "number",
             "description": "1 / Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio² (Excel \"Inverse Amount Ratio Squared\"); the weighting factor under `1/x²` weighting mode.\r\n`null` when Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is zero.",
+            "format": "double",
+            "nullable": true
+          },
+          "calculatedResponseRatio": {
+            "type": "number",
+            "description": "Average-RF-predicted response ratio (Excel DVD row 244) = `MeanResponseFactor × AmountRatio`;\r\nthe Y-value the Average RF model predicts at this point's X-position regardless of the curve's model.\r\n`null` when the Average RF mean response factor was not available or Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is zero.",
             "format": "double",
             "nullable": true
           }
@@ -10267,6 +10652,18 @@
             "description": "`true` when ICV/LCS recovery is within the per-analyte LCL/UCL; `null` when limits are not configured.",
             "nullable": true
           },
+          "icvLcsLowerControlLimit": {
+            "type": "number",
+            "description": "Per-analyte lower control limit the ICV/LCS recovery is judged against; `null` when not configured.",
+            "format": "double",
+            "nullable": true
+          },
+          "icvLcsUpperControlLimit": {
+            "type": "number",
+            "description": "Per-analyte upper control limit the ICV/LCS recovery is judged against; `null` when not configured.",
+            "format": "double",
+            "nullable": true
+          },
           "points": {
             "type": "array",
             "items": {
@@ -10274,6 +10671,9 @@
             },
             "description": "Per-point debug data ordered by true concentration ascending.",
             "nullable": true
+          },
+          "lowLevelExtrapolation": {
+            "$ref": "#/components/schemas/LowLevelExtrapolationResponse"
           }
         },
         "additionalProperties": false,
@@ -10284,12 +10684,22 @@
         "properties": {
           "sourceRunId": {
             "type": "string",
-            "description": "Calibration run that contributed this point.",
-            "format": "uuid"
+            "description": "Calibration run that contributed this point; `null` for synthetic low-level extrapolation rows.",
+            "format": "uuid",
+            "nullable": true
           },
           "sourceRunName": {
             "type": "string",
-            "description": "Display name of the source run.",
+            "description": "Display name of the source run, or the probe label for extrapolation rows.",
+            "nullable": true
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RegressionPointKind"
+          },
+          "deviation": {
+            "type": "number",
+            "description": "`|CalcConcentration − StandardConcentration|` for extrapolation rows; `null` for calibration rows.",
+            "format": "double",
             "nullable": true
           },
           "calibrationLevelId": {
@@ -10303,15 +10713,15 @@
             "description": "Display name of the calibration level (e.g. `Cal_10ppb`); `null` when no level is linked.",
             "nullable": true
           },
-          "trueConcentration": {
+          "standardConcentration": {
             "type": "number",
-            "description": "Absolute true concentration from the calibration level (e.g. µg/L) — Excel \"True Conct\".\r\n`null` when no level is linked. Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is derived as\r\n`TrueConcentration / IS_conc` for ISTD methods.",
+            "description": "Absolute true standard concentration from the calibration level (e.g. µg/L) — Excel\r\n\"True Conct\" / \"Standard Concentration\". `null` when no level is linked.\r\nWltr.Api.Models.RegressionInputPointResponse.AmountRatio is derived as `StandardConcentration / IS_conc` for ISTD methods.",
             "format": "double",
             "nullable": true
           },
           "amountRatio": {
             "type": "number",
-            "description": "Regression X-axis value (Excel \"Amount Ratio (X-Value)\"). For ISTD methods:\r\n`analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not\r\nconfigured: the raw true concentration.",
+            "description": "Regression X-axis value (Excel \"Amount Ratio (X-Value)\"). For ISTD methods:\r\n`analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not\r\nconfigured: the raw standard concentration.",
             "format": "double"
           },
           "responseRatio": {
@@ -10367,7 +10777,7 @@
           },
           "calcConcentration": {
             "type": "number",
-            "description": "Back-calculated absolute concentration (Excel \"Calc Conct\") = Wltr.Api.Models.RegressionInputPointResponse.TrueConcentration × (1 + Wltr.Api.Models.RegressionInputPointResponse.PercentDiff / 100);\r\n`null` when Wltr.Api.Models.RegressionInputPointResponse.PercentDiff or Wltr.Api.Models.RegressionInputPointResponse.TrueConcentration is `null`.",
+            "description": "Back-calculated absolute concentration (Excel \"Calc Conct\") = Wltr.Api.Models.RegressionInputPointResponse.StandardConcentration × (1 + Wltr.Api.Models.RegressionInputPointResponse.PercentDiff / 100);\r\n`null` when Wltr.Api.Models.RegressionInputPointResponse.PercentDiff or Wltr.Api.Models.RegressionInputPointResponse.StandardConcentration is `null`.",
             "format": "double",
             "nullable": true
           },
@@ -10391,6 +10801,12 @@
           "inverseAmountRatioSquared": {
             "type": "number",
             "description": "1 / Wltr.Api.Models.RegressionInputPointResponse.AmountRatio² (Excel \"Inverse Amount Ratio Squared\"); the weighting factor under `1/x²` weighting mode.\r\n`null` when Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is zero.",
+            "format": "double",
+            "nullable": true
+          },
+          "calculatedResponseRatio": {
+            "type": "number",
+            "description": "Average-RF-predicted response ratio (Excel DVD row 244) = `MeanResponseFactor × AmountRatio`;\r\nthe Y-value the Average RF model predicts at this point's X-position. `null` when the group has\r\nnot been computed, Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is zero, or the Average RF mean response factor was\r\nnot available.",
             "format": "double",
             "nullable": true
           }
@@ -10418,17 +10834,29 @@
             },
             "description": "Per-level, per-run data points sorted by true concentration (X) ascending.",
             "nullable": true
+          },
+          "lowLevelExtrapolation": {
+            "$ref": "#/components/schemas/LowLevelExtrapolationResponse"
           }
         },
         "additionalProperties": false,
         "description": "Assembled regression input for one analyte, as returned by\r\n`GET /api/calibration-groups/{id}/regression-inputs`."
+      },
+      "RegressionPointKind": {
+        "enum": [
+          "Calibration",
+          "LowLevelExtrapolation"
+        ],
+        "type": "string",
+        "description": "Distinguishes real calibration points from synthetic low-level extrapolation probes that share the same\r\npoint table (matching the Excel workbook, which lists the extrapolated rows alongside the cal points)."
       },
       "RegressionType": {
         "enum": [
           "Average",
           "Linear",
           "LinearForcedZero",
-          "Quadratic"
+          "Quadratic",
+          "QuadraticForcedZero"
         ],
         "type": "string"
       },
@@ -10473,6 +10901,7 @@
             "items": {
               "$ref": "#/components/schemas/SaveMethodAnalyteCriteriaRequest"
             },
+            "description": "Complete list of per-analyte criteria rows. This is a full replacement — any existing rows\r\nnot present here are removed. Send an empty array to clear all per-analyte criteria.\r\nEach analyte id must be unique within this list and must belong to the same laboratory as the config.",
             "nullable": true
           }
         },
@@ -10527,10 +10956,153 @@
           "icvPassed": {
             "type": "boolean",
             "nullable": true
+          },
+          "pointTotal": {
+            "type": "integer",
+            "description": "Workbook composite ranking score for this variant within the analyte (lower is better); null until ranked.",
+            "format": "int32",
+            "nullable": true
+          },
+          "modelRank": {
+            "type": "integer",
+            "description": "Ascending rank of PointTotal within the analyte (1 = best); null until ranked.",
+            "format": "int32",
+            "nullable": true
+          },
+          "negativeAreaPenalty": {
+            "type": "integer",
+            "description": "Count (0-3) of the three lowest probes back-calculating a negative concentration.",
+            "format": "int32",
+            "nullable": true
+          },
+          "isRecommendedModel": {
+            "type": "boolean",
+            "description": "True when this is the analyte's overall recommended variant."
+          },
+          "isRecommendedNonForcedZeroModel": {
+            "type": "boolean",
+            "description": "True when this is the analyte's recommended non-forced-zero variant."
+          },
+          "rankingBreakdown": {
+            "$ref": "#/components/schemas/ReportCardRankingBreakdownDto"
           }
         },
         "additionalProperties": false,
         "description": "Per-analyte acceptance summary for a single Report Card variant."
+      },
+      "ReportCardAnalyteRecommendationDto": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "nullable": true
+          },
+          "recommendedRegressionType": {
+            "$ref": "#/components/schemas/RegressionType"
+          },
+          "recommendedWeightingMode": {
+            "$ref": "#/components/schemas/WeightingMode"
+          },
+          "recommendedPointTotal": {
+            "type": "integer",
+            "description": "Point Total of the overall recommended variant, or null when unranked.",
+            "format": "int32",
+            "nullable": true
+          },
+          "nonForcedZeroRegressionType": {
+            "$ref": "#/components/schemas/RegressionType"
+          },
+          "nonForcedZeroWeightingMode": {
+            "$ref": "#/components/schemas/WeightingMode"
+          },
+          "quadraticInverseCaution": {
+            "type": "boolean",
+            "description": "True when the recommendation is a quadratic inverse-weighted pick (\"check instrument COD\")."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Per-analyte model recommendation: the lowest-Point-Total variant overall and among non-forced-zero models."
+      },
+      "ReportCardAnalyteSelectionDto": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "nullable": true
+          },
+          "regressionType": {
+            "$ref": "#/components/schemas/RegressionType"
+          },
+          "weightingMode": {
+            "$ref": "#/components/schemas/WeightingMode"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Current QA-selected model for a single analyte within the group."
+      },
+      "ReportCardRankingBreakdownDto": {
+        "type": "object",
+        "properties": {
+          "passGate": {
+            "type": "integer",
+            "description": "1 when the variant passes its primary criterion, otherwise 100.",
+            "format": "int32"
+          },
+          "pointsBelowLowerBound": {
+            "type": "integer",
+            "description": "Included points whose %Diff fell below the lower bound.",
+            "format": "int32"
+          },
+          "pointsAboveUpperBound": {
+            "type": "integer",
+            "description": "Included points whose %Diff exceeded the upper bound.",
+            "format": "int32"
+          },
+          "failTotalDoubleCounted": {
+            "type": "integer",
+            "description": "The below+above failure total, added a second time per the workbook double-count.",
+            "format": "int32"
+          },
+          "probeDeviationRanks": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Ascending rank (1 = best) of each low-level probe's deviation, in probe-ladder order.",
+            "nullable": true
+          },
+          "probeDeviationRankSum": {
+            "type": "integer",
+            "description": "Sum of ProbeDeviationRanks.",
+            "format": "int32"
+          },
+          "overallDeviationRank": {
+            "type": "integer",
+            "description": "Ascending rank of the summed probe deviation.",
+            "format": "int32"
+          },
+          "negativeAreaRank": {
+            "type": "integer",
+            "description": "Ascending rank of the negative-area penalty.",
+            "format": "int32"
+          },
+          "icvRank": {
+            "type": "integer",
+            "description": "Ascending rank of the absolute ICV %Diff.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "The individual ranker addends that sum to a variant's Point Total, mirroring the workbook's explicit\r\n`SUM(BF:BP)` columns: <c>PointTotal = PassGate + PointsBelowLowerBound + PointsAboveUpperBound +\r\nFailTotalDoubleCounted + ProbeDeviationRankSum + OverallDeviationRank + NegativeAreaRank + IcvRank</c>."
       },
       "ReportCardVariantDto": {
         "type": "object",
@@ -10917,41 +11489,75 @@
         "properties": {
           "analyteId": {
             "type": "string",
+            "description": "GUID of the analyte this row applies to. Must belong to the same laboratory as the method config.",
             "format": "uuid"
           },
           "isSpcc": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Marks this analyte as a Surrogate/Positive-Control Compound (SPCC).\r\nSPCC analytes are flagged in summary reports and evaluated separately from standard target analytes."
           },
           "minResponseFactor": {
             "type": "number",
+            "description": "Minimum acceptable response factor for this analyte; `null` disables the gate.\r\nThe response factor is the ratio of instrument response to known concentration.\r\nMust be greater than `0` when provided.",
             "format": "double",
             "nullable": true
           },
           "isCcc": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Marks this analyte as a Continuing Calibration Check (CCC) compound.\r\nCCC analytes are subject to additional QC acceptance checks during group computation."
           },
           "maxRsdPercent": {
             "type": "number",
+            "description": "Maximum acceptable %RSD (relative standard deviation) across calibration levels for this analyte;\r\n`null` disables the gate. Must be greater than `0` when provided.",
             "format": "double",
             "nullable": true
           },
+          "concentrationMultiplier": {
+            "maximum": 1.7976931348623157E+308,
+            "minimum": 5E-324,
+            "type": "number",
+            "description": "Per-analyte true-concentration multiplier; omit or send `1` for no scaling. Must be greater than 0.",
+            "format": "double"
+          },
           "methodBlankLimit": {
             "type": "number",
+            "description": "Upper limit for the method-blank response for this analyte; `null` disables the gate.\r\nUsed to flag when a blank sample produces an unexpectedly high signal.",
             "format": "double",
             "nullable": true
           },
           "icvLcsConcentration": {
             "type": "number",
+            "description": "Expected true concentration of the ICV/LCS standard for this analyte.\r\nRequired when `icvLcsLowerControlLimit` or `icvLcsUpperControlLimit` are set.",
             "format": "double",
             "nullable": true
           },
           "icvLcsLowerControlLimit": {
             "type": "number",
+            "description": "Lower control limit (%) for ICV/LCS recovery acceptance; `null` disables the lower bound.",
             "format": "double",
             "nullable": true
           },
           "icvLcsUpperControlLimit": {
             "type": "number",
+            "description": "Upper control limit (%) for ICV/LCS recovery acceptance; `null` disables the upper bound.",
+            "format": "double",
+            "nullable": true
+          },
+          "surrogateSpikeAmount": {
+            "type": "number",
+            "description": "Nominal spiked amount for a surrogate / system-monitoring compound; denominator for recovery.",
+            "format": "double",
+            "nullable": true
+          },
+          "surrogateRecoveryLowerLimit": {
+            "type": "number",
+            "description": "Lower control limit (%) for surrogate / SMC recovery acceptance; omit to disable the gate.",
+            "format": "double",
+            "nullable": true
+          },
+          "surrogateRecoveryUpperLimit": {
+            "type": "number",
+            "description": "Upper control limit (%) for surrogate / SMC recovery acceptance; omit to disable the gate.",
             "format": "double",
             "nullable": true
           }
@@ -10971,6 +11577,17 @@
         },
         "additionalProperties": false,
         "description": "Request body for selecting the regression model variant a QA reviewer will sign off on."
+      },
+      "SelectRecommendedModelsRequest": {
+        "type": "object",
+        "properties": {
+          "excludeForcedZero": {
+            "type": "boolean",
+            "description": "When true, applies each analyte's recommended non-forced-zero model instead of the overall recommendation."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request body for applying each analyte's low-level-extrapolation recommended model."
       },
       "SummaryReportAdministrativeDto": {
         "type": "object",
@@ -11030,6 +11647,12 @@
           "analyteName": {
             "type": "string",
             "nullable": true
+          },
+          "selectedRegressionType": {
+            "$ref": "#/components/schemas/RegressionType"
+          },
+          "selectedWeightingMode": {
+            "$ref": "#/components/schemas/WeightingMode"
           },
           "calStatus": {
             "$ref": "#/components/schemas/AnalyteCalStatus"
@@ -11134,6 +11757,16 @@
           },
           "icvCdsPassed": {
             "type": "boolean",
+            "nullable": true
+          },
+          "icvLcsLowerControlLimit": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "icvLcsUpperControlLimit": {
+            "type": "number",
+            "format": "double",
             "nullable": true
           },
           "points": {
@@ -11347,6 +11980,9 @@
             "description": "Optional default internal standard.",
             "format": "uuid",
             "nullable": true
+          },
+          "role": {
+            "$ref": "#/components/schemas/AnalyteRole"
           }
         },
         "additionalProperties": false,
@@ -11788,6 +12424,174 @@
         "additionalProperties": false,
         "description": "User list row."
       },
+      "VariantComparisonResponse": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "description": "Canonical analyte identifier.",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "description": "Canonical analyte display name.",
+            "nullable": true
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VariantComparisonRowResponse"
+            },
+            "description": "Per-level comparison rows ordered by standard concentration ascending.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Per-analyte variant-comparison deck (Excel \"DVD\") as returned by\r\n`GET /api/calibration-groups/{id}/analytes/{analyteId}/variant-comparison`."
+      },
+      "VariantComparisonRowResponse": {
+        "type": "object",
+        "properties": {
+          "calibrationRunId": {
+            "type": "string",
+            "description": "Source CAL run identifier for this level.",
+            "format": "uuid"
+          },
+          "calibrationLevelId": {
+            "type": "string",
+            "description": "Calibration level that supplied the true concentration; `null` when the run had no level.",
+            "format": "uuid",
+            "nullable": true
+          },
+          "levelName": {
+            "type": "string",
+            "description": "Display name of the calibration level (e.g. `Cal_10ppb`); `null` when no level is linked.",
+            "nullable": true
+          },
+          "standardConcentration": {
+            "type": "number",
+            "description": "Absolute true standard concentration for the level (Excel \"Standard Concentration\"); `null` when no level is linked.",
+            "format": "double",
+            "nullable": true
+          },
+          "calculatedResponseRatio": {
+            "type": "number",
+            "description": "Average-RF-predicted response ratio (Excel DVD row 244) = `MeanRF × AmountRatio`; `null` when not computable.",
+            "format": "double",
+            "nullable": true
+          },
+          "averageRf": {
+            "type": "number",
+            "description": "Calculated concentration from the Average RF model.",
+            "format": "double",
+            "nullable": true
+          },
+          "averageRfDiff": {
+            "type": "number",
+            "description": "%Diff for the Average RF model.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastEqualWeighting": {
+            "type": "number",
+            "description": "Calculated concentration from Linear least-squares, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastEqualWeightingDiff": {
+            "type": "number",
+            "description": "%Diff for Linear, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastInverseConct": {
+            "type": "number",
+            "description": "Calculated concentration from Linear least-squares, 1/x weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastInverseConctDiff": {
+            "type": "number",
+            "description": "%Diff for Linear, 1/x weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastInverseSq": {
+            "type": "number",
+            "description": "Calculated concentration from Linear least-squares, 1/x² weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastInverseSqDiff": {
+            "type": "number",
+            "description": "%Diff for Linear, 1/x² weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastForced": {
+            "type": "number",
+            "description": "Calculated concentration from Linear forced-zero least-squares, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastForcedDiff": {
+            "type": "number",
+            "description": "%Diff for Linear forced-zero, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticEqualWeighting": {
+            "type": "number",
+            "description": "Calculated concentration from Quadratic regression, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticEqualWeightingDiff": {
+            "type": "number",
+            "description": "%Diff for Quadratic, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticInverseConct": {
+            "type": "number",
+            "description": "Calculated concentration from Quadratic regression, 1/x weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticInverseConctDiff": {
+            "type": "number",
+            "description": "%Diff for Quadratic, 1/x weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticInverseSq": {
+            "type": "number",
+            "description": "Calculated concentration from Quadratic regression, 1/x² weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticInverseSqDiff": {
+            "type": "number",
+            "description": "%Diff for Quadratic, 1/x² weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticForced": {
+            "type": "number",
+            "description": "Calculated concentration from Quadratic forced-zero regression, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticForcedDiff": {
+            "type": "number",
+            "description": "%Diff for Quadratic forced-zero, equal weighting.",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "One row of the variant-comparison deck as returned by\r\n`GET /api/calibration-groups/{id}/analytes/{analyteId}/variant-comparison`."
+      },
       "WeightingMode": {
         "enum": [
           "None",
@@ -11809,7 +12613,7 @@
   },
   "security": [
     {
-      "Bearer": []
+      "Bearer": [ ]
     }
   ],
   "tags": [
