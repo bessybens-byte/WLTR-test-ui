@@ -1,5 +1,5 @@
 import { REPORT_CARD_MODEL_ORDER } from "@/lib/report-card-excel";
-import { variantKey } from "@/lib/regression-wire";
+import { modelVariantLabel, variantKey } from "@/lib/regression-wire";
 
 export function getIcvField(raw: Record<string, unknown>, ...keys: string[]): unknown {
   for (const k of keys) {
@@ -22,13 +22,36 @@ export type IcvSnapshot = Readonly<{
   calculatedConcentration: number | null;
   percentDiff: number | null;
   recoveryPercent: number | null;
+  observedResponse: number | null;
+  cdsReportedConcentration: number | null;
+  cdsPercentDiff: number | null;
   lowerControlLimit: number | null;
   upperControlLimit: number | null;
   recoveryPassed: boolean | null;
   icvPassed: boolean | null;
+  icvCdsPassed: boolean | null;
   spccMinRfPassed: boolean | null;
   cccRsdPassed: boolean | null;
 }>;
+
+export type IcvAdminLimits = Readonly<{
+  icvLimitPercent: number | null;
+  icvCdsParityPercent: number | null;
+}>;
+
+export type IcvReportContext = Readonly<{
+  ldr?: Record<string, unknown> | null;
+  executive?: Record<string, unknown> | null;
+  admin?: Record<string, unknown> | null;
+}>;
+
+export function parseIcvAdminLimits(raw: Record<string, unknown> | null | undefined): IcvAdminLimits {
+  const r = raw ?? {};
+  return {
+    icvLimitPercent: num(getIcvField(r, "icvLimitPercent", "IcvLimitPercent")),
+    icvCdsParityPercent: num(getIcvField(r, "icvCdsParityPercent", "IcvCdsParityPercent")),
+  };
+}
 
 export function parseIcvSnapshot(raw: Record<string, unknown> | null | undefined): IcvSnapshot {
   const r = raw ?? {};
@@ -37,12 +60,13 @@ export function parseIcvSnapshot(raw: Record<string, unknown> | null | undefined
     getIcvField(r, "icvCalculatedConcentration", "IcvCalculatedConcentration"),
   );
   const percentDiff = num(getIcvField(r, "icvPercentDiff", "IcvPercentDiff"));
-  const lowerControlLimit = num(getIcvField(r, "icvLcsLowerControlLimit", "IcvLcsLowerControlLimit"));
-  const upperControlLimit = num(getIcvField(r, "icvLcsUpperControlLimit", "IcvLcsUpperControlLimit"));
+  const apiRecovery = num(getIcvField(r, "icvRecoveryPercent", "IcvRecoveryPercent"));
   const recoveryPercent =
-    trueConcentration != null && calculatedConcentration != null && trueConcentration !== 0
+    apiRecovery ??
+    (percentDiff != null ? 100 + percentDiff : null) ??
+    (trueConcentration != null && calculatedConcentration != null && trueConcentration !== 0
       ? (calculatedConcentration / trueConcentration) * 100
-      : null;
+      : null);
 
   return {
     analyteName:
@@ -53,13 +77,105 @@ export function parseIcvSnapshot(raw: Record<string, unknown> | null | undefined
     calculatedConcentration,
     percentDiff,
     recoveryPercent,
-    lowerControlLimit,
-    upperControlLimit,
+    observedResponse: num(getIcvField(r, "icvObservedResponse", "IcvObservedResponse")),
+    cdsReportedConcentration: num(
+      getIcvField(r, "icvCdsReportedConcentration", "IcvCdsReportedConcentration"),
+    ),
+    cdsPercentDiff: num(getIcvField(r, "icvCdsPercentDiff", "IcvCdsPercentDiff")),
+    lowerControlLimit: num(getIcvField(r, "icvLcsLowerControlLimit", "IcvLcsLowerControlLimit")),
+    upperControlLimit: num(getIcvField(r, "icvLcsUpperControlLimit", "IcvLcsUpperControlLimit")),
     recoveryPassed: bool(getIcvField(r, "icvLcsRecoveryPassed", "IcvLcsRecoveryPassed")),
     icvPassed: bool(getIcvField(r, "icvPassed", "IcvPassed")),
+    icvCdsPassed: bool(getIcvField(r, "icvCdsPassed", "IcvCdsPassed")),
     spccMinRfPassed: bool(getIcvField(r, "spccMinRfPassed", "SpccMinRfPassed")),
     cccRsdPassed: bool(getIcvField(r, "cccRsdPassed", "CccRsdPassed")),
   };
+}
+
+/** Merge summary-report LDR/executive with a regression-debug curve (report wins for ICV headline fields). */
+export function mergeIcvSnapshot(
+  referenceCurve: Record<string, unknown> | null | undefined,
+  reportContext?: IcvReportContext | null,
+): IcvSnapshot {
+  const fromCurve = parseIcvSnapshot(referenceCurve);
+  const ldr = reportContext?.ldr ?? null;
+  const executive = reportContext?.executive ?? null;
+  const fromLdr = ldr ? parseIcvSnapshot(ldr) : null;
+  const fromExec = executive ? parseIcvSnapshot(executive) : null;
+
+  const merged = { ...fromCurve };
+
+  if (fromLdr) {
+    if (fromLdr.trueConcentration != null) merged.trueConcentration = fromLdr.trueConcentration;
+    if (fromLdr.calculatedConcentration != null) merged.calculatedConcentration = fromLdr.calculatedConcentration;
+    if (fromLdr.percentDiff != null) merged.percentDiff = fromLdr.percentDiff;
+    if (fromLdr.recoveryPercent != null) merged.recoveryPercent = fromLdr.recoveryPercent;
+    if (fromLdr.observedResponse != null) merged.observedResponse = fromLdr.observedResponse;
+    if (fromLdr.cdsReportedConcentration != null) merged.cdsReportedConcentration = fromLdr.cdsReportedConcentration;
+    if (fromLdr.cdsPercentDiff != null) merged.cdsPercentDiff = fromLdr.cdsPercentDiff;
+    if (fromLdr.lowerControlLimit != null) merged.lowerControlLimit = fromLdr.lowerControlLimit;
+    if (fromLdr.upperControlLimit != null) merged.upperControlLimit = fromLdr.upperControlLimit;
+    if (fromLdr.icvPassed != null) merged.icvPassed = fromLdr.icvPassed;
+    if (fromLdr.icvCdsPassed != null) merged.icvCdsPassed = fromLdr.icvCdsPassed;
+    if (fromLdr.analyteName) merged.analyteName = fromLdr.analyteName;
+  }
+
+  if (fromExec) {
+    if (fromExec.recoveryPassed != null) merged.recoveryPassed = fromExec.recoveryPassed;
+    if (fromExec.icvPassed != null && merged.icvPassed == null) merged.icvPassed = fromExec.icvPassed;
+    if (fromExec.icvCdsPassed != null && merged.icvCdsPassed == null) merged.icvCdsPassed = fromExec.icvCdsPassed;
+    if (fromExec.spccMinRfPassed != null) merged.spccMinRfPassed = fromExec.spccMinRfPassed;
+    if (fromExec.cccRsdPassed != null) merged.cccRsdPassed = fromExec.cccRsdPassed;
+    if (fromExec.analyteName && !merged.analyteName) merged.analyteName = fromExec.analyteName;
+  }
+
+  if (merged.recoveryPassed == null && referenceCurve) {
+    merged.recoveryPassed = parseIcvSnapshot(referenceCurve).recoveryPassed;
+  }
+
+  return merged;
+}
+
+export function findReportAnalyteRow(
+  rows: readonly Record<string, unknown>[] | null | undefined,
+  analyteId: string,
+): Record<string, unknown> | null {
+  if (!rows?.length || !analyteId) return null;
+  for (const raw of rows) {
+    if (typeof raw !== "object" || raw === null) continue;
+    const id = getIcvField(raw as Record<string, unknown>, "analyteId", "AnalyteId");
+    if (typeof id === "string" && id === analyteId) return raw as Record<string, unknown>;
+  }
+  return null;
+}
+
+export function buildIcvReportContext(
+  report: Record<string, unknown> | null | undefined,
+  analyteId: string,
+): IcvReportContext | null {
+  if (!report || !analyteId) return null;
+  return {
+    ldr: findReportAnalyteRow(
+      Array.isArray(report.linearDynamicRange) ? (report.linearDynamicRange as Record<string, unknown>[]) : [],
+      analyteId,
+    ),
+    executive: findReportAnalyteRow(
+      Array.isArray(report.executive) ? (report.executive as Record<string, unknown>[]) : [],
+      analyteId,
+    ),
+    admin:
+      typeof report.administrative === "object" && report.administrative !== null
+        ? (report.administrative as Record<string, unknown>)
+        : null,
+  };
+}
+
+export function selectedModelLabel(executive: Record<string, unknown> | null | undefined): string | null {
+  if (!executive) return null;
+  const rt = getIcvField(executive, "selectedRegressionType", "SelectedRegressionType");
+  const wm = getIcvField(executive, "selectedWeightingMode", "SelectedWeightingMode");
+  if (rt == null && wm == null) return null;
+  return modelVariantLabel(rt, wm);
 }
 
 export type IcvInstrumentInputs = Readonly<{
@@ -71,9 +187,12 @@ export type IcvInstrumentInputs = Readonly<{
 }>;
 
 /** ICV measurement row from regression-debug `points` (Standard/IS response, ratios). */
-export function parseIcvInstrumentInputs(curve: Record<string, unknown> | null | undefined): IcvInstrumentInputs {
+export function parseIcvInstrumentInputs(
+  curve: Record<string, unknown> | null | undefined,
+  observedResponse?: number | null,
+): IcvInstrumentInputs {
   const empty = {
-    standardResponse: null,
+    standardResponse: observedResponse ?? null,
     isResponse: null,
     responseRatio: null,
     amountRatio: null,
@@ -107,10 +226,17 @@ export function parseIcvInstrumentInputs(curve: Record<string, unknown> | null |
     }
   }
 
-  if (!icvPoint) return empty;
+  if (!icvPoint) {
+    return {
+      ...empty,
+      standardResponse: observedResponse ?? empty.standardResponse,
+    };
+  }
 
   return {
-    standardResponse: num(getIcvField(icvPoint, "standardResponse", "StandardResponse")),
+    standardResponse:
+      observedResponse ??
+      num(getIcvField(icvPoint, "standardResponse", "StandardResponse")),
     isResponse: num(getIcvField(icvPoint, "isResponse", "IsResponse")),
     responseRatio: num(getIcvField(icvPoint, "responseRatio", "ResponseRatio")),
     amountRatio: num(getIcvField(icvPoint, "amountRatio", "AmountRatio")),
@@ -254,9 +380,23 @@ export function icvPassLabel(passed: boolean | null): string {
   return "—";
 }
 
+export function icvTriStateLabel(v: boolean | null): string {
+  if (v === true) return "Pass";
+  if (v === false) return "Fail";
+  return "N/A";
+}
+
 /** Excel SPCC/CCC check cells show 0.000 when the criterion passed. */
 export function excelCheckCell(passed: boolean | null): string {
   if (passed === true) return "0.000";
   if (passed === false) return "1.000";
   return "—";
+}
+
+export function hasIcvData(snapshot: IcvSnapshot): boolean {
+  return (
+    snapshot.trueConcentration != null ||
+    snapshot.calculatedConcentration != null ||
+    snapshot.observedResponse != null
+  );
 }

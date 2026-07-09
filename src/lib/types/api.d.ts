@@ -1946,6 +1946,13 @@ export interface paths {
          *                 ICV results, and per-point predicted/residual/percent-diff values — so QA reviewers can
          *                 compare the application's output against the legacy Excel workbook step by step.
          *
+         *     <strong>ICV verification (workbook "ICV Calculator" parity):</strong> the response carries
+         *                 `icvTrueConcentration`, `icvCalculatedConcentration`, `icvPercentDiff`, `icvPassed`,
+         *                 and the CDS-parity fields, plus the per-analyte recovery window it is judged against —
+         *                 `icvLcsLowerControlLimit` / `icvLcsUpperControlLimit` (from the method-config snapshot;
+         *                 `null` when not configured). These bounds are the same snapshot values that drive
+         *                 `icvLcsRecoveryPassed`, so the number and the pass/fail always agree.
+         *
          *     <strong>Status prerequisite:</strong> the endpoint returns <strong>404</strong> when the group
          *                 has not yet been computed (no `CalibrationCurve` row exists for this analyte), when the
          *                 analyte is not present in the group's CAL runs, or when the group is outside the caller's laboratory scope.
@@ -2043,6 +2050,11 @@ export interface paths {
          *                 was computed during the last `POST .../compute` call. The payload shape per element is identical
          *                 to the single-variant `regression-debug` endpoint. Use this endpoint to compare all variants
          *                 side-by-side without making a separate request per variant.
+         *
+         *     This is the closest match to the workbook's <strong>ICV Calculator</strong> table: every variant row carries the
+         *                 ICV verification fields (`icvCalculatedConcentration`, `icvPercentDiff`, `icvPassed`, CDS parity)
+         *                 alongside the per-analyte recovery window (`icvLcsLowerControlLimit` / `icvLcsUpperControlLimit`), so a
+         *                 client can render the analyte's ICV calc-conc, %Diff, and control limits model-by-model in one call.
          *
          *     Returns an <strong>empty array</strong> when the group has not yet been computed (Draft status) or
          *                 when no `CalibrationCurve` rows exist for the specified analyte.
@@ -2692,6 +2704,22 @@ export interface paths {
          *                 always reconciles with the persisted `pointTotal`; it is `null` for variants that could not be ranked
          *                 (for example, an analyte with no low-level probe ladder).
          *
+         *     <strong>What the rank points mean</strong>: `pointTotal` is a demerit score — <em>lower is better</em>. It
+         *                 rewards a variant for behaving well where it matters most: back-calculating concentration in the region between
+         *                 zero response and the lowest calibration standard (near the reporting limit). Points accrue from failing the
+         *                 primary acceptance criterion (a large `passGate` penalty), from calibration points outside the %Diff bounds
+         *                 (counted twice), and from each variant's <em>relative rank</em> against its siblings on the low-level probe
+         *                 deviations, overall deviation, negative back-calculated areas, and ICV %Diff. The variant with the lowest
+         *                 `pointTotal` gets `modelRank == 1` and is flagged `isRecommendedModel`.
+         *
+         *     <strong>Forced-zero variants are full ranking participants</strong> — they receive a numeric `pointTotal`
+         *                 like every other variant and <em>can</em> win the overall recommendation (this mirrors the workbook, whose own
+         *                 "best overall ranked model" cell selects a forced-zero model on some datasets). A forced-zero
+         *                 `pointTotal` is therefore never blank; a `null` means the variant could not be ranked at all, not that
+         *                 it was excluded for being forced-zero. Because some labs disallow through-origin models, each analyte also
+         *                 exposes `isRecommendedNonForcedZeroModel` (and the recommendation object carries the best non-forced-zero
+         *                 pick separately) so QA can choose the best model that is <em>not</em> forced-zero when policy requires it.
+         *
          *     Returns <strong>409 Conflict</strong> when the group has not been computed, and <strong>404</strong> when the
          *                 group is missing or outside the caller's laboratory scope.
          */
@@ -2769,7 +2797,61 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Returns the four-table Summary Report for the selected regression model. */
+        /**
+         * Returns the full self-contained Summary Report for the selected regression model.
+         * @description This is the <strong>single workbook-parity endpoint</strong> (see ADR 0003): one call reproduces the entire Excel
+         *                 Summary Report sheet, so a client never has to compose it from multiple endpoints. Every analyte is reported under
+         *                 <em>its own selected regression model</em>, so different analytes in one group may show different regression
+         *                 types / weightings.
+         *
+         *     <strong>How to read the report</strong> — each block answers a different question:
+         *     <list type="bullet">
+         *       <item>
+         *         <description>
+         *           <strong>administrative</strong> — <em>what rules applied?</em> The frozen method-config limits
+         *                   (`rsdPercentLimit`, `isRsdPercentLimit`, `icvLimitPercent`, `icvCdsParityPercent`) and run
+         *                   metadata. If `isComputationStale` is `true`, the group changed after compute — recompute before sign-off.</description>
+         *       </item>
+         *       <item>
+         *         <description>
+         *           <strong>executive</strong> — <em>did each analyte pass?</em> One headline `calStatus`
+         *                   (Pass/Fail) per analyte with `failureReasons` and the individual gate flags. Flag convention throughout:
+         *                   `true` = configured & passed, `false` = configured & failed, `null` = not configured / not applicable.</description>
+         *       </item>
+         *       <item>
+         *         <description>
+         *           <strong>responseFactors</strong> — <em>is the response consistent across levels?</em> Mean RF,
+         *                   RF `%RSD`, and per-level points (RF = responseRatio Y / amountRatio X). Evidence behind average / RF models.</description>
+         *       </item>
+         *       <item>
+         *         <description>
+         *           <strong>linearDynamicRange</strong> — <em>how good is the fit, and does ICV verify?</em> Curve
+         *                   `slope`/`intercept`, per-point residuals/%Diff, and the ICV block (see below).</description>
+         *       </item>
+         *       <item>
+         *         <description>
+         *           <strong>internalStandardEvaluation</strong> — <em>were the internal standards stable?</em>
+         *                   Response `%RSD` per IS vs `isRsdPercentLimit`.</description>
+         *       </item>
+         *       <item>
+         *         <description>
+         *           <strong>surrogateEvaluation</strong> — <em>did surrogates recover?</em> Recovery min/max % vs
+         *                   the control-limit window per surrogate/SMC. (Both IS blocks are computed by the same engine as
+         *                   `GET .../internal-standard-summaries`, which remains for drill-down, so the numbers never diverge.)</description>
+         *       </item>
+         *     </list>
+         *
+         *     <strong>Reading the ICV block (in linearDynamicRange).</strong> The ICV is a separately-prepared standard at a known
+         *                 concentration. WLTR inverts its `icvObservedResponse` (raw area from the linked ICV run) through the selected
+         *                 curve to get `icvCalculatedConcentration`, then compares to `icvTrueConcentration`:
+         *                 `icvPercentDiff = (calc − true) / true × 100` and `icvRecoveryPercent = 100 + icvPercentDiff` (100% =
+         *                 perfect). `icvCdsReportedConcentration` / `icvCdsPercentDiff` cross-check WLTR against the instrument's own
+         *                 value; `icvLcsLowerControlLimit`/`icvLcsUpperControlLimit` is the recovery pass window. All ICV fields are
+         *                 `null` when the analyte has no ICV configured or no ICV run is linked; the raw `icvObservedResponse` /
+         *                 `icvCdsReportedConcentration` are additionally `null` when absent from the export.
+         *
+         *     Returns <strong>409 Conflict</strong> when the group has not been computed or no model has been selected.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -8056,7 +8138,11 @@ export interface components {
         };
         /** @enum {string} */
         CalibrationGroupStatus: "Draft" | "Computed" | "Approved" | "Rejected";
-        /** @description Full Summary Report payload for a computed calibration group with a selected model. */
+        /**
+         * @description Full Summary Report payload for a computed calibration group with a selected model. Single self-contained
+         *     endpoint reproducing the entire workbook Summary Report sheet (see ADR 0003), including the Internal Standard
+         *     and Surrogate evaluation blocks.
+         */
         CalibrationGroupSummaryReportDto: {
             /** Format: uuid */
             calibrationGroupId?: string;
@@ -8065,14 +8151,24 @@ export interface components {
             instrumentId?: string;
             /** Format: uuid */
             methodConfigId?: string;
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Frozen method-config snapshot used at compute time; null for legacy groups computed before snapshots.
+             */
             methodConfigSnapshotId?: string | null;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description Version of the snapshot (or the live config when no snapshot exists) the numbers were computed against.
+             */
             methodConfigVersion?: number | null;
             administrative?: components["schemas"]["SummaryReportAdministrativeDto"];
             executive?: components["schemas"]["SummaryReportExecutiveAnalyteDto"][] | null;
             responseFactors?: components["schemas"]["SummaryReportResponseFactorAnalyteDto"][] | null;
             linearDynamicRange?: components["schemas"]["SummaryReportLdrAnalyteDto"][] | null;
+            /** @description Response-stability rows for internal standards only (surrogates are in SurrogateEvaluation). */
+            internalStandardEvaluation?: components["schemas"]["InternalStandardSummaryDto"][] | null;
+            /** @description Recovery rows for surrogate / system-monitoring compounds only. */
+            surrogateEvaluation?: components["schemas"]["InternalStandardSummaryDto"][] | null;
         };
         /** @description Full detail projection for a single calibration level. */
         CalibrationLevelDetailDto: {
@@ -8764,39 +8860,85 @@ export interface components {
              */
             concentration?: number | null;
         };
-        /** @description Aggregated internal-standard response statistics for one normalized compound name in scope. */
+        /** @description Aggregated response statistics for one internal standard or surrogate (grouped by normalized compound name). */
         InternalStandardSummaryDto: {
+            /** @description Compound name normalized for grouping/matching; use RawCompoundName for display. */
             normalizedKey?: string | null;
+            /** @description Compound name as it appeared in the raw export. */
             rawCompoundName?: string | null;
-            /** Format: double */
+            category?: components["schemas"]["CompoundCategory"];
+            /**
+             * Format: double
+             * @description Minimum response observed across injections.
+             */
             min?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Maximum response observed across injections.
+             */
             max?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Mean response across injections (compared to ThresholdMin/ThresholdMax when configured).
+             */
             mean?: number;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description Number of measurement rows aggregated.
+             */
             count?: number;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description Number of distinct runs contributing (basis for %RSD); null when not computed for this scope.
+             */
             distinctCalibrationRunCount?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Configured minimum acceptable mean response; null when not configured.
+             */
             thresholdMin?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Configured maximum acceptable mean response; null when not configured.
+             */
             thresholdMax?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Response %RSD across runs — the IS stability metric; null when not computable.
+             */
             responseRsdPercent?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Max allowed response %RSD; null when not configured.
+             */
             isRsdPercentLimit?: number | null;
+            /** @description True when ResponseRsdPercent is within the limit; null when no limit configured. */
             isRsdPassed?: boolean | null;
+            /** @description Roll-up flag: true when any threshold/%RSD/recovery check on this row failed. */
             isWarning?: boolean;
+            /** @description Human-readable explanations for each failed check; empty when the row is clean. */
             warningMessages?: string[] | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Lowest per-injection surrogate recovery %; null for internal standards.
+             */
             recoveryMinPercent?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Highest per-injection surrogate recovery %; null for internal standards.
+             */
             recoveryMaxPercent?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Lower recovery control limit; null when not configured.
+             */
             recoveryLowerLimit?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Upper recovery control limit; null when not configured.
+             */
             recoveryUpperLimit?: number | null;
+            /** @description True when all recoveries fall inside the control-limit window; null when not applicable. */
             recoveryPassed?: boolean | null;
         };
         /** @description Response payload for invitation creation. */
@@ -9822,7 +9964,10 @@ export interface components {
             icvPassed?: boolean | null;
             /**
              * Format: int32
-             * @description Workbook composite ranking score for this variant within the analyte (lower is better); null until ranked.
+             * @description Workbook low-level-extrapolation composite demerit score for this variant within the analyte — <b>lower is better</b>,
+             *     and `modelRank == 1` marks the winner. Populated for <b>every</b> ranked variant, including forced-zero ones
+             *     (they are full ranking participants and can win); `null` only when the variant could not be ranked at all
+             *     (e.g. no low-level probe ladder), never merely because it is forced-zero.
              */
             pointTotal?: number | null;
             /**
@@ -9835,9 +9980,9 @@ export interface components {
              * @description Count (0-3) of the three lowest probes back-calculating a negative concentration.
              */
             negativeAreaPenalty?: number | null;
-            /** @description True when this is the analyte's overall recommended variant. */
+            /** @description True when this is the analyte's overall recommended (lowest Point Total) variant; a forced-zero variant may carry this flag. */
             isRecommendedModel?: boolean;
-            /** @description True when this is the analyte's recommended non-forced-zero variant. */
+            /** @description True when this is the analyte's recommended variant among non-forced-zero models (for labs that disallow through-origin fits). */
             isRecommendedNonForcedZeroModel?: boolean;
             rankingBreakdown?: components["schemas"]["ReportCardRankingBreakdownDto"];
         };
@@ -10193,25 +10338,50 @@ export interface components {
             /** @description When true, applies each analyte's recommended non-forced-zero model instead of the overall recommendation. */
             excludeForcedZero?: boolean;
         };
+        /** @description Run metadata plus the frozen global acceptance limits that were in force for this computation. */
         SummaryReportAdministrativeDto: {
             methodConfigName?: string | null;
-            /** Format: date-time */
+            /**
+             * Format: date-time
+             * @description When the group was computed; null if never computed.
+             */
             computedAt?: string | null;
+            /** @description Engine version tag that produced these numbers (for reproducibility / audit). */
             computationVersion?: string | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Max allowed calibration %RSD (used by average / response-factor acceptance).
+             */
             rsdPercentLimit?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Max allowed internal-standard response %RSD.
+             */
             isRsdPercentLimit?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Max allowed absolute ICV %Diff from true (the primary ICV gate).
+             */
             icvLimitPercent?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Max allowed %Diff between WLTR's ICV calc and the instrument (CDS) reported value.
+             */
             icvCdsParityPercent?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Reporting dilution factor for soil matrices; null when not configured.
+             */
             soilDilutionFactor?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Reporting dilution factor for aqueous matrices; null when not configured.
+             */
             aqueousDilutionFactor?: number | null;
+            /** @description True when the group was edited after compute — treat the report as out of date. */
             isComputationStale?: boolean;
         };
+        /** @description One headline pass/fail row per analyte for its selected model — the report's verdict line. */
         SummaryReportExecutiveAnalyteDto: {
             /** Format: uuid */
             analyteId?: string;
@@ -10219,63 +10389,144 @@ export interface components {
             selectedRegressionType?: components["schemas"]["RegressionType"];
             selectedWeightingMode?: components["schemas"]["WeightingMode"];
             calStatus?: components["schemas"]["AnalyteCalStatus"];
+            /** @description Human-readable reasons the analyte failed; empty when it passed. */
             failureReasons?: string[] | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Coefficient of determination; how much variance the fit explains (closer to 1 is better). Not meaningful for average models.
+             */
             rSquared?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Correlation coefficient of the fit.
+             */
             correlationR?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Relative standard error of the regression; lower is a tighter fit.
+             */
             rse?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description %RSD of the per-level response factors; the precision metric for average / RF acceptance.
+             */
             responseFactorRsd?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Mean response factor across included levels.
+             */
             meanResponseFactor?: number | null;
+            /** @description ICV %Diff within `IcvLimitPercent`; null when no ICV configured. */
             icvPassed?: boolean | null;
+            /** @description WLTR ICV calc agrees with the instrument (CDS) value within `IcvCdsParityPercent`; null when not applicable. */
             icvCdsPassed?: boolean | null;
+            /** @description ICV recovery inside the per-analyte LCL/UCL window; null when no window configured. */
             icvLcsRecoveryPassed?: boolean | null;
+            /** @description SPCC minimum-response-factor check passed; null when the analyte is not an SPCC. */
             spccMinRfPassed?: boolean | null;
+            /** @description CCC %RSD check passed; null when the analyte is not a CCC. */
             cccRsdPassed?: boolean | null;
         };
+        /** @description Curve fit and ICV verification detail per analyte — the deepest evidence block. */
         SummaryReportLdrAnalyteDto: {
             /** Format: uuid */
             analyteId?: string;
             analyteName?: string | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Fitted curve slope (response per unit amount ratio).
+             */
             slope?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Fitted curve intercept; 0 for forced-zero models.
+             */
             intercept?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Known prepared ICV concentration.
+             */
             icvTrueConcentration?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Concentration WLTR back-calculates from the ICV response via the selected curve.
+             */
             icvCalculatedConcentration?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description (calc − true) / true × 100 — the primary ICV accuracy metric.
+             */
             icvPercentDiff?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description %Diff between WLTR's ICV calc and the instrument (CDS) reported concentration.
+             */
             icvCdsPercentDiff?: number | null;
+            /** @description True when |IcvPercentDiff| is within the global `IcvLimitPercent`. */
             icvPassed?: boolean | null;
+            /** @description True when WLTR and CDS agree within `IcvCdsParityPercent`. */
             icvCdsPassed?: boolean | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Lower recovery control limit for this analyte; null when not configured.
+             */
             icvLcsLowerControlLimit?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Upper recovery control limit for this analyte; null when not configured.
+             */
             icvLcsUpperControlLimit?: number | null;
+            /**
+             * Format: double
+             * @description Raw ICV response (area) from the linked ICV run; null when no ICV run is linked or not exported.
+             */
+            icvObservedResponse?: number | null;
+            /**
+             * Format: double
+             * @description Instrument (CDS) reported ICV concentration; null when not exported or no ICV run is linked.
+             */
+            icvCdsReportedConcentration?: number | null;
+            /**
+             * Format: double
+             * @description ICV recovery percent (`100 + IcvPercentDiff`), where 100% is a perfect recovery; null when ICV %Diff is not available.
+             */
+            icvRecoveryPercent?: number | null;
             points?: components["schemas"]["SummaryReportLdrPointDto"][] | null;
         };
+        /** @description One calibration level's fit quality within the Linear Dynamic Range table. */
         SummaryReportLdrPointDto: {
             /** Format: uuid */
             calibrationRunId?: string;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Amount ratio (X) for the level.
+             */
             x?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Observed response ratio (Y) for the level.
+             */
             y?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Response the curve predicts at this X; null when not computable.
+             */
             predictedY?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Observed minus predicted (Y − PredictedY); how far off the fit is here.
+             */
             residual?: number | null;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Back-calculated concentration %Diff from the level's true concentration — the acceptance metric per point.
+             */
             percentDiff?: number | null;
+            /** @description False when the point was excluded from the fit; excluded points still display. */
             isIncluded?: boolean;
             acceptance?: components["schemas"]["PointAcceptance"];
         };
+        /** @description Response-factor audit trail per analyte: the mean RF, its %RSD, and the per-level points behind them. */
         SummaryReportResponseFactorAnalyteDto: {
             /** Format: uuid */
             analyteId?: string;
@@ -10286,15 +10537,26 @@ export interface components {
             responseFactorRsd?: number | null;
             points?: components["schemas"]["SummaryReportResponseFactorPointDto"][] | null;
         };
+        /** @description One calibration level's contribution to the response-factor audit. */
         SummaryReportResponseFactorPointDto: {
             /** Format: uuid */
             calibrationRunId?: string;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Amount ratio (analyte amount / internal-standard amount) for this level.
+             */
             x?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description Response ratio (analyte response / internal-standard response) for this level.
+             */
             y?: number;
-            /** Format: double */
+            /**
+             * Format: double
+             * @description RF for the level = Y / X (0 when X is 0).
+             */
             responseFactor?: number;
+            /** @description False when the point was excluded from the mean/%RSD (e.g. manual exclusion); excluded points still display for transparency. */
             isIncluded?: boolean;
         };
         /** @description Request body for suppressing an analyte on an instrument. */

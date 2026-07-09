@@ -10,6 +10,7 @@ import {
   getCalibrationGroupRegressionDebug,
   getCalibrationGroupRegressionInputs,
   getCalibrationGroupReportCard,
+  getCalibrationGroupSummaryReport,
 } from "@/lib/api/wltr-api";
 import {
   buildCurveQueryParams,
@@ -21,6 +22,7 @@ import {
   variantKey,
 } from "@/lib/calibration-variant-utils";
 import { hasComputedRegressionOutputs } from "@/lib/regression-wire";
+import { buildIcvReportContext } from "@/lib/icv-calculator";
 import type { MeResponse } from "@/lib/types/wltr";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -150,6 +152,22 @@ export function CalibrationGroupRegressionDebugPanel({
     !!groupId &&
     !!selectedAnalyteId &&
     (!needPlatformLab || !!laboratoryIdOverride.trim());
+
+  const reportQ = useQuery({
+    queryKey: ["calibration-group-summary-report", groupId, effectiveLaboratoryId ?? ""],
+    queryFn: () => getCalibrationGroupSummaryReport(groupId, scopeParams),
+    enabled: canLoad,
+    retry: false,
+  });
+
+  const icvReportContext = useMemo(
+    () =>
+      buildIcvReportContext(
+        reportQ.data as Record<string, unknown> | undefined,
+        selectedAnalyteId,
+      ),
+    [reportQ.data, selectedAnalyteId],
+  );
 
   const debugQ = useQuery({
     queryKey: [
@@ -326,6 +344,7 @@ export function CalibrationGroupRegressionDebugPanel({
                 ? (debugQ.data as Record<string, unknown>)
                 : null
             }
+            reportContext={icvReportContext}
           />
         ) : null}
 

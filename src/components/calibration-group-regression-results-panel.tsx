@@ -10,6 +10,7 @@ import {
   getCalibrationGroupRegressionDebug,
   getCalibrationGroupRegressionInputs,
   getCalibrationGroupReportCard,
+  getCalibrationGroupSummaryReport,
 } from "@/lib/api/wltr-api";
 import {
   buildCurveQueryParams,
@@ -20,7 +21,7 @@ import {
   resolveVariantOptions,
   variantKey,
 } from "@/lib/calibration-variant-utils";
-import { fmtIcvNum, icvPassLabel, parseIcvSnapshot } from "@/lib/icv-calculator";
+import { fmtIcvNum, icvPassLabel, parseIcvSnapshot, buildIcvReportContext } from "@/lib/icv-calculator";
 import {
   analyteCalStatusLabel,
   hasComputedRegressionOutputs,
@@ -307,6 +308,22 @@ export function CalibrationGroupRegressionResultsPanel({
     enabled: canSummarizeFromDebug && canFetchChart,
   });
 
+  const reportQ = useQuery({
+    queryKey: ["calibration-group-summary-report", groupId, effectiveLaboratoryId ?? ""],
+    queryFn: () => getCalibrationGroupSummaryReport(groupId, platformParams),
+    enabled: canSummarizeFromDebug && canFetchChart,
+    retry: false,
+  });
+
+  const icvReportContext = useMemo(
+    () =>
+      buildIcvReportContext(
+        reportQ.data as Record<string, unknown> | undefined,
+        selected?.analyteId ?? "",
+      ),
+    [reportQ.data, selected?.analyteId],
+  );
+
   const curveRows = useMemo(
     () =>
       (Array.isArray(curvesQ.data) ? curvesQ.data : []).filter(
@@ -532,6 +549,7 @@ export function CalibrationGroupRegressionResultsPanel({
                   ? (debugQ.data as Record<string, unknown>)
                   : null
               }
+              reportContext={icvReportContext}
             />
           </div>
         ) : null}
