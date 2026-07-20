@@ -186,61 +186,24 @@ export type IcvInstrumentInputs = Readonly<{
   responseFactor: number | null;
 }>;
 
-/** ICV measurement row from regression-debug `points` (Standard/IS response, ratios). */
+/**
+ * ICV instrument-block inputs, read directly from the curve/regression-debug response.
+ * The ICV run is separate from the CAL `points[]` (which only carry calibration-level
+ * measurements), so the backend reports its own area, IS response, and derived ratios as
+ * scalar `icv*` fields alongside the calc-concentration block.
+ */
 export function parseIcvInstrumentInputs(
   curve: Record<string, unknown> | null | undefined,
   observedResponse?: number | null,
 ): IcvInstrumentInputs {
-  const empty = {
-    standardResponse: observedResponse ?? null,
-    isResponse: null,
-    responseRatio: null,
-    amountRatio: null,
-    responseFactor: null,
-  } as const;
-  if (!curve) return empty;
-
-  const trueConc = num(getIcvField(curve, "icvTrueConcentration", "IcvTrueConcentration"));
-  const points = Array.isArray(curve.points) ? curve.points : [];
-  let icvPoint: Record<string, unknown> | null = null;
-
-  for (const raw of points) {
-    if (typeof raw !== "object" || raw === null) continue;
-    const p = raw as Record<string, unknown>;
-    const sc = num(getIcvField(p, "standardConcentration", "StandardConcentration"));
-    if (trueConc != null && sc != null && Math.abs(sc - trueConc) < 1e-9) {
-      icvPoint = p;
-      break;
-    }
-  }
-
-  if (!icvPoint) {
-    for (const raw of points) {
-      if (typeof raw !== "object" || raw === null) continue;
-      const p = raw as Record<string, unknown>;
-      const runName = getIcvField(p, "sourceRunName", "SourceRunName");
-      if (typeof runName === "string" && /icv/i.test(runName)) {
-        icvPoint = p;
-        break;
-      }
-    }
-  }
-
-  if (!icvPoint) {
-    return {
-      ...empty,
-      standardResponse: observedResponse ?? empty.standardResponse,
-    };
-  }
-
+  const r = curve ?? {};
   return {
     standardResponse:
-      observedResponse ??
-      num(getIcvField(icvPoint, "standardResponse", "StandardResponse")),
-    isResponse: num(getIcvField(icvPoint, "isResponse", "IsResponse")),
-    responseRatio: num(getIcvField(icvPoint, "responseRatio", "ResponseRatio")),
-    amountRatio: num(getIcvField(icvPoint, "amountRatio", "AmountRatio")),
-    responseFactor: num(getIcvField(icvPoint, "responseFactor", "ResponseFactor")),
+      observedResponse ?? num(getIcvField(r, "icvObservedResponse", "IcvObservedResponse")),
+    isResponse: num(getIcvField(r, "icvInternalStandardResponse", "IcvInternalStandardResponse")),
+    responseRatio: num(getIcvField(r, "icvObservedResponseRatio", "IcvObservedResponseRatio")),
+    amountRatio: num(getIcvField(r, "icvAmountRatio", "IcvAmountRatio")),
+    responseFactor: num(getIcvField(r, "icvResponseFactor", "IcvResponseFactor")),
   };
 }
 

@@ -1947,11 +1947,14 @@ export interface paths {
          *                 compare the application's output against the legacy Excel workbook step by step.
          *
          *     <strong>ICV verification (workbook "ICV Calculator" parity):</strong> the response carries
-         *                 `icvTrueConcentration`, `icvCalculatedConcentration`, `icvPercentDiff`, `icvPassed`,
+         *                 `icvTrueConcentration`, `icvCalculatedConcentration`, `icvPercentDiff`, `icvPassed`, `icvRecoveryPercent`,
          *                 and the CDS-parity fields, plus the per-analyte recovery window it is judged against —
          *                 `icvLcsLowerControlLimit` / `icvLcsUpperControlLimit` (from the method-config snapshot;
          *                 `null` when not configured). These bounds are the same snapshot values that drive
-         *                 `icvLcsRecoveryPassed`, so the number and the pass/fail always agree.
+         *                 `icvLcsRecoveryPassed`, so the number and the pass/fail always agree. The instrument block —
+         *                 `icvObservedResponse`, `icvObservedResponseRatio`, `icvInternalStandardResponse`, `icvAmountRatio`,
+         *                 `icvResponseFactor` — carries the ICV run's own area/IS-area/ratios directly (the ICV run is not a
+         *                 member of `points[]`, which only covers CAL levels).
          *
          *     <strong>Status prerequisite:</strong> the endpoint returns <strong>404</strong> when the group
          *                 has not yet been computed (no `CalibrationCurve` row exists for this analyte), when the
@@ -9742,6 +9745,46 @@ export interface components {
             icvPassed?: boolean | null;
             /**
              * Format: double
+             * @description Recovery % = 100 + IcvPercentDiff (100% = perfect); `null` when no ICV run was linked or no true concentration is configured.
+             */
+            icvRecoveryPercent?: number | null;
+            /**
+             * Format: double
+             * @description Raw ICV response (area) from the linked ICV run; `null` when no ICV run is linked or not exported.
+             */
+            icvObservedResponse?: number | null;
+            /**
+             * Format: double
+             * @description ICV response ratio (Y-value) = analyte area / internal-standard area; `null` when no ICV run was linked.
+             */
+            icvObservedResponseRatio?: number | null;
+            /**
+             * Format: double
+             * @description Internal-standard response (area) from the linked ICV run; `null` when no ICV run is linked or no IS row matched.
+             */
+            icvInternalStandardResponse?: number | null;
+            /**
+             * Format: double
+             * @description ICV amount ratio (X-value) = true concentration / internal-standard concentration; `null` when no true concentration is configured.
+             */
+            icvAmountRatio?: number | null;
+            /**
+             * Format: double
+             * @description ICV response factor = IcvObservedResponseRatio / IcvAmountRatio; `null` when IcvAmountRatio is unavailable.
+             */
+            icvResponseFactor?: number | null;
+            /**
+             * Format: double
+             * @description Instrument (CDS) reported ICV concentration; `null` when not exported or no ICV run is linked.
+             */
+            icvCdsReportedConcentration?: number | null;
+            /**
+             * Format: int32
+             * @description This variant's relative rank against its siblings on ICV %Diff, used by the report-card ranking breakdown; `null` when no ICV run was linked.
+             */
+            icvRank?: number | null;
+            /**
+             * Format: double
              * @description Arithmetic mean of per-point response factors (ResponseRatio / AmountRatio) across included points; `null` when not computed.
              */
             meanResponseFactor?: number | null;
@@ -10491,6 +10534,13 @@ export interface components {
              * @description ICV recovery percent (`100 + IcvPercentDiff`), where 100% is a perfect recovery; null when ICV %Diff is not available.
              */
             icvRecoveryPercent?: number | null;
+            /**
+             * Format: double
+             * @description ICV response ratio (Y-value) = analyte area / internal-standard area; null when no ICV run was linked. The
+             *     fuller instrument block (IS response, amount ratio, response factor) is only available from `GET …/curves` and
+             *     `GET …/regression-debug`, not from this summary report.
+             */
+            icvObservedResponseRatio?: number | null;
             points?: components["schemas"]["SummaryReportLdrPointDto"][] | null;
         };
         /** @description One calibration level's fit quality within the Linear Dynamic Range table. */
