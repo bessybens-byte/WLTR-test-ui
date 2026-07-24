@@ -1,0 +1,3884 @@
+{
+  "labId": "9c826e89-3d74-4980-a0c9-d2dd974c61cf",
+  "labName": "MS4-VOC-Parity-230120-029cf398",
+  "adminEmail": "parity-admin-029cf398@wltr.local",
+  "adminPassword": "ParityLab1!aA",
+  "tokenHint": "re-login each run",
+  "instrumentId": "c1aad091-da07-441d-a004-e08b7e0f00f9",
+  "methodConfigId": "9dd7c9d8-b2a6-4825-b35f-d509981e0223",
+  "internalStandardIds": {
+    "Fluorobenzene": "08527dd2-13f0-4dfa-a07b-e6185a3570d9",
+    "Chlorobenzene-d5": "f95281ee-f167-4f62-baa8-260d85c5ef54",
+    "1,4-Dichlorobenzene-d4": "5d9d03dd-03ce-4294-b9ce-20eae2aa0cd0"
+  },
+  "analyteIds": {
+    "Fluorobenzene": "d4be0b50-cb77-420b-9d8d-aba1859b6869",
+    "Chlorobenzene-d5": "bece00d5-401c-45bc-ba42-1b2a013aee87",
+    "1,4-Dichlorobenzene-d4": "1b0aa397-d8f3-4301-9bbc-22adc6513a4d",
+    "1,2-Dichloroethane-d4": "1d98eec0-2be2-46c0-b5bc-2f6263cfc6e7",
+    "Toluene-d8": "b5bfd762-aa01-404a-a8aa-2e7600cfc86d",
+    "Bromofluorobenzene": "e69c2351-cffa-4e51-b60e-46b4cbd71290",
+    "Dichlorodifluoromethane": "07b7d062-54dd-4e72-ae6d-da6e8dd3ec72",
+    "Chloromethane-P": "34e11ff7-86a5-4020-b741-b8e800f5d823",
+    "Vinyl Chloride-C": "8ef5bf46-fe7a-4781-9624-60540dbfda44",
+    "Bromomethane": "6c5d35f3-7a9c-4203-94c7-2cc1b6a003bd",
+    "Chloroethane": "5db8a49e-87db-48c6-8cc8-07985efa1a56",
+    "Trichlorofluoromethane": "80b805c7-89f6-464b-a638-fd104cba8c62",
+    "1,1-Dichloroethene-C": "89cb06e8-0bb5-4420-9a8a-2318e334125c",
+    "Acetone": "c75c9b40-ed63-44d9-9eea-b759f8cbb4d7",
+    "tert-Butanol": "dd25f33a-c03e-411e-b1ed-51c944ce4f8a",
+    "Methylene Chloride": "58068a0c-d3b8-439f-9345-c1a0b636d5e5",
+    "Methyl-tert-butyl ethe..": "3b36f7bb-05d2-411e-8dd6-2e9fbeaf2170",
+    "trans-1,2-Dichloroethene": "243ea6d2-f00f-4960-a050-bf49b559ea2c",
+    "Di-isopropyl ether": "186a518c-9d12-4f55-ae5c-5085b293e0df",
+    "1,1-Dichloroethane-P": "9fd8b88e-97c5-4b67-aa3e-f5a7c929ac5c",
+    "Ethyl-tert-butyl ether..": "f4e3b0da-1031-4a6f-ad8d-d0504ec111b6",
+    "2-Butanone (MEK)": "9cd59d08-532f-4978-bf70-a5c62a1b7eb2",
+    "cis-1,2-Dichloroethene": "0f0451f1-a845-4989-a3de-4710cd1fa1f7",
+    "2,2-Dichloropropane": "f6685fe4-e5fa-457d-bcd0-ba1c84d8d0be",
+    "Bromochloromethane": "4b42f85b-783e-43be-9f75-c6ba34bf2817",
+    "Chloroform-C": "c6987e2b-bd0f-4a76-bb4b-6fb4c5ba1569",
+    "1,1,1-Trichloroethane": "a655943f-1691-4bc5-aaad-ceadae724c22",
+    "Carbon Tetrachloride": "b832adc6-b93b-4a50-b33a-d9cb0c77a9a4",
+    "1,1-Dichloropropene": "f9f06ecf-7cb3-4cdc-ac2f-ffd61055403a",
+    "tert-Amyl methyl ether..": "c77403fd-5d2c-49a6-9730-b5e7823cdf2c",
+    "Benzene": "7942457b-52f3-4fd0-8af2-b236864384b0",
+    "1,2-Dichloroethane": "2e4994c9-f814-4c46-8a3b-482b6c25e52b",
+    "Trichloroethene": "2c894032-d947-4076-9038-ef7a0c6a0ace",
+    "1,2-Dichloropropane-C": "81a71d70-ed65-4e07-9333-0004019c2dc1",
+    "Dibromomethane": "6d061250-3c7b-48d3-a590-edbdca8412bb",
+    "Bromodichloromethane": "0c2aa97b-850c-4497-92b0-bdb269e6a8b8",
+    "2-Chloroethyl vinyl ethe": "decdb367-9278-489b-b65f-c0f65a9dd803",
+    "cis-1,3-Dichloropropene": "d91e9b5e-aff2-4c88-af21-3038d04902a5",
+    "4-Methyl-2-pentanone (..": "2416563d-7d1f-43ee-8863-471394599227",
+    "Toluene-C": "5b70ab36-5508-483f-8cb5-79cc43c52595",
+    "trans-1,3-Dichloropropen": "74658b4d-aecd-48ad-8e62-5384f7701c88",
+    "1,1,2-Trichloroethane": "bc9ae746-2f15-425a-a6e1-c00aa4e8c529",
+    "Tetrachloroethene": "52854564-2dc2-4ed2-9af6-cfd3d5d98a81",
+    "2-Hexanone": "6888f81d-1e13-416d-a08c-70bb7a30a5f1",
+    "1,3-Dichloropropane": "fd82aeb9-ecfd-4027-983a-da2f5d4012f9",
+    "Dibromochloromethane": "e4da10e7-140e-44fa-8da1-946f78f75f46",
+    "1,2-Dibromoethane": "6d2a394d-109d-4818-a9cb-2bcff1409ed1",
+    "Chlorobenzene-P": "002d3373-6842-4114-8025-3e3b79adc6ef",
+    "Ethylbenzene-C": "26fcc480-03b1-4023-98dc-08ae839f2bee",
+    "1,1,1,2-Tetrachloroethan": "8f076a7c-82e3-4ca2-a947-b1c1bb63f3f2",
+    "m,p-Xylene": "8776cd31-987b-4e71-b6de-76ce6ea79706",
+    "o-Xylene": "8b4b2ae1-b466-473b-be6c-2bddd7a4f39c",
+    "Styrene": "8f7e4f7e-964d-4f25-b569-ab2fa94caad0",
+    "Bromoform-P": "fc6959f5-ef41-4ff1-833f-2c535fdd34b5",
+    "Isopropylbenzene": "013bc5b7-a454-45a1-bd5f-120d3ad94cbd",
+    "1,1,2,2-Tetrachloroeth..": "d0ecb35b-ce9d-474f-91b9-e8cd0e1ec13c",
+    "Bromobenzene": "7e498ca1-4a2b-4b2c-a5c3-9b61e48109f5",
+    "n-Propylbenzene": "79cbd9f2-d396-46df-8d4c-464516294f3e",
+    "1,2,3-Trichloropropane": "765900e7-865d-4f32-abac-95bfd1b1a5a7",
+    "2-Chlorotoluene": "aaad27e7-c45a-498c-89f0-29372674e930",
+    "1,3,5-Trimethylbenzene": "7661e50a-1944-4689-b69a-b010c81ec368",
+    "4-Chlorotoluene": "3795fc84-3d9e-4713-871a-3c64d0bb3351",
+    "tert-Butylbenzene": "9d4da329-7466-4960-a91a-84ef8a4c4a74",
+    "1,2,4-Trimethylbenzene": "c4466546-b93c-4dc1-bd31-ed393167a560",
+    "sec-Butylbenzene": "1b2758fb-58c8-417b-8b30-db4a037a5571",
+    "4-Isopropyltoluene": "b7bffb9b-4785-4597-b8b8-0e15377e642b",
+    "1,3-Dichlorobenzene": "a1c58d0f-ae18-4088-8f4c-15a231477c68",
+    "1,4-Dichlorobenzene": "e6cc76e0-63c1-4eeb-8201-d3f31acc49e3",
+    "n-Butylbenzene": "494fcbc5-259a-435d-bb3c-f8e4b3644af3",
+    "1,2-Dichlorobenzene": "76eb509e-960b-4278-a74b-bd4f57e844ad",
+    "1,2-Dibromo-3-chloropr..": "66e448e1-4205-4704-96be-7ef20b3adc29",
+    "1,2,4-Trichlorobenzene": "69c59113-e86a-4a66-b114-7fee86708484",
+    "Hexachlorobutadiene": "686d22e2-ce74-4bbe-aac7-1774aae88f81",
+    "Naphthalene": "40d74726-013c-4e95-ad3d-e2abaea91bda",
+    "1,2,3-Trichlorobenzene": "6824e547-4c99-4a2a-a535-1653a1f46115",
+    "2-Methylnaphthalene": "03f765bf-4a78-4985-83c9-b9642f182ebb",
+    "1-Methylnaphthalene": "4036ae13-6746-49e7-bd47-535c47a78450"
+  },
+  "levelIds": {
+    "01 VOC CAL": "0e1a8208-42e1-457c-b159-8a87144fe8f7",
+    "02 VOC CAL": "dc302813-e440-4c61-adaa-6a5f46b3f5c8",
+    "05 VOC CAL": "79fd5ed7-117c-499b-9dcc-5de350a7430f",
+    "1 VOC CAL": "2be16fdc-3a85-4a4c-b283-145c7319161c",
+    "2 VOC CAL": "87cc7f1d-0020-4d77-b3f4-e15e74ce2ff7",
+    "4 VOC CAL": "dcb2b740-2167-490d-91df-eb0e0b59da43",
+    "8 VOC CAL": "fa94ac6c-aec3-4ecc-8967-776f8aaddf72",
+    "20 VOC CAL": "ac09778d-d1d5-4ff0-9b91-b7100790439d",
+    "50 VOC CAL": "b3bc00be-12e4-4504-801c-974b64dbba5b",
+    "100 VOC CAL": "b1b08e93-e97a-44b9-b873-07c4342d2a8f",
+    "120 VOC CAL": "e5dd2fa1-2e08-4d89-8198-441437a717b9",
+    "140 VOC CAL": "b88d49fb-7bdc-433e-88b3-7f9abd418ac8",
+    "160 VOC CAL": "c01deb61-6954-4d38-b429-3bb18a538081"
+  },
+  "groupId": "0ce7f6a5-5d90-44bf-bca5-e3090edd9a6e",
+  "calRunIds": [
+    "f01f9f97-6f4d-4ca6-86f7-06352295b509",
+    "f432fb5d-d6b7-4e0d-a106-52581c9449c0",
+    "34ae6c47-9c5b-4622-9f13-e64265702239",
+    "6c2d1216-f673-42e9-b1b4-0e8244747a45",
+    "729425c3-0475-4d5a-b0a7-55ac6046b1a9",
+    "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9",
+    "4a654a00-cfba-495e-8c7e-34195f3022ae",
+    "998ea1e4-8736-4e20-b5bd-e89a96b78984",
+    "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9",
+    "7bfa33f9-8603-4189-9878-1f8f0512f51f",
+    "31e508e5-c1c1-4bfc-ac95-fd01324fb479",
+    "e16fdf9a-5e9d-4f55-9f3f-2497ee095926",
+    "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+  ],
+  "icvRunId": "ce43f9ee-267a-47cf-8444-217a4529ab97",
+  "readiness": {
+    "calibrationGroupId": "0ce7f6a5-5d90-44bf-bca5-e3090edd9a6e",
+    "isReady": false,
+    "minPointsRequired": 6,
+    "calibrationLevelCount": 13,
+    "blockingIssues": [
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "1b43d45a-6f6f-4c29-bcc8-3bfad6737475",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "1b43d45a-6f6f-4c29-bcc8-3bfad6737475",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "78513013-f7f3-4eaa-b312-5d17843b4971",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "78513013-f7f3-4eaa-b312-5d17843b4971",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "ba1d9af4-e770-476b-b1e3-630eecb4b34d",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "ba1d9af4-e770-476b-b1e3-630eecb4b34d",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "de8cb5bc-4254-4928-b5cb-6df596ceda2c",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "de8cb5bc-4254-4928-b5cb-6df596ceda2c",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "f9a6d829-9d45-4795-9aa4-84afb096a838",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "f9a6d829-9d45-4795-9aa4-84afb096a838",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "31cc5332-571b-4c3e-96b7-88ee3f04700a",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "31cc5332-571b-4c3e-96b7-88ee3f04700a",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "bcfd2f24-b144-486a-8e32-a4021f2f6949",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "bcfd2f24-b144-486a-8e32-a4021f2f6949",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "605c64e4-e989-4ea1-a019-b19cba40f024",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "605c64e4-e989-4ea1-a019-b19cba40f024",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "ddfefd5f-b5a1-434a-b9b8-e672c982a7b1",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "ddfefd5f-b5a1-434a-b9b8-e672c982a7b1",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "4b4cc85a-aeb9-4ce1-a760-f730a84c0ac5",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "4b4cc85a-aeb9-4ce1-a760-f730a84c0ac5",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "cb44e7dc-b0f1-4021-a772-10c5ba304bd7",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "cb44e7dc-b0f1-4021-a772-10c5ba304bd7",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "826ac88d-89db-447f-820f-5bb396dba655",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "826ac88d-89db-447f-820f-5bb396dba655",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "633ee5b1-8536-4336-9c3b-8340a7a29d83",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "633ee5b1-8536-4336-9c3b-8340a7a29d83",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "8b26a47a-c902-4a83-8251-8ee3e7da10a4",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "8b26a47a-c902-4a83-8251-8ee3e7da10a4",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "a1926380-3ccf-4d03-9a4a-a043cc421232",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "a1926380-3ccf-4d03-9a4a-a043cc421232",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "f1fb7c82-358b-495f-ba66-d819015e7a1b",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "f1fb7c82-358b-495f-ba66-d819015e7a1b",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "661ba2ca-7f76-4e68-8f1d-dd7f37c68db1",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "661ba2ca-7f76-4e68-8f1d-dd7f37c68db1",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "4551b102-0511-43f8-911d-fdb4a8c6f60e",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "4551b102-0511-43f8-911d-fdb4a8c6f60e",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "a0dbdb4a-ddc8-4d07-afa4-052cc56a387f",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "a0dbdb4a-ddc8-4d07-afa4-052cc56a387f",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "c3db98bd-904c-4ffb-871e-19d1a8e35339",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "c3db98bd-904c-4ffb-871e-19d1a8e35339",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "b22a5112-0786-47b4-958a-29b809d5fd8e",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "b22a5112-0786-47b4-958a-29b809d5fd8e",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "2da35763-4513-4645-83ca-899d91307784",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "2da35763-4513-4645-83ca-899d91307784",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "ba5194f9-d97a-47a7-b491-aa96cfcc6c72",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "ba5194f9-d97a-47a7-b491-aa96cfcc6c72",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "5aa2c82a-628e-4da9-abd0-b00273ce187d",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "5aa2c82a-628e-4da9-abd0-b00273ce187d",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "3eb2eb12-ab8d-4e15-bbea-f752bfc3eadb",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "3eb2eb12-ab8d-4e15-bbea-f752bfc3eadb",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "bc3f5671-6822-4d3a-b776-f8c4712f74e5",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "bc3f5671-6822-4d3a-b776-f8c4712f74e5",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "897a28ef-4ed0-4c81-a2e6-f8e9b94019ec",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "897a28ef-4ed0-4c81-a2e6-f8e9b94019ec",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "8e9a11ea-e1a0-436f-8af7-fa68e9d75630",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "8e9a11ea-e1a0-436f-8af7-fa68e9d75630",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "c20af30f-4616-425c-91af-07c59b7faad3",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "c20af30f-4616-425c-91af-07c59b7faad3",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "c07d333a-14e8-44bc-9de6-2b2324afcd19",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "c07d333a-14e8-44bc-9de6-2b2324afcd19",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "2fe8c291-18cf-47df-83ef-2bc1f670cade",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "2fe8c291-18cf-47df-83ef-2bc1f670cade",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "2acc4f18-39fa-4e55-8af9-4f35261ef9b5",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "2acc4f18-39fa-4e55-8af9-4f35261ef9b5",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "5002c662-32c1-404d-8d12-587dd90a164c",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "5002c662-32c1-404d-8d12-587dd90a164c",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "58866620-b663-49de-a8ee-5ca16a188dbc",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "58866620-b663-49de-a8ee-5ca16a188dbc",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "e31ea81f-20fd-4d25-93e9-6ea892cef008",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "e31ea81f-20fd-4d25-93e9-6ea892cef008",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "bff1e329-322c-41e2-aef2-763bd9443f7e",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "bff1e329-322c-41e2-aef2-763bd9443f7e",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "14002f91-db29-4975-a781-8b59802eae2a",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "14002f91-db29-4975-a781-8b59802eae2a",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "069731e3-6c8a-4d41-8b64-f6539a3fd502",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "069731e3-6c8a-4d41-8b64-f6539a3fd502",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "36ce93f6-09d4-471a-a691-223b5858536d",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "36ce93f6-09d4-471a-a691-223b5858536d",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "8c58d015-ad6e-4ebb-a76e-5a7d99a5a3cd",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "8c58d015-ad6e-4ebb-a76e-5a7d99a5a3cd",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "6aa73c56-c484-445c-a4bf-5aa3a64a656a",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "6aa73c56-c484-445c-a4bf-5aa3a64a656a",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "c731de46-5cd7-4a9f-b7d1-61a3e4f83b0a",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "c731de46-5cd7-4a9f-b7d1-61a3e4f83b0a",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "7df2c13b-907e-438c-859b-a72467f0d273",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "7df2c13b-907e-438c-859b-a72467f0d273",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "633f4003-e364-419f-ae21-a8792fc896e0",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "633f4003-e364-419f-ae21-a8792fc896e0",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "c4e98a96-9db1-4c71-a010-b3f84ad9b28e",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "c4e98a96-9db1-4c71-a010-b3f84ad9b28e",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "599c8283-7e46-4b31-8c63-b9b6535fa263",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "599c8283-7e46-4b31-8c63-b9b6535fa263",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "f661dc99-be5b-46f7-9bb0-348228887c54",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "f661dc99-be5b-46f7-9bb0-348228887c54",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "80d07ef2-3d10-460f-85bb-653c3b50f37b",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "80d07ef2-3d10-460f-85bb-653c3b50f37b",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "46737463-7447-4c1d-a05e-70e02af8d55b",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "46737463-7447-4c1d-a05e-70e02af8d55b",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "dca10f15-5ae7-4cf7-9884-7f0667f43a17",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "dca10f15-5ae7-4cf7-9884-7f0667f43a17",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "7a53d6d8-1b79-4d39-90fc-8d5d61a1461a",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "7a53d6d8-1b79-4d39-90fc-8d5d61a1461a",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "33ea5ef0-a1b6-4be5-a720-9facf0f5fe20",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "33ea5ef0-a1b6-4be5-a720-9facf0f5fe20",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "e993b852-b422-4632-bc9b-c7acd85e1c9b",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "e993b852-b422-4632-bc9b-c7acd85e1c9b",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "962d5121-f7f4-4996-8de0-dbf3e7ebf8be",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "962d5121-f7f4-4996-8de0-dbf3e7ebf8be",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "6ae24e82-3ee1-45f4-99b8-e6d268fdc763",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "6ae24e82-3ee1-45f4-99b8-e6d268fdc763",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "5e876c0b-72da-4410-aabb-ee77e1562148",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "5e876c0b-72da-4410-aabb-ee77e1562148",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "7b335a02-b95f-4ab7-9035-017f4609d9a2",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "7b335a02-b95f-4ab7-9035-017f4609d9a2",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "a5c60e1f-f8f6-477f-acbd-4ed5d091f5b6",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "a5c60e1f-f8f6-477f-acbd-4ed5d091f5b6",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "db1ea0af-745a-4398-a089-5a26efe43fe7",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "db1ea0af-745a-4398-a089-5a26efe43fe7",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "ac4cfa7c-4567-4fb2-acfc-688aa9757bc2",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "ac4cfa7c-4567-4fb2-acfc-688aa9757bc2",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "ecc4f64c-539b-4e57-bdc3-764dcc8636cd",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "ecc4f64c-539b-4e57-bdc3-764dcc8636cd",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "79b7dbab-be0f-483f-9296-8e9d4cd11321",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "79b7dbab-be0f-483f-9296-8e9d4cd11321",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "d3ea917e-a649-4856-9ceb-adc8c26010b1",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "d3ea917e-a649-4856-9ceb-adc8c26010b1",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "543f690e-748c-4aec-9647-bc012b4191ac",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "543f690e-748c-4aec-9647-bc012b4191ac",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "5b7e1c10-142e-4606-9032-d957e571e1b6",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "5b7e1c10-142e-4606-9032-d957e571e1b6",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "c80ce4de-ff92-48e7-9f13-dd5ae4dd8158",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "c80ce4de-ff92-48e7-9f13-dd5ae4dd8158",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "0b19a3ab-39c8-4588-8307-1a4026684616",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "0b19a3ab-39c8-4588-8307-1a4026684616",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "d5b81960-0cf0-47d9-b031-4bb29ef14f12",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "d5b81960-0cf0-47d9-b031-4bb29ef14f12",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "e19c3281-8fee-4331-8500-54188fc92eb3",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "e19c3281-8fee-4331-8500-54188fc92eb3",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "52ac8f6f-4290-4f15-b217-8b510137e144",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "52ac8f6f-4290-4f15-b217-8b510137e144",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "2d763b01-2638-4566-98fe-9410a6a5275e",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "2d763b01-2638-4566-98fe-9410a6a5275e",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "8116d31f-bd7b-47fd-9a24-96e4fae16c18",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "8116d31f-bd7b-47fd-9a24-96e4fae16c18",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "3ba30ab6-0b06-4145-a024-a3084d097089",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "3ba30ab6-0b06-4145-a024-a3084d097089",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "2a345097-5659-46be-9564-a37019645baa",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "2a345097-5659-46be-9564-a37019645baa",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "6c4c6e63-f01a-4d87-b0af-a8854ad7e3f3",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "6c4c6e63-f01a-4d87-b0af-a8854ad7e3f3",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "79d6accf-a117-44a3-90bc-ebb15d0c209a",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "79d6accf-a117-44a3-90bc-ebb15d0c209a",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "a3878381-630a-4f3a-abe1-0c9fd9ab92a7",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "a3878381-630a-4f3a-abe1-0c9fd9ab92a7",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "20521599-0873-4c0a-9916-0d2ce58542b2",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "20521599-0873-4c0a-9916-0d2ce58542b2",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "6bdc36ef-7f9c-4ad3-88c4-4a7c97671af3",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "6bdc36ef-7f9c-4ad3-88c4-4a7c97671af3",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "0aab5155-c529-4650-8782-65019464ae61",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "0aab5155-c529-4650-8782-65019464ae61",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "78c98dde-5259-403a-90a4-6dc2cd18759a",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "78c98dde-5259-403a-90a4-6dc2cd18759a",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "26a57d5e-0c82-4bea-92b5-81d7139dae1a",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "26a57d5e-0c82-4bea-92b5-81d7139dae1a",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "490e439e-dfa2-4911-9b13-ae95266ce64e",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "490e439e-dfa2-4911-9b13-ae95266ce64e",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "e44f17a2-ac57-4be9-a960-d022e870bf48",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "e44f17a2-ac57-4be9-a960-d022e870bf48",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "b8064331-0c3c-48c4-81d9-e78068f163b9",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "b8064331-0c3c-48c4-81d9-e78068f163b9",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "443941a7-85a4-40c8-acef-fece2aaac455",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "443941a7-85a4-40c8-acef-fece2aaac455",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "5e678cd9-46cc-4c27-97f8-0bf6ad8d65ac",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "5e678cd9-46cc-4c27-97f8-0bf6ad8d65ac",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "6ca184e2-0998-4733-973b-1c1edc455446",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "6ca184e2-0998-4733-973b-1c1edc455446",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "a1ba98c4-cf1a-466d-9491-311619da2add",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "a1ba98c4-cf1a-466d-9491-311619da2add",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "894af7bc-bb95-4b8d-9211-3a7e8301b971",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "894af7bc-bb95-4b8d-9211-3a7e8301b971",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "85a4f766-d348-4f6a-8fb4-3ddd97c15b89",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "85a4f766-d348-4f6a-8fb4-3ddd97c15b89",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "a67c4996-8ee6-47c6-9052-409906fc2ded",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "a67c4996-8ee6-47c6-9052-409906fc2ded",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "073d7681-f2fd-4f47-a541-8786e9058a64",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "073d7681-f2fd-4f47-a541-8786e9058a64",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "ba7ec70b-ae45-4ceb-9c4f-898997630bf1",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "ba7ec70b-ae45-4ceb-9c4f-898997630bf1",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "8da5e166-120d-4b4e-8120-8da1bf121317",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "8da5e166-120d-4b4e-8120-8da1bf121317",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "c6a4cb14-5d46-4f0c-8653-f53379e33e71",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "c6a4cb14-5d46-4f0c-8653-f53379e33e71",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "b15e48cb-f532-457e-ba9d-53066331a38a",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "b15e48cb-f532-457e-ba9d-53066331a38a",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "95c7c64e-8ba4-4c5b-84c3-5e4607f4ac55",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "95c7c64e-8ba4-4c5b-84c3-5e4607f4ac55",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "3bc56d64-eba7-49c6-9f1d-639778a5d5b6",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "3bc56d64-eba7-49c6-9f1d-639778a5d5b6",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "46e5feac-73ca-4a4a-804d-65f76d7df95e",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "46e5feac-73ca-4a4a-804d-65f76d7df95e",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "1f24c789-664e-44b7-be6c-988d16a44e38",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "1f24c789-664e-44b7-be6c-988d16a44e38",
+        "rawCompoundName": "GRO",
+        "sourceLineNumber": 42,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "83065115-9f83-476d-963b-b6b5fe1109f9",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "83065115-9f83-476d-963b-b6b5fe1109f9",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "79a8e83e-13c6-48d4-9b20-b8ce40dccea6",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "79a8e83e-13c6-48d4-9b20-b8ce40dccea6",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "18d90b53-1450-4324-82ff-c1c30e46c141",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "18d90b53-1450-4324-82ff-c1c30e46c141",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "b72edb2c-de46-4a6c-8720-e6b0b9ba6d24",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "b72edb2c-de46-4a6c-8720-e6b0b9ba6d24",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "d930b739-6881-43e3-aeca-f03a5c6ad727",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "d930b739-6881-43e3-aeca-f03a5c6ad727",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "5b17549c-e8c6-412a-a7da-0333eb8b8e1c",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "5b17549c-e8c6-412a-a7da-0333eb8b8e1c",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "19af7232-7426-44d5-b4e0-373f71bc6a32",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "19af7232-7426-44d5-b4e0-373f71bc6a32",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "5dafa20e-c7be-453d-8368-3e72936e18b6",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "5dafa20e-c7be-453d-8368-3e72936e18b6",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "f74ef090-b6dd-494a-b1ab-8b17f470beae",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "f74ef090-b6dd-494a-b1ab-8b17f470beae",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "c4b41930-824e-4f78-b0e4-c1ba9d093315",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "c4b41930-824e-4f78-b0e4-c1ba9d093315",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "c35e0be1-ecc7-4123-8a66-c30f2788035e",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "c35e0be1-ecc7-4123-8a66-c30f2788035e",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "58df0b1e-b7ee-415f-a3b5-cc3d6246766b",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "58df0b1e-b7ee-415f-a3b5-cc3d6246766b",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "12187a25-0ec7-4a07-b9ad-fd6a44c867bb",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "12187a25-0ec7-4a07-b9ad-fd6a44c867bb",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "59ac7ef5-8cbe-4f8a-ac79-0e6b22abefb8",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "59ac7ef5-8cbe-4f8a-ac79-0e6b22abefb8",
+        "rawCompoundName": "tert-Amyl methyl ether...",
+        "sourceLineNumber": 66,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "f0473f28-f3b9-49b5-823f-4fabf4d2284e",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "f0473f28-f3b9-49b5-823f-4fabf4d2284e",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "3c275cac-a6ab-478d-9dcb-7c780a754c81",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "3c275cac-a6ab-478d-9dcb-7c780a754c81",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "dda6b7ee-c0bc-4360-a088-859b549458ea",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "dda6b7ee-c0bc-4360-a088-859b549458ea",
+        "rawCompoundName": "Methyl-tert-butyl ethe...",
+        "sourceLineNumber": 53,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "8a245a71-9a39-4dc8-9ea4-b72a4dabc3a1",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "8a245a71-9a39-4dc8-9ea4-b72a4dabc3a1",
+        "rawCompoundName": "Ethyl-tert-butyl ether...",
+        "sourceLineNumber": 57,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "54111936-cf03-4faf-88ac-b89287e0fa8d",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "54111936-cf03-4faf-88ac-b89287e0fa8d",
+        "rawCompoundName": "1,1,1,2-Tetrachloroethane",
+        "sourceLineNumber": 86,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "e5ae4a02-d88a-4575-99f7-c7194c1ff1a2",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "e5ae4a02-d88a-4575-99f7-c7194c1ff1a2",
+        "rawCompoundName": "trans-1,3-Dichloropropene",
+        "sourceLineNumber": 77,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 1,
+        "isError": false,
+        "message": "Compound is not mapped to a canonical analyte.",
+        "measurementId": "8c90706d-4389-4f37-8877-ddf60c6a9070",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 2,
+        "isError": false,
+        "message": "Response ratio is missing while the run includes internal standard compound rows.",
+        "measurementId": "8c90706d-4389-4f37-8877-ddf60c6a9070",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      }
+    ],
+    "warnings": [
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "1b43d45a-6f6f-4c29-bcc8-3bfad6737475",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "23c72008-af21-4ebc-872f-6868983de82b",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "d245e998-de71-4ff1-81a1-2dcb577dff07",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "2bc89f23-f96d-4137-8717-817dc603e4cb",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "31e508e5-c1c1-4bfc-ac95-fd01324fb479"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "1a151efa-7905-40ad-9be6-a1407196d851",
+        "rawCompoundName": "1,2-Dibromoethane",
+        "sourceLineNumber": 83,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "9e553e55-7a8b-4fc8-b8a2-b60ef5321244",
+        "rawCompoundName": "1,2-Dichloropropane-C",
+        "sourceLineNumber": 70,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "bf3664b4-b2bf-4ca0-8897-b8d95b65646d",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "f1fb7c82-358b-495f-ba66-d819015e7a1b",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "72aa5164-8e63-4948-8c0e-52144b04cf06",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "1bbe5e44-a309-4bc2-a292-b538e3488b03",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "34ae6c47-9c5b-4622-9f13-e64265702239"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "18fe225d-387e-4477-9106-0e9746de83fc",
+        "rawCompoundName": "Acetone",
+        "sourceLineNumber": 50,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "b22a5112-0786-47b4-958a-29b809d5fd8e",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "581e445e-e521-4d8e-a8d0-f456e20a8ffd",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "48f38fce-20f0-4cb5-bfaf-6aafdb539917",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "d3cd2d8c-52b3-4130-83fb-8d75d90c2c2d",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "4a654a00-cfba-495e-8c7e-34195f3022ae"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "13da31c9-e8a7-4c63-bcf7-66eeeb197f2c",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "14002f91-db29-4975-a781-8b59802eae2a",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "91d3ee0c-5b0c-4849-9cef-adaaf796efb9",
+        "rawCompoundName": "Acetone",
+        "sourceLineNumber": 50,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "455e32a6-b609-48ea-93b9-1c8debaa08b2",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "bf0afc94-3f0f-49d1-913d-40de5276bf58",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "541bc0c2-e32f-40dc-ab70-c71cd0bb0dd9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "c4e98a96-9db1-4c71-a010-b3f84ad9b28e",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "d20fc002-496b-438c-823a-d9f6f356d03c",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "0bfe2f3a-8c7f-4a83-9805-eb235e51bbf6",
+        "rawCompoundName": "Acetone",
+        "sourceLineNumber": 50,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "fab5739d-dff9-44fa-ab6d-2aeae99e5d17",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "eed16ee7-53e9-4d5c-bdec-ce56f1c22018",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "6c2d1216-f673-42e9-b1b4-0e8244747a45"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "d6044f94-6d77-4d37-80df-62240ce57f8f",
+        "rawCompoundName": "Bromochloromethane",
+        "sourceLineNumber": 61,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "f6f668d2-90cd-43d5-8ae4-b838180348cd",
+        "rawCompoundName": "Acetone",
+        "sourceLineNumber": 50,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "e993b852-b422-4632-bc9b-c7acd85e1c9b",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "b5c8a6ef-dc0a-4747-ae99-ce4678914508",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "1f3ab170-e06b-4cdc-8a85-64d20cd263ae",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "7adac9b8-0943-40ea-8607-d30baf350e06",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "729425c3-0475-4d5a-b0a7-55ac6046b1a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "b4e9aa28-cf35-4c0c-9098-0cba048967e6",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "db1ea0af-745a-4398-a089-5a26efe43fe7",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "60558d8f-1402-4524-8521-618adfbeba48",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "da5e616f-ce1c-4892-bb6e-eab43ec0aebd",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "7589f50c-f7a6-4256-95da-a3c21d4e9c37"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "77403610-4690-4963-9824-d3c29e890093",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "79d6accf-a117-44a3-90bc-ebb15d0c209a",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "0758c8de-a1f7-4a09-a733-7d8f168bdc25",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "80cbedcf-3b27-49bd-ac66-adc93c19bd41",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "7bfa33f9-8603-4189-9878-1f8f0512f51f"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "6bdc36ef-7f9c-4ad3-88c4-4a7c97671af3",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "fea3660b-464f-4ac6-8985-7e71dcb3e3f7",
+        "rawCompoundName": "Acetone",
+        "sourceLineNumber": 50,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "dc0bd4bb-b99c-43f1-af38-ad1fbf8a2a5f",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "b697843e-4acf-405a-9155-2d4af2614a1d",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "e6078577-73b0-4aad-a436-8536f459efbf",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "998ea1e4-8736-4e20-b5bd-e89a96b78984"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "fcf78dc1-dae0-4cab-b4cc-9f0c3b5bfdc9",
+        "rawCompoundName": "Bromochloromethane",
+        "sourceLineNumber": 61,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "b4d67bad-014f-42f1-b6ee-eb85c1406f99",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "c6a4cb14-5d46-4f0c-8653-f53379e33e71",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "1a8b818e-5014-4bf9-b8d8-32ebed2ee8d7",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "5539a0ad-7a27-48b8-8a38-6df4999a3aa2",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "ddcc5f4d-7327-4bfe-b60a-d2b14e4194a9"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "95c7c64e-8ba4-4c5b-84c3-5e4607f4ac55",
+        "rawCompoundName": "4-Methyl-2-pentanone (...",
+        "sourceLineNumber": 75,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "0ae8d27b-ea19-4138-8f5b-f1a2b8f77ebe",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "c84b76bb-9d4f-4e58-8803-042b37f5cd86",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "c4d6d106-9f0c-41ee-9a0f-8f5853a801f6",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "e16fdf9a-5e9d-4f55-9f3f-2497ee095926"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "5b17549c-e8c6-412a-a7da-0333eb8b8e1c",
+        "rawCompoundName": "1,1,2,2-Tetrachloroeth...",
+        "sourceLineNumber": 92,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "55b40097-c73d-43c3-b9e9-1fd06ef0074f",
+        "rawCompoundName": "cis-1,2-Dichloroethene",
+        "sourceLineNumber": 59,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "60446892-b8ca-4569-81c1-345eac851a59",
+        "rawCompoundName": "Bromochloromethane",
+        "sourceLineNumber": 61,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "1b196038-58c8-4c95-a747-367d585897b6",
+        "rawCompoundName": "2-Methylnaphthalene",
+        "sourceLineNumber": 112,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "08bcb6b6-bce8-4535-aafb-378052f97abd",
+        "rawCompoundName": "1,1-Dichloroethane-P",
+        "sourceLineNumber": 56,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "6cb12e4b-e431-44c9-9358-77617155bd69",
+        "rawCompoundName": "2-Hexanone",
+        "sourceLineNumber": 80,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "f74ef090-b6dd-494a-b1ab-8b17f470beae",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "66bea50e-eb9a-428c-b4a9-974f5efecefd",
+        "rawCompoundName": "1,2-Dichloropropane-C",
+        "sourceLineNumber": 70,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "aa0637b5-aafa-42f4-9971-9f351e6f5443",
+        "rawCompoundName": "1-Methylnaphthalene",
+        "sourceLineNumber": 113,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "ff18df1e-68c9-47bf-ac11-b7d070e585f8",
+        "rawCompoundName": "Bromoform-P",
+        "sourceLineNumber": 90,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "c35e0be1-ecc7-4123-8a66-c30f2788035e",
+        "rawCompoundName": "2-Chloroethyl vinyl ether",
+        "sourceLineNumber": 73,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "dffdcd54-f77f-47d7-b66a-cfb28f3420d4",
+        "rawCompoundName": "1,2-Dibromoethane",
+        "sourceLineNumber": 83,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "ac96d81f-b8e7-455d-bedd-d812ec2aeda3",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "66cd4a1b-4862-437c-b839-ee95f23c7bed",
+        "rawCompoundName": "1,2-Dichloroethane",
+        "sourceLineNumber": 68,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "8522a910-6e86-44a7-9f41-851350af2c7f",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "b02bcce6-8f02-4ec8-ae9b-f12dcdad8a2a",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "f01f9f97-6f4d-4ca6-86f7-06352295b509"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "7ba99c98-1e16-461b-ade4-224c21260756",
+        "rawCompoundName": "1,2-Dichloroethane",
+        "sourceLineNumber": 68,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "030f352f-d78a-4f4c-b462-23d0f3be7af3",
+        "rawCompoundName": "Bromoform-P",
+        "sourceLineNumber": 90,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "679ccf2b-8e79-42c5-939e-3fdc906a8b7e",
+        "rawCompoundName": "2-Hexanone",
+        "sourceLineNumber": 80,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "2525f818-9d4d-4777-843b-6f240a87e3f0",
+        "rawCompoundName": "1,2-Dibromoethane",
+        "sourceLineNumber": 83,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "1537e45b-c7ad-4b86-a7cc-87a7f9115af4",
+        "rawCompoundName": "1,2-Dichloropropane-C",
+        "sourceLineNumber": 70,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "324d152a-7b06-43dc-83eb-d7ba8a43502c",
+        "rawCompoundName": "Bromochloromethane",
+        "sourceLineNumber": 61,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "cebead6d-bc7e-4f0c-b489-d88decd9726e",
+        "rawCompoundName": "2-Butanone (MEK)",
+        "sourceLineNumber": 58,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "8c90706d-4389-4f37-8877-ddf60c6a9070",
+        "rawCompoundName": "1,2-Dibromo-3-chloropr...",
+        "sourceLineNumber": 107,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "dc3b46a3-4761-484a-b303-2c34332ec03b",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4",
+        "sourceLineNumber": 23,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      },
+      {
+        "code": 3,
+        "isError": false,
+        "message": "Qualifier out of range (#).",
+        "measurementId": "4604709f-9669-4a0b-a646-418dfd2a5892",
+        "rawCompoundName": "1,4-Dichlorobenzene-d4-G",
+        "sourceLineNumber": 20,
+        "calibrationRunId": "f432fb5d-d6b7-4e0d-a106-52581c9449c0"
+      }
+    ]
+  },
+  "selectResults": [
+    {
+      "name": "Dichlorodifluoromethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Quadratic",
+        "weightingMode": "InverseX",
+        "label": "Quad (InvX)"
+      },
+      "resp": null
+    },
+    {
+      "name": "Chloromethane-P",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Quadratic",
+        "weightingMode": "InverseX",
+        "label": "Quad (InvX)"
+      },
+      "resp": null
+    },
+    {
+      "name": "Vinyl Chloride-C",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Quadratic",
+        "weightingMode": "InverseX",
+        "label": "Quad (InvX)"
+      },
+      "resp": null
+    },
+    {
+      "name": "Bromomethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Chloroethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Trichlorofluoromethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,1-Dichloroethene-C",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Acetone",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Linear",
+        "weightingMode": "InverseX",
+        "label": "LS (InvX)"
+      },
+      "resp": null
+    },
+    {
+      "name": "tert-Butanol",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Linear",
+        "weightingMode": "InverseX",
+        "label": "LS (InvX)"
+      },
+      "resp": null
+    },
+    {
+      "name": "Methylene Chloride",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Methyl-tert-butyl ethe..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte 3b36f7bb-05d2-411e-8dd6-2e9fbeaf2170 under variant Average/None.",
+        "traceId": "00-6784d4e13c327271e0ce04e9c445240b-192798211a3a66c5-00"
+      }
+    },
+    {
+      "name": "trans-1,2-Dichloroethene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Di-isopropyl ether",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,1-Dichloroethane-P",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Ethyl-tert-butyl ether..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte f4e3b0da-1031-4a6f-ad8d-d0504ec111b6 under variant Average/None.",
+        "traceId": "00-b042a9b822053612b47ead7ac4b1f313-549c51967657db2a-00"
+      }
+    },
+    {
+      "name": "2-Butanone (MEK)",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Linear",
+        "weightingMode": "InverseX",
+        "label": "LS (InvX)"
+      },
+      "resp": null
+    },
+    {
+      "name": "cis-1,2-Dichloroethene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "2,2-Dichloropropane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Linear",
+        "weightingMode": "InverseX",
+        "label": "LS (InvX)"
+      },
+      "resp": null
+    },
+    {
+      "name": "Bromochloromethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Chloroform-C",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,1,1-Trichloroethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Carbon Tetrachloride",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,1-Dichloropropene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "tert-Amyl methyl ether..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte c77403fd-5d2c-49a6-9730-b5e7823cdf2c under variant Average/None.",
+        "traceId": "00-c9020ac9362e6133065691d0eb629b46-8361defb411b4aa8-00"
+      }
+    },
+    {
+      "name": "Benzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,2-Dichloroethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Trichloroethene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,2-Dichloropropane-C",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Dibromomethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Bromodichloromethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "2-Chloroethyl vinyl ethe",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte decdb367-9278-489b-b65f-c0f65a9dd803 under variant Average/None.",
+        "traceId": "00-7a256b8463d68363e2de0ab13840c974-d6e8fdc6b69e6a8b-00"
+      }
+    },
+    {
+      "name": "cis-1,3-Dichloropropene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "4-Methyl-2-pentanone (..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte 2416563d-7d1f-43ee-8863-471394599227 under variant Average/None.",
+        "traceId": "00-22701bc2466994b59935cee1402ab6bb-55efe4470263a188-00"
+      }
+    },
+    {
+      "name": "Toluene-C",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "trans-1,3-Dichloropropen",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte 74658b4d-aecd-48ad-8e62-5384f7701c88 under variant Average/None.",
+        "traceId": "00-8f7d76ce2cbb55778bfa8c8907fd17f7-f8b0b509e58f128e-00"
+      }
+    },
+    {
+      "name": "1,1,2-Trichloroethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Tetrachloroethene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "2-Hexanone",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,3-Dichloropropane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Dibromochloromethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,2-Dibromoethane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Chlorobenzene-P",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Ethylbenzene-C",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,1,1,2-Tetrachloroethan",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte 8f076a7c-82e3-4ca2-a947-b1c1bb63f3f2 under variant Average/None.",
+        "traceId": "00-f89275ee233adc5be14756c5688b4f57-f631396e1005a734-00"
+      }
+    },
+    {
+      "name": "m,p-Xylene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "o-Xylene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Styrene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Bromoform-P",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Isopropylbenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,1,2,2-Tetrachloroeth..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte d0ecb35b-ce9d-474f-91b9-e8cd0e1ec13c under variant Average/None.",
+        "traceId": "00-0fda9fe5b81c13422f84a4063318a6bc-042ec28c19b73e91-00"
+      }
+    },
+    {
+      "name": "Bromobenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "n-Propylbenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,2,3-Trichloropropane",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "2-Chlorotoluene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,3,5-Trimethylbenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "4-Chlorotoluene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "tert-Butylbenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,2,4-Trimethylbenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "sec-Butylbenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "4-Isopropyltoluene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,3-Dichlorobenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,4-Dichlorobenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "n-Butylbenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,2-Dichlorobenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,2-Dibromo-3-chloropr..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte 66e448e1-4205-4704-96be-7ef20b3adc29 under variant Average/None.",
+        "traceId": "00-162cde66a1f368d861128f3c5a7627fa-40b12c2496e00e6f-00"
+      }
+    },
+    {
+      "name": "1,2,4-Trichlorobenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Hexachlorobutadiene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "Naphthalene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1,2,3-Trichlorobenzene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "2-Methylnaphthalene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    },
+    {
+      "name": "1-Methylnaphthalene",
+      "ok": true,
+      "status": 204,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": null
+    }
+  ],
+  "spotChecks": [
+    "Dichlorodifluoromethane",
+    "Acetone",
+    "Bromomethane"
+  ]
+}

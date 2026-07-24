@@ -1,0 +1,2508 @@
+{
+  "generatedAt": "2026-07-12T00:07:10.298214+00:00",
+  "labId": "9c826e89-3d74-4980-a0c9-d2dd974c61cf",
+  "groupId": "0ce7f6a5-5d90-44bf-bca5-e3090edd9a6e",
+  "summary": {
+    "pass": 43,
+    "fail": 28,
+    "skip": 0,
+    "total": 71,
+    "selectModelFailures": 9,
+    "gateMismatches": 19,
+    "numericDrift": 31,
+    "fullPass": 12,
+    "apiExecutiveCount": 62
+  },
+  "intentionalDivergences": [
+    "Single global minPointsRequired (Quad=6) vs Excel Avg/LS/Quad separate minima",
+    "WLTR workflow states Draft/Computed/Approved have no Excel equivalent",
+    "Report Writer Instrument #REF! ignored",
+    "Method Blank limits stored but not evaluated until blank runs exist",
+    "pctDiff bounds mapped from Excel 0.8/1.2 \u00d7 \u00b120% \u2192 -16 / +24",
+    "Excel ICAL SUMMARY can be Acceptable when RSD fails if chosen curve model passes; WLTR calStatus may still Fail on %RSD / missed points"
+  ],
+  "selectFailures": [
+    {
+      "name": "Methyl-tert-butyl ethe..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte 3b36f7bb-05d2-411e-8dd6-2e9fbeaf2170 under variant Average/None.",
+        "traceId": "00-6784d4e13c327271e0ce04e9c445240b-192798211a3a66c5-00"
+      }
+    },
+    {
+      "name": "Ethyl-tert-butyl ether..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte f4e3b0da-1031-4a6f-ad8d-d0504ec111b6 under variant Average/None.",
+        "traceId": "00-b042a9b822053612b47ead7ac4b1f313-549c51967657db2a-00"
+      }
+    },
+    {
+      "name": "tert-Amyl methyl ether..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte c77403fd-5d2c-49a6-9730-b5e7823cdf2c under variant Average/None.",
+        "traceId": "00-c9020ac9362e6133065691d0eb629b46-8361defb411b4aa8-00"
+      }
+    },
+    {
+      "name": "2-Chloroethyl vinyl ethe",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte decdb367-9278-489b-b65f-c0f65a9dd803 under variant Average/None.",
+        "traceId": "00-7a256b8463d68363e2de0ab13840c974-d6e8fdc6b69e6a8b-00"
+      }
+    },
+    {
+      "name": "4-Methyl-2-pentanone (..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte 2416563d-7d1f-43ee-8863-471394599227 under variant Average/None.",
+        "traceId": "00-22701bc2466994b59935cee1402ab6bb-55efe4470263a188-00"
+      }
+    },
+    {
+      "name": "trans-1,3-Dichloropropen",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte 74658b4d-aecd-48ad-8e62-5384f7701c88 under variant Average/None.",
+        "traceId": "00-8f7d76ce2cbb55778bfa8c8907fd17f7-f8b0b509e58f128e-00"
+      }
+    },
+    {
+      "name": "1,1,1,2-Tetrachloroethan",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte 8f076a7c-82e3-4ca2-a947-b1c1bb63f3f2 under variant Average/None.",
+        "traceId": "00-f89275ee233adc5be14756c5688b4f57-f631396e1005a734-00"
+      }
+    },
+    {
+      "name": "1,1,2,2-Tetrachloroeth..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte d0ecb35b-ce9d-474f-91b9-e8cd0e1ec13c under variant Average/None.",
+        "traceId": "00-0fda9fe5b81c13422f84a4063318a6bc-042ec28c19b73e91-00"
+      }
+    },
+    {
+      "name": "1,2-Dibromo-3-chloropr..",
+      "ok": false,
+      "status": 400,
+      "model": {
+        "regressionType": "Average",
+        "weightingMode": "None",
+        "label": "Average RF"
+      },
+      "resp": {
+        "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+        "title": "Bad Request",
+        "status": 400,
+        "detail": "No computed curve exists for analyte 66e448e1-4205-4704-96be-7ef20b3adc29 under variant Average/None.",
+        "traceId": "00-162cde66a1f368d861128f3c5a7627fa-40b12c2496e00e6f-00"
+      }
+    }
+  ],
+  "rows": [
+    {
+      "name": "Dichlorodifluoromethane",
+      "excel": {
+        "averageRf": 0.1963003949765928,
+        "rsdPercent": 21.331194919151375,
+        "rsdPass": "N",
+        "chosenModelCode": "QIC",
+        "rSquared": 0.9948619921076552,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "Missed point count 3 exceeds the maximum allowed of 2.",
+          "%RSD 29.038512 exceeds the maximum of 15."
+        ],
+        "meanRf": 0.1816162490222863,
+        "rsdPercent": 29.03851217161641,
+        "rSquared": 0.9967661525306429,
+        "selectedRegressionType": "Quadratic",
+        "selectedWeightingMode": "InverseX",
+        "matchedApiName": "Dichlorodifluoromethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "Chloromethane-P",
+      "excel": {
+        "averageRf": 0.2746093945391784,
+        "rsdPercent": 15.816257852752393,
+        "rsdPass": "N",
+        "chosenModelCode": "QIC",
+        "rSquared": 0.9963799869300027,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "%RSD 20.238395 exceeds the maximum of 15."
+        ],
+        "meanRf": 0.2728033255703407,
+        "rsdPercent": 20.23839532997933,
+        "rSquared": 0.9985587891493467,
+        "selectedRegressionType": "Quadratic",
+        "selectedWeightingMode": "InverseX",
+        "matchedApiName": "Chloromethane-P"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "Vinyl Chloride-C",
+      "excel": {
+        "averageRf": 0.2998025162526904,
+        "rsdPercent": 12.753131336541697,
+        "rsdPass": "Y",
+        "chosenModelCode": "QIC",
+        "rSquared": 0.9979146566042022,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "%RSD 15.330267 exceeds the maximum of 15."
+        ],
+        "meanRf": 0.29261160654637836,
+        "rsdPercent": 15.330267312698897,
+        "rSquared": 0.9990669571110394,
+        "selectedRegressionType": "Quadratic",
+        "selectedWeightingMode": "InverseX",
+        "matchedApiName": "Vinyl Chloride-C"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "Bromomethane",
+      "excel": {
+        "averageRf": 0.20198323442389943,
+        "rsdPercent": 6.832953710130549,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "Missed point count 3 exceeds the maximum allowed of 2.",
+          "R\u00b2 0.927574 is below the minimum of 0.990025.",
+          "%RSD 25.869009 exceeds the maximum of 15."
+        ],
+        "meanRf": 0.22196029519880628,
+        "rsdPercent": 25.86900883788855,
+        "rSquared": 0.9275744225469227,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Bromomethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "Chloroethane",
+      "excel": {
+        "averageRf": 0.19962398100598844,
+        "rsdPercent": 11.544665454408731,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": true,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "Missed point count 3 exceeds the maximum allowed of 2.",
+          "R\u00b2 0.907989 is below the minimum of 0.990025."
+        ],
+        "meanRf": 0.20039307679403193,
+        "rsdPercent": 14.89701980029687,
+        "rSquared": 0.9079891637441531,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Chloroethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "Trichlorofluoromethane",
+      "excel": {
+        "averageRf": 0.4595071530546511,
+        "rsdPercent": 9.750763573538265,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "R\u00b2 0.958909 is below the minimum of 0.990025."
+        ],
+        "meanRf": 0.4650076530414334,
+        "rsdPercent": 10.16338444418315,
+        "rSquared": 0.9589091184564026,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Trichlorofluoromethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "1,1-Dichloroethene-C",
+      "excel": {
+        "averageRf": 0.29219179448900795,
+        "rsdPercent": 7.308156932687291,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "R\u00b2 0.979853 is below the minimum of 0.990025."
+        ],
+        "meanRf": 0.2921917944890079,
+        "rsdPercent": 7.30815693268729,
+        "rSquared": 0.979852793571129,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,1-Dichloroethene-C"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "Acetone",
+      "excel": {
+        "averageRf": 0.02745517570504561,
+        "rsdPercent": 23.08608797942931,
+        "rsdPass": "N",
+        "chosenModelCode": "LSIC",
+        "rSquared": 0.9993945474827449,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "%RSD 55.642935 exceeds the maximum of 15."
+        ],
+        "meanRf": 0.03531350679787679,
+        "rsdPercent": 55.642935474617246,
+        "rSquared": 0.9989407030397698,
+        "selectedRegressionType": "Linear",
+        "selectedWeightingMode": "InverseX",
+        "matchedApiName": "Acetone"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "tert-Butanol",
+      "excel": {
+        "averageRf": 0.01990389704292078,
+        "rsdPercent": 23.39848655404219,
+        "rsdPass": "N",
+        "chosenModelCode": "LSIC",
+        "rSquared": 0.999098917821601,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "%RSD 38.765483 exceeds the maximum of 15."
+        ],
+        "meanRf": 0.23496903553562773,
+        "rsdPercent": 38.765483168230105,
+        "rSquared": 0.9977660372866105,
+        "selectedRegressionType": "Linear",
+        "selectedWeightingMode": "InverseX",
+        "matchedApiName": "tert-Butanol"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "Methylene Chloride",
+      "excel": {
+        "averageRf": 0.3077033997037533,
+        "rsdPercent": 7.41470420293024,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "R\u00b2 0.980273 is below the minimum of 0.990025."
+        ],
+        "meanRf": 0.3117061173423114,
+        "rsdPercent": 8.39924294350974,
+        "rSquared": 0.9802726566487486,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Methylene Chloride"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "Methyl-tert-butyl ethe..",
+      "excel": {
+        "averageRf": 0.7840320881451593,
+        "rsdPercent": 6.049647880212925,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": false
+      },
+      "status": "FAIL"
+    },
+    {
+      "name": "trans-1,2-Dichloroethene",
+      "excel": {
+        "averageRf": 0.32176750509726937,
+        "rsdPercent": 6.05862762507526,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.32176750509726937,
+        "rsdPercent": 6.058627625075254,
+        "rSquared": 0.9901968119901553,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "trans-1,2-Dichloroethene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Di-isopropyl ether",
+      "excel": {
+        "averageRf": 1.030126032831288,
+        "rsdPercent": 8.714831096681106,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "R\u00b2 0.980325 is below the minimum of 0.990025."
+        ],
+        "meanRf": 1.030126032831288,
+        "rsdPercent": 8.714831096681099,
+        "rSquared": 0.980324697576364,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Di-isopropyl ether"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "1,1-Dichloroethane-P",
+      "excel": {
+        "averageRf": 0.5751691871164799,
+        "rsdPercent": 5.7798072904015365,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "R\u00b2 0.989705 is below the minimum of 0.990025."
+        ],
+        "meanRf": 0.5751691871164799,
+        "rsdPercent": 5.779807290401531,
+        "rSquared": 0.9897048788631219,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,1-Dichloroethane-P"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "Ethyl-tert-butyl ether..",
+      "excel": {
+        "averageRf": 0.92855667761656,
+        "rsdPercent": 5.947135153517174,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": false
+      },
+      "status": "FAIL"
+    },
+    {
+      "name": "2-Butanone (MEK)",
+      "excel": {
+        "averageRf": 0.024412939085473172,
+        "rsdPercent": 16.84693257316677,
+        "rsdPass": "N",
+        "chosenModelCode": "LSIC",
+        "rSquared": 0.9990637612711072,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "Missed point count 5 exceeds the maximum allowed of 2.",
+          "R\u00b2 0.986468 is below the minimum of 0.990025.",
+          "%RSD 88.61243 exceeds the maximum of 15."
+        ],
+        "meanRf": 0.05054176938326904,
+        "rsdPercent": 88.61243032591484,
+        "rSquared": 0.9864679510240866,
+        "selectedRegressionType": "Linear",
+        "selectedWeightingMode": "InverseX",
+        "matchedApiName": "2-Butanone (MEK)"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "cis-1,2-Dichloroethene",
+      "excel": {
+        "averageRf": 0.35166989693853196,
+        "rsdPercent": 4.600075376249021,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 0.9999999999999993,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.35166989693853196,
+        "rsdPercent": 4.600075376249023,
+        "rSquared": 0.9946296557314809,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "cis-1,2-Dichloroethene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "2,2-Dichloropropane",
+      "excel": {
+        "averageRf": 0.463153343658327,
+        "rsdPercent": 9.162190844006794,
+        "rsdPass": "Y",
+        "chosenModelCode": "LSIC",
+        "rSquared": 0.998501334575099,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.47472475351087723,
+        "rsdPercent": 12.267145530897103,
+        "rSquared": 0.9984537598673453,
+        "selectedRegressionType": "Linear",
+        "selectedWeightingMode": "InverseX",
+        "matchedApiName": "2,2-Dichloropropane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Bromochloromethane",
+      "excel": {
+        "averageRf": 0.1546671776586606,
+        "rsdPercent": 4.6622047551362,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 0.9999999999999998,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.15006553254489038,
+        "rsdPercent": 11.975137135498876,
+        "rSquared": 0.9974513205744584,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Bromochloromethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Chloroform-C",
+      "excel": {
+        "averageRf": 0.5725943334158394,
+        "rsdPercent": 8.407549394295552,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": null,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "Missed point count 11 exceeds the maximum allowed of 2.",
+          "R\u00b2 -0.644411 is below the minimum of 0.990025.",
+          "%RSD 97.121914 exceeds the maximum of 15.",
+          "%RSD 97.121914 exceeds the CCC maximum of 30."
+        ],
+        "meanRf": 1.0737849653422757,
+        "rsdPercent": 97.1219141484578,
+        "rSquared": -0.6444109997178047,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Chloroform-C"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Quadratic",
+        "recommendedWeightingMode": "InverseXSquared"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "1,1,1-Trichloroethane",
+      "excel": {
+        "averageRf": 0.5308346531517508,
+        "rsdPercent": 4.4677152633993344,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.5308346531517508,
+        "rsdPercent": 4.467715263399331,
+        "rSquared": 0.9959756592286165,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,1,1-Trichloroethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Carbon Tetrachloride",
+      "excel": {
+        "averageRf": 0.4704734183860684,
+        "rsdPercent": 2.421743270535855,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.4704734183860684,
+        "rsdPercent": 2.4217432705358544,
+        "rSquared": 0.9993700693992044,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Carbon Tetrachloride"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "1,1-Dichloropropene",
+      "excel": {
+        "averageRf": 0.4140891230271879,
+        "rsdPercent": 4.4477456046327575,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.4140891230271879,
+        "rsdPercent": 4.447745604632755,
+        "rSquared": 0.9947569401190086,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,1-Dichloropropene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "tert-Amyl methyl ether..",
+      "excel": {
+        "averageRf": 0.823408920375229,
+        "rsdPercent": 4.414898792862056,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": false
+      },
+      "status": "FAIL"
+    },
+    {
+      "name": "Benzene",
+      "excel": {
+        "averageRf": 1.247586480190312,
+        "rsdPercent": 6.40940944484136,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "R\u00b2 0.98914 is below the minimum of 0.990025."
+        ],
+        "meanRf": 1.247586480190312,
+        "rsdPercent": 6.4094094448413585,
+        "rSquared": 0.9891400300197696,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Benzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "1,2-Dichloroethane",
+      "excel": {
+        "averageRf": 0.4151160393045253,
+        "rsdPercent": 7.7584503169096015,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "R\u00b2 0.989474 is below the minimum of 0.990025."
+        ],
+        "meanRf": 0.4151160393045253,
+        "rsdPercent": 7.7584503169096015,
+        "rSquared": 0.9894741167053203,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,2-Dichloroethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "Trichloroethene",
+      "excel": {
+        "averageRf": 0.4127452979388996,
+        "rsdPercent": 3.8150351030946146,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.4127452979388996,
+        "rsdPercent": 3.8150351030946115,
+        "rSquared": 0.9971543634047481,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Trichloroethene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "1,2-Dichloropropane-C",
+      "excel": {
+        "averageRf": 0.37660037027282084,
+        "rsdPercent": 4.415386610265962,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.37660037027282084,
+        "rsdPercent": 4.415386610265964,
+        "rSquared": 0.9941975109861193,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,2-Dichloropropane-C"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Dibromomethane",
+      "excel": {
+        "averageRf": 0.20629123185547124,
+        "rsdPercent": 6.220207002842228,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.20629123185547124,
+        "rsdPercent": 6.220207002842224,
+        "rSquared": 0.9981691201956137,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Dibromomethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Bromodichloromethane",
+      "excel": {
+        "averageRf": 0.535769308823908,
+        "rsdPercent": 8.517658277085205,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 0.9999999999999993,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "Missed point count 7 exceeds the maximum allowed of 2.",
+          "R\u00b2 0.910386 is below the minimum of 0.990025.",
+          "%RSD 36.974963 exceeds the maximum of 15."
+        ],
+        "meanRf": 0.6233192231459111,
+        "rsdPercent": 36.974963368502834,
+        "rSquared": 0.9103863869302258,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Bromodichloromethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Quadratic",
+        "recommendedWeightingMode": "InverseX"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "2-Chloroethyl vinyl ethe",
+      "excel": {
+        "averageRf": 0.18689376158669468,
+        "rsdPercent": 7.085194545402189,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": false
+      },
+      "status": "FAIL"
+    },
+    {
+      "name": "cis-1,3-Dichloropropene",
+      "excel": {
+        "averageRf": 0.6088013089361544,
+        "rsdPercent": 3.129603195575323,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 0.9999999999999996,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.6088013089361544,
+        "rsdPercent": 3.129603195575323,
+        "rSquared": 0.9982382540965289,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "cis-1,3-Dichloropropene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "4-Methyl-2-pentanone (..",
+      "excel": {
+        "averageRf": 0.04096933137644313,
+        "rsdPercent": 3.5130727548877827,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": null,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": false
+      },
+      "status": "FAIL"
+    },
+    {
+      "name": "Toluene-C",
+      "excel": {
+        "averageRf": 1.0065219654686817,
+        "rsdPercent": 6.723744276128861,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.0065219654686817,
+        "rsdPercent": 6.723744276128859,
+        "rSquared": 0.9941025985517155,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Toluene-C"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "trans-1,3-Dichloropropen",
+      "excel": {
+        "averageRf": 0.5343679416828018,
+        "rsdPercent": 2.9395382642296886,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": false
+      },
+      "status": "FAIL"
+    },
+    {
+      "name": "1,1,2-Trichloroethane",
+      "excel": {
+        "averageRf": 0.24703892730254504,
+        "rsdPercent": 3.94483959801051,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.24703892730254504,
+        "rsdPercent": 3.9448395980105024,
+        "rSquared": 0.9962894611284625,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,1,2-Trichloroethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Tetrachloroethene",
+      "excel": {
+        "averageRf": 0.37592906068793536,
+        "rsdPercent": 5.952918267397879,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.37592906068793536,
+        "rsdPercent": 5.9529182673978775,
+        "rSquared": 0.9967916699683658,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Tetrachloroethene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "2-Hexanone",
+      "excel": {
+        "averageRf": 0.20354444506859937,
+        "rsdPercent": 6.259122455379405,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": null,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "Missed point count 11 exceeds the maximum allowed of 2.",
+          "R\u00b2 0.693378 is below the minimum of 0.990025.",
+          "%RSD 52.135323 exceeds the maximum of 15."
+        ],
+        "meanRf": 0.27534892111039855,
+        "rsdPercent": 52.135322692080855,
+        "rSquared": 0.6933781817725699,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "2-Hexanone"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "1,3-Dichloropropane",
+      "excel": {
+        "averageRf": 0.5071787895889992,
+        "rsdPercent": 4.052681337207248,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000009,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.5071787895889992,
+        "rsdPercent": 4.052681337207247,
+        "rSquared": 0.995727557274018,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,3-Dichloropropane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Dibromochloromethane",
+      "excel": {
+        "averageRf": 0.39289218303812695,
+        "rsdPercent": 5.372149862789366,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.39289218303812695,
+        "rsdPercent": 5.3721498627893665,
+        "rSquared": 0.9986735700867664,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Dibromochloromethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "1,2-Dibromoethane",
+      "excel": {
+        "averageRf": 0.2882758447272667,
+        "rsdPercent": 3.342770515188061,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.2882758447272667,
+        "rsdPercent": 3.342770515188059,
+        "rSquared": 0.9989058044630442,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,2-Dibromoethane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Chlorobenzene-P",
+      "excel": {
+        "averageRf": 1.0260338804962443,
+        "rsdPercent": 3.4742135717600737,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.0260338804962443,
+        "rsdPercent": 3.474213571760071,
+        "rSquared": 0.9971740779337109,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Chlorobenzene-P"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Ethylbenzene-C",
+      "excel": {
+        "averageRf": 1.8375242427908596,
+        "rsdPercent": 5.460409715957534,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.8375242427908591,
+        "rsdPercent": 5.460409715957535,
+        "rSquared": 0.9917946500604558,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Ethylbenzene-C"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "1,1,1,2-Tetrachloroethan",
+      "excel": {
+        "averageRf": 0.40189480254325044,
+        "rsdPercent": 2.610999245427065,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": false
+      },
+      "status": "FAIL"
+    },
+    {
+      "name": "m,p-Xylene",
+      "excel": {
+        "averageRf": 0.7282813965327048,
+        "rsdPercent": 4.007597002009674,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": false,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.4565627930654097,
+        "rsdPercent": 4.007597002009672,
+        "rSquared": 0.9971547683332918,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "m,p-Xylene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "o-Xylene",
+      "excel": {
+        "averageRf": 0.7090324632135837,
+        "rsdPercent": 2.7351388086891397,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.7090324632135837,
+        "rsdPercent": 2.7351388086891406,
+        "rSquared": 0.9993919138179157,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "o-Xylene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "Styrene",
+      "excel": {
+        "averageRf": 1.2231375328356275,
+        "rsdPercent": 3.9678978031984715,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 0.9999999999999996,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.2231375328356275,
+        "rsdPercent": 3.9678978031984724,
+        "rSquared": 0.9990977456676451,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Styrene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "Bromoform-P",
+      "excel": {
+        "averageRf": 0.26259783281215066,
+        "rsdPercent": 5.964938656582395,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.26259783281215066,
+        "rsdPercent": 5.9649386565823965,
+        "rSquared": 0.996499528531402,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Bromoform-P"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Isopropylbenzene",
+      "excel": {
+        "averageRf": 1.7585523859549943,
+        "rsdPercent": 3.2096532938254305,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.7585523859549943,
+        "rsdPercent": 3.209653293825431,
+        "rSquared": 0.9988038761279767,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Isopropylbenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "1,1,2,2-Tetrachloroeth..",
+      "excel": {
+        "averageRf": 0.33161981474739455,
+        "rsdPercent": 4.150887356490529,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": false
+      },
+      "status": "FAIL"
+    },
+    {
+      "name": "Bromobenzene",
+      "excel": {
+        "averageRf": 0.5067716168331289,
+        "rsdPercent": 3.028519527644714,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.5067716168331289,
+        "rsdPercent": 3.0285195276447134,
+        "rSquared": 0.9996417623589579,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Bromobenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "n-Propylbenzene",
+      "excel": {
+        "averageRf": 1.971035991689284,
+        "rsdPercent": 3.331307409992221,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.9710359916892837,
+        "rsdPercent": 3.3313074099922186,
+        "rSquared": 0.9986707878482965,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "n-Propylbenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "1,2,3-Trichloropropane",
+      "excel": {
+        "averageRf": 0.2678067440054349,
+        "rsdPercent": 2.2872594318615898,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.2678067440054349,
+        "rsdPercent": 2.287259431861589,
+        "rSquared": 0.9990695110176881,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,2,3-Trichloropropane"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "2-Chlorotoluene",
+      "excel": {
+        "averageRf": 1.2213048991488764,
+        "rsdPercent": 2.20309017414996,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 0.9999999999999998,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.230250151848082,
+        "rsdPercent": 3.3552348821688103,
+        "rSquared": 0.9990354962607283,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "2-Chlorotoluene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "1,3,5-Trimethylbenzene",
+      "excel": {
+        "averageRf": 1.5211915614057583,
+        "rsdPercent": 3.1631877354283695,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.5211915614057583,
+        "rsdPercent": 3.163187735428371,
+        "rSquared": 0.9992638414107008,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,3,5-Trimethylbenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "4-Chlorotoluene",
+      "excel": {
+        "averageRf": 1.4433245546367837,
+        "rsdPercent": 3.9385440088402044,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.4433245546367837,
+        "rsdPercent": 3.9385440088402057,
+        "rSquared": 0.9993780879249697,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "4-Chlorotoluene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "tert-Butylbenzene",
+      "excel": {
+        "averageRf": 1.2529303919792991,
+        "rsdPercent": 2.6985893469111377,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.2529303919792991,
+        "rsdPercent": 2.698589346911139,
+        "rSquared": 0.9995578084928357,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "tert-Butylbenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "1,2,4-Trimethylbenzene",
+      "excel": {
+        "averageRf": 1.5525563038635575,
+        "rsdPercent": 4.824012421736286,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.5948840736036716,
+        "rsdPercent": 10.572649944259492,
+        "rSquared": 0.9946937355869847,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,2,4-Trimethylbenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "sec-Butylbenzene",
+      "excel": {
+        "averageRf": 1.6593288029290574,
+        "rsdPercent": 4.008092351913508,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.6593288029290574,
+        "rsdPercent": 4.00809235191351,
+        "rSquared": 0.9992965717254355,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "sec-Butylbenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "4-Isopropyltoluene",
+      "excel": {
+        "averageRf": 1.5337227387224568,
+        "rsdPercent": 4.66832634220176,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.5337227387224568,
+        "rsdPercent": 4.668326342201762,
+        "rSquared": 0.9991804513689188,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "4-Isopropyltoluene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "1,3-Dichlorobenzene",
+      "excel": {
+        "averageRf": 0.9087681896776248,
+        "rsdPercent": 2.3226954947348433,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.9087681896776247,
+        "rsdPercent": 2.322695494734841,
+        "rSquared": 0.999384841487545,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,3-Dichlorobenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "1,4-Dichlorobenzene",
+      "excel": {
+        "averageRf": 1.5147100515659824,
+        "rsdPercent": 5.512740485839433,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.5147100515659822,
+        "rsdPercent": 5.512740485839428,
+        "rSquared": 0.9964268860393757,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,4-Dichlorobenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "n-Butylbenzene",
+      "excel": {
+        "averageRf": 2.0613680105732914,
+        "rsdPercent": 4.582634372927109,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": true,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 2.0613680105732914,
+        "rsdPercent": 4.582634372927108,
+        "rSquared": 0.9991022962952584,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "n-Butylbenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS"
+    },
+    {
+      "name": "1,2-Dichlorobenzene",
+      "excel": {
+        "averageRf": 1.4054904972595936,
+        "rsdPercent": 5.219275221092072,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.4054904972595936,
+        "rsdPercent": 5.219275221092074,
+        "rSquared": 0.9935457362850426,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,2-Dichlorobenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "1,2-Dibromo-3-chloropr..",
+      "excel": {
+        "averageRf": 0.10652298777778499,
+        "rsdPercent": 8.024453179251951,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": null,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": false
+      },
+      "status": "FAIL"
+    },
+    {
+      "name": "1,2,4-Trichlorobenzene",
+      "excel": {
+        "averageRf": 0.9227666946223898,
+        "rsdPercent": 5.1253247964311415,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.9227666946223898,
+        "rsdPercent": 5.12532479643114,
+        "rSquared": 0.9952986452278223,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,2,4-Trichlorobenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Hexachlorobutadiene",
+      "excel": {
+        "averageRf": 0.39788117857800753,
+        "rsdPercent": 8.399107134540051,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.39788117857800753,
+        "rsdPercent": 8.39910713454005,
+        "rSquared": 0.9959178179151253,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Hexachlorobutadiene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "Naphthalene",
+      "excel": {
+        "averageRf": 1.9179222684188895,
+        "rsdPercent": 6.659568541623758,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": false,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Fail",
+        "failureReasons": [
+          "R\u00b2 0.988661 is below the minimum of 0.990025."
+        ],
+        "meanRf": 1.9179222684188895,
+        "rsdPercent": 6.65956854162376,
+        "rSquared": 0.9886614048465148,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "Naphthalene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "GATE_MISMATCH",
+      "note": "Excel ICAL Acceptable vs WLTR calStatus mismatch (often RSD/missed-points hard-fail in WLTR while Excel passes via chosen model)."
+    },
+    {
+      "name": "1,2,3-Trichlorobenzene",
+      "excel": {
+        "averageRf": 0.8306000567586096,
+        "rsdPercent": 5.273285372438859,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 0.9999999999999998,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.8306000567586096,
+        "rsdPercent": 5.27328537243886,
+        "rSquared": 0.9935141976312134,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1,2,3-Trichlorobenzene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "LinearForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "2-Methylnaphthalene",
+      "excel": {
+        "averageRf": 1.030260612065085,
+        "rsdPercent": 6.46088433206064,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": true,
+        "rsdPercent": true,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 1.0302606120650848,
+        "rsdPercent": 6.460884332060641,
+        "rSquared": 0.9947433022146227,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "2-Methylnaphthalene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "QuadraticForcedZero",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    },
+    {
+      "name": "1-Methylnaphthalene",
+      "excel": {
+        "averageRf": 0.930091307301318,
+        "rsdPercent": 4.643888671895916,
+        "rsdPass": "Y",
+        "chosenModelCode": "A",
+        "rSquared": 1.0000000000000004,
+        "icalSummary": "Acceptable"
+      },
+      "checks": {
+        "presentInApiReport": true,
+        "icalGate": true,
+        "averageRf": false,
+        "rsdPercent": false,
+        "rSquared": false,
+        "model": true
+      },
+      "api": {
+        "calStatus": "Pass",
+        "failureReasons": [],
+        "meanRf": 0.45353439381419,
+        "rsdPercent": 8.243674859443852,
+        "rSquared": 0.990712002709368,
+        "selectedRegressionType": "Average",
+        "selectedWeightingMode": "None",
+        "matchedApiName": "1-Methylnaphthalene"
+      },
+      "reportCard": {
+        "recommendedRegressionType": "Average",
+        "recommendedWeightingMode": "None"
+      },
+      "status": "PASS_WITH_NUMERIC_DRIFT"
+    }
+  ],
+  "apiReportKeys": [
+    "calibrationGroupId",
+    "groupName",
+    "instrumentId",
+    "methodConfigId",
+    "methodConfigSnapshotId",
+    "methodConfigVersion",
+    "administrative",
+    "executive",
+    "responseFactors",
+    "linearDynamicRange",
+    "internalStandardEvaluation",
+    "surrogateEvaluation"
+  ]
+}

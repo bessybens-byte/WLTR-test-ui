@@ -9,7 +9,6 @@ import {
   type ReportCardAnalyteTable,
   type ReportCardModelRow,
 } from "@/lib/report-card-excel";
-import { modelVariantLabel } from "@/lib/regression-wire";
 import { useMemo, useState } from "react";
 
 function ReportCardRankingLegend() {
@@ -92,11 +91,16 @@ function ReportCardRankingLegend() {
           <p className="text-[10px] font-semibold uppercase tracking-wide text-neutral-500">Reading the columns</p>
           <ul className="mt-1.5 space-y-1 text-xs text-neutral-700 dark:text-neutral-300">
             <li>
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">Fit quality</span> — letter grades
-              for RSD, r, and COD
+              <span className="font-medium text-neutral-900 dark:text-neutral-100">Fit quality</span> — RSD from{" "}
+              <code className="font-mono">rsdPassGate</code> (Average RF only); r/COD from{" "}
+              <code className="font-mono">correlationRGrade</code> / <code className="font-mono">codGrade</code>
             </li>
             <li>
-              <span className="font-medium text-neutral-900 dark:text-neutral-100">ReFitting / low cal</span> — ranked
+              <span className="font-medium text-neutral-900 dark:text-neutral-100">ReFitting check</span> — raw point
+              counts, not ranks
+            </li>
+            <li>
+              <span className="font-medium text-neutral-900 dark:text-neutral-100">Low cal probes / ICV</span> — ranked
               1–9; greener is better
             </li>
             <li>
@@ -139,11 +143,31 @@ function ReportCardRankingLegend() {
               top variant gets <code className="font-mono">isSuggestedModel</code>.
             </p>
             <p className="rounded border border-neutral-200 bg-neutral-50 px-2 py-1.5 font-mono text-[10px] dark:border-neutral-700 dark:bg-neutral-900">
-              pointTotal = passGate + belowBound + aboveBound + failTotal×2 + probeRanks + overallDev + negArea + icvRank
+              pointTotal = passGate + belowBound + aboveBound + failTotal×2 + probeRanks + overallDev + negArea +
+              icvRank
             </p>
             <p>
-              Forced-zero models compete fully — blank point total means unranked, not excluded. Recommendations also
-              expose <code className="font-mono">isRecommendedNonForcedZeroModel</code> per analyte.
+              RSD column uses <code className="font-mono">rankingBreakdown.rsdPassGate</code> only (1 → A+, 100 → F);
+              blank on non–Average-RF rows. Do not use <code className="font-mono">rse</code> or{" "}
+              <code className="font-mono">passGate</code> for that cell.
+            </p>
+            <p>
+              # &lt; −20% PE, # &gt; +20% PE, and Total # come straight from{" "}
+              <code className="font-mono">pointsBelowLowerBound</code>, <code className="font-mono">pointsAboveUpperBound</code>,{" "}
+              <code className="font-mono">failTotalDoubleCounted</code> — these are raw counts baked into the Point
+              Total sum, not a rank vs sibling models.
+            </p>
+            <p>
+              <span className="font-mono">w/o forced 0</span> shows{" "}
+              <code className="font-mono">nonForcedZeroPointTotal</code>; <span className="font-mono">w/ forced 0</span>{" "}
+              shows <code className="font-mono">nonForcedZeroModelRank</code>. Both are blank on the two forced-zero
+              rows.
+            </p>
+            <p>
+              Forced-zero models compete fully in the overall Point Total — blank point total means unranked, not
+              excluded. Picker cells read <code className="font-mono">analyteRecommendations[].recommendedModelLabel</code>{" "}
+              / <code className="font-mono">nonForcedZeroModelLabel</code>, overridden by{" "}
+              <code className="font-mono">cautionText</code> for quadratic inverse-weighted picks.
             </p>
           </div>
         ) : null}
@@ -169,12 +193,22 @@ function RankCell({ rank }: { rank: number | null }) {
   );
 }
 
-function GradeCell({ grade }: { grade: string }) {
+function GradeCell({ grade, title }: { grade: string; title?: string }) {
   return (
     <td
+      title={title}
       className={`border border-neutral-300 px-1 py-0.5 text-center text-[11px] dark:border-neutral-700 ${gradeCellClass(grade)}`}
     >
       {grade}
+    </td>
+  );
+}
+
+/** Plain numeric cell for raw counts (BF/BG/BH) — not a rank, so no traffic-light coloring. */
+function CountCell({ value }: { value: number | null }) {
+  return (
+    <td className="border border-neutral-300 px-1 py-0.5 text-center font-mono text-[11px] dark:border-neutral-700">
+      {value ?? "—"}
     </td>
   );
 }
@@ -192,9 +226,6 @@ function AnalyteReportCardTable({
   onSelectModel: (row: ReportCardModelRow) => void;
   selectBusy: boolean;
 }) {
-  const bestOverall = table.rows.find((r) => r.key === table.bestOverallKey);
-  const bestNonForced = table.rows.find((r) => r.key === table.bestNonForcedZeroKey);
-
   return (
     <div className="overflow-x-auto rounded-lg border border-neutral-300 dark:border-neutral-700">
       <table className="w-full min-w-[960px] border-collapse text-[11px]">
@@ -229,12 +260,12 @@ function AnalyteReportCardTable({
             ) : null}
           </tr>
           <tr className="bg-neutral-50 text-[9px] dark:bg-neutral-950">
-            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">RSD</th>
-            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">r</th>
-            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">COD</th>
-            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">&gt; −20% PE</th>
-            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">&lt; +20% PE</th>
-            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">Total</th>
+            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">{table.columnLabels.rsd}</th>
+            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">{table.columnLabels.r}</th>
+            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">{table.columnLabels.cod}</th>
+            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700"># &lt; −20% PE</th>
+            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700"># &gt; +20% PE</th>
+            <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">Total #</th>
             <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">Zero</th>
             <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">12.5%</th>
             <th className="border border-neutral-300 px-1 py-1 dark:border-neutral-700">25%</th>
@@ -258,12 +289,21 @@ function AnalyteReportCardTable({
                 <td className={`border border-neutral-300 px-2 py-1 font-semibold dark:border-neutral-700 ${row.rowClass}`}>
                   {row.excelLabel}
                 </td>
-                <GradeCell grade={m.rsdGrade} />
-                <GradeCell grade={m.rGrade} />
-                <GradeCell grade={m.codGrade} />
-                <RankCell rank={m.refittingGreaterThanMinus20PeRank} />
-                <RankCell rank={m.refittingLessThanPlus20PeRank} />
-                <RankCell rank={m.refittingTotalRank} />
+                <GradeCell
+                  grade={m.rsdGrade}
+                  title={row.analyte?.responseFactorRsd != null ? `RF %RSD ${row.analyte.responseFactorRsd.toFixed(2)}` : undefined}
+                />
+                <GradeCell
+                  grade={m.rGrade}
+                  title={row.analyte?.correlationR != null ? `r ${row.analyte.correlationR.toFixed(4)}` : undefined}
+                />
+                <GradeCell
+                  grade={m.codGrade}
+                  title={row.analyte?.rSquared != null ? `COD ${row.analyte.rSquared.toFixed(4)}` : undefined}
+                />
+                <CountCell value={m.pointsBelowLowerBound} />
+                <CountCell value={m.pointsAboveUpperBound} />
+                <CountCell value={m.failTotalDoubleCounted} />
                 <RankCell rank={m.zeroAreaRank} />
                 <RankCell rank={m.cal125PercentRank} />
                 <RankCell rank={m.cal25PercentRank} />
@@ -278,8 +318,8 @@ function AnalyteReportCardTable({
                   {m.pointTotal ?? "—"}
                 </td>
                 <RankCell rank={m.pointTotalRank} />
-                <RankCell rank={m.pointTotalWithoutForcedZeroRank} />
-                <RankCell rank={m.pointTotalWithForcedZeroRank} />
+                <CountCell value={m.nonForcedZeroPointTotal} />
+                <RankCell rank={m.nonForcedZeroModelRank} />
                 {canSelect ? (
                   <td className="border border-neutral-300 px-1 py-0.5 text-center dark:border-neutral-700">
                     {isSelected ? (
@@ -308,20 +348,17 @@ function AnalyteReportCardTable({
               <div className="flex flex-wrap gap-x-6 gap-y-1 text-[11px]">
                 <span>
                   <span className="font-semibold text-blue-800 dark:text-blue-200">Best overall ranked calibration model:</span>{" "}
-                  <span className="font-semibold text-blue-700 dark:text-blue-300">
-                    {bestOverall?.excelLabel ?? "—"}
-                  </span>
-                  {bestOverall?.regressionType && bestOverall.weightingMode ? (
-                    <span className="ml-1 text-neutral-500">
-                      ({modelVariantLabel(bestOverall.regressionType, bestOverall.weightingMode)})
-                    </span>
+                  <span className="font-semibold text-blue-700 dark:text-blue-300">{table.bestOverallLabel ?? "—"}</span>
+                  {table.bestOverallCaution ? (
+                    <span className="ml-1 text-amber-700 dark:text-amber-400">⚠ {table.bestOverallCaution}</span>
                   ) : null}
                 </span>
                 <span>
                   <span className="font-semibold text-red-800 dark:text-red-200">Best ranked non-forced 0 calibration model:</span>{" "}
-                  <span className="font-semibold text-red-700 dark:text-red-300">
-                    {bestNonForced?.excelLabel ?? "—"}
-                  </span>
+                  <span className="font-semibold text-red-700 dark:text-red-300">{table.bestNonForcedZeroLabel ?? "—"}</span>
+                  {table.bestNonForcedZeroCaution ? (
+                    <span className="ml-1 text-amber-700 dark:text-amber-400">⚠ {table.bestNonForcedZeroCaution}</span>
+                  ) : null}
                 </span>
               </div>
             </td>
