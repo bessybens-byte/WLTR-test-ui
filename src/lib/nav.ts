@@ -18,7 +18,7 @@ export const navSections: NavSection[] = [
   {
     title: "Overview",
     items: [
-      { href: "/dashboard", label: "Dashboard", description: "Your account and system status" },
+      { href: "/dashboard", label: "Dashboard", description: "Lab workflow overview and action items" },
       { href: "/account", label: "My profile", description: "Update your technician profile" },
       { href: "/technicians/me", label: "Technician record", description: "Your read-only technician profile" },
     ],

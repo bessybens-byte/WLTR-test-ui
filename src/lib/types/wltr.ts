@@ -118,6 +118,33 @@ export const GROUP_STATUS_LABEL: Record<number, string> = {
   3: "Rejected",
 };
 
+const GROUP_STATUS_BY_NAME: Record<string, number> = {
+  Draft: CalibrationGroupStatus.Draft,
+  Computed: CalibrationGroupStatus.Computed,
+  Approved: CalibrationGroupStatus.Approved,
+  Rejected: CalibrationGroupStatus.Rejected,
+};
+
+/** Normalizes API group status from enum name or integer. */
+export function normalizeGroupStatus(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v in GROUP_STATUS_BY_NAME) return GROUP_STATUS_BY_NAME[v];
+  return CalibrationGroupStatus.Draft;
+}
+
+export function groupStatusLabel(v: unknown): string {
+  const status = normalizeGroupStatus(v);
+  return GROUP_STATUS_LABEL[status] ?? (typeof v === "string" ? v : String(status));
+}
+
+export function groupStatusTone(v: unknown): "ok" | "warn" | "bad" | "neutral" {
+  const status = normalizeGroupStatus(v);
+  if (status === CalibrationGroupStatus.Approved) return "ok";
+  if (status === CalibrationGroupStatus.Rejected) return "bad";
+  if (status === CalibrationGroupStatus.Computed) return "warn";
+  return "neutral";
+}
+
 /** `Wltr.Domain.Enums.AnalyteCalStatus` — 0 Fail, 1 Pass. */
 export const AnalyteCalStatus = {
   Fail: 0,
@@ -201,6 +228,40 @@ export type Paged<T> = {
   totalCount: number;
   page: number;
   pageSize: number;
+};
+
+export type DashboardSummaryMetrics = {
+  instrumentsActive: number;
+  calRunsToday: number;
+  groupsPendingQa: number;
+  groupsApprovedMtd: number;
+};
+
+export type DashboardRecentCalibrationGroup = {
+  id: string;
+  name?: string | null;
+  instrumentName?: string | null;
+  analyteCount?: number | null;
+  /** API may return enum name (`Draft`) or integer status. */
+  status?: string | number | null;
+  createdAt?: string | null;
+};
+
+export type DashboardActionItemKind = "Recompute" | "Review";
+
+export type DashboardActionItem = {
+  kind?: DashboardActionItemKind | string | null;
+  type?: string | null;
+  title?: string | null;
+  name?: string | null;
+  priority?: string | null;
+  calibrationGroupId: string;
+};
+
+export type DashboardSummaryResponse = {
+  metrics: DashboardSummaryMetrics;
+  recentCalibrationGroups?: DashboardRecentCalibrationGroup[] | null;
+  actionItems?: DashboardActionItem[] | null;
 };
 
 export const PERMS = {

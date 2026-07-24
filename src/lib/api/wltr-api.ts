@@ -1,6 +1,6 @@
 import { apiFetch, apiJson } from "@/lib/api/client";
 import { parseErrorResponse } from "@/lib/api/errors";
-import type { MeResponse, Paged } from "@/lib/types/wltr";
+import type { DashboardSummaryResponse, MeResponse, Paged } from "@/lib/types/wltr";
 
 export async function healthRoot(): Promise<string> {
   const res = await apiFetch("", { method: "GET" });
@@ -742,4 +742,16 @@ export async function updateCalibrationGroup(id: string, body: unknown): Promise
 /** CAL and ICV run candidates with eligibility flags for a given instrument. */
 export async function getCalibrationGroupCandidates(instrumentId: string): Promise<Record<string, unknown>> {
   return apiJson(`calibration-groups/candidates`, { searchParams: { instrumentId } });
+}
+
+/**
+ * Lab workflow snapshot for the dashboard.
+ * Requires `perm.view`. Lab users are scoped from the JWT; platform operators may pass
+ * `laboratoryId` to filter (omit for all labs).
+ */
+export async function getDashboardSummary(params?: {
+  laboratoryId?: string;
+  limit?: number;
+}): Promise<DashboardSummaryResponse> {
+  return apiJson<DashboardSummaryResponse>(`dashboard/summary`, { searchParams: params });
 }

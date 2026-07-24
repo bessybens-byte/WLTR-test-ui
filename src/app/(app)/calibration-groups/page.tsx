@@ -8,7 +8,7 @@ import {
   listInstruments,
   listMethodConfigs,
 } from "@/lib/api/wltr-api";
-import { GROUP_STATUS_LABEL, hasPermission, PERMS } from "@/lib/types/wltr";
+import { GROUP_STATUS_LABEL, groupStatusTone, hasPermission, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -35,12 +35,6 @@ function formatDate(iso: string) {
   } catch {
     return iso;
   }
-}
-
-function groupStatusTone(status: number): "ok" | "warn" | "bad" | "neutral" {
-  if (status === 2) return "ok";
-  if (status === 3) return "bad";
-  return "neutral";
 }
 
 function mapCandidate(r: Record<string, unknown>): CandidateRun {

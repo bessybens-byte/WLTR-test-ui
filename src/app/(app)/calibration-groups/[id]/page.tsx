@@ -21,27 +21,15 @@ import {
   listMethodConfigs,
   updateCalibrationGroup,
 } from "@/lib/api/wltr-api";
-import { CalibrationGroupStatus, GROUP_STATUS_LABEL, hasPermission, PERMS, RUN_STATUS_LABEL } from "@/lib/types/wltr";
+import { CalibrationGroupStatus, GROUP_STATUS_LABEL, groupStatusTone, hasPermission, normalizeGroupStatus, PERMS, RUN_STATUS_LABEL } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 function s(v: unknown, fallback = ""): string {
   return typeof v === "string" ? v : fallback;
-}
-
-function normalizeGroupStatus(v: unknown): number {
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  const byName: Record<string, number> = {
-    Draft: CalibrationGroupStatus.Draft,
-    Computed: CalibrationGroupStatus.Computed,
-    Approved: CalibrationGroupStatus.Approved,
-    Rejected: CalibrationGroupStatus.Rejected,
-  };
-  if (typeof v === "string" && v in byName) return byName[v];
-  return CalibrationGroupStatus.Draft;
 }
 
 type GroupDetail = Readonly<{
@@ -84,12 +72,6 @@ function formatShortDate(iso: string) {
   } catch {
     return iso;
   }
-}
-
-function groupStatusTone(status: number): "ok" | "warn" | "bad" | "neutral" {
-  if (status === CalibrationGroupStatus.Approved) return "ok";
-  if (status === CalibrationGroupStatus.Rejected) return "bad";
-  return "neutral";
 }
 
 function isEditable(status: number) {
@@ -539,15 +521,36 @@ const STEP_TO_TAB: Record<string, GroupTabId> = {
   approve: "compute",
 };
 
+const VALID_TABS = new Set<GroupTabId>(["overview", "setup", "compute", "review", "debug"]);
+
+function tabFromSearchParam(value: string | null): GroupTabId | null {
+  if (!value) return null;
+  return VALID_TABS.has(value as GroupTabId) ? (value as GroupTabId) : null;
+}
+
 export default function CalibrationGroupDetailPage() {
+  return (
+    <Suspense fallback={<div className="p-4 text-sm text-neutral-500">Loading group…</div>}>
+      <CalibrationGroupDetailContent />
+    </Suspense>
+  );
+}
+
+function CalibrationGroupDetailContent() {
   const { id } = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const { me } = useAuth();
   const canEdit = hasPermission(me, PERMS.runsUpload);
   const canCompute = hasPermission(me, PERMS.runsUpload);
   const canViewRegressionDebug = hasPermission(me, PERMS.groupsApprove);
   const canViewCalibrationChart = hasPermission(me, PERMS.view);
   const [editing, setEditing] = useState(false);
-  const [tab, setTab] = useState<GroupTabId>("overview");
+  const [tab, setTab] = useState<GroupTabId>(() => tabFromSearchParam(searchParams.get("tab")) ?? "overview");
+
+  useEffect(() => {
+    const fromUrl = tabFromSearchParam(searchParams.get("tab"));
+    if (fromUrl) setTab(fromUrl);
+  }, [searchParams]);
 
   const groupQuery = useQuery({
     queryKey: ["calibration-groups", id],
