@@ -1,6 +1,13 @@
 import { apiFetch, apiJson } from "@/lib/api/client";
-import { parseErrorResponse } from "@/lib/api/errors";
-import type { DashboardSummaryResponse, MeResponse, Paged } from "@/lib/types/wltr";
+import { ApiError, parseErrorResponse, type ProblemDetails } from "@/lib/api/errors";
+import type {
+  DashboardSummaryResponse,
+  LabConfigBundle,
+  LabConfigImportResult,
+  LabConfigImportStrategy,
+  MeResponse,
+  Paged,
+} from "@/lib/types/wltr";
 
 export async function healthRoot(): Promise<string> {
   const res = await apiFetch("", { method: "GET" });
@@ -754,4 +761,96 @@ export async function getDashboardSummary(params?: {
   limit?: number;
 }): Promise<DashboardSummaryResponse> {
   return apiJson<DashboardSummaryResponse>(`dashboard/summary`, { searchParams: params });
+}
+
+function parseContentDispositionFilename(header: string | null): string | undefined {
+  if (!header) return undefined;
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (star?.[1]) {
+    try {
+      return decodeURIComponent(star[1].replace(/"/g, ""));
+    } catch {
+      return star[1].replace(/"/g, "");
+    }
+  }
+  const plain = /filename="?([^";]+)"?/i.exec(header);
+  return plain?.[1]?.replace(/"/g, "");
+}
+
+function triggerBlobDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Triggers a browser download of a lab config Excel workbook. Call only from client event handlers.
+ * Requires `perm.view` (platform admins may pass `laboratoryId`).
+ */
+export async function downloadLabConfigExport(params: {
+  bundle: LabConfigBundle;
+  laboratoryId?: string;
+  methodConfigId?: string;
+  includeInlineCatalog?: boolean;
+  includeRoles?: boolean;
+}): Promise<void> {
+  const res = await apiFetch("lab-config/export", {
+    searchParams: {
+      bundle: params.bundle,
+      laboratoryId: params.laboratoryId,
+      methodConfigId: params.methodConfigId,
+      includeInlineCatalog:
+        params.includeInlineCatalog != null ? String(params.includeInlineCatalog) : undefined,
+      includeRoles: params.includeRoles != null ? String(params.includeRoles) : undefined,
+    },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const blob = await res.blob();
+  const filename =
+    parseContentDispositionFilename(res.headers.get("content-disposition")) ??
+    `lab-config-${params.bundle}.xlsx`;
+  triggerBlobDownload(blob, filename);
+}
+
+/**
+ * Upload a lab config workbook for validation or import.
+ * Always returns the JSON result body when present (including row-level validation failures).
+ * Throws only for non-JSON transport/auth errors.
+ */
+export async function importLabConfig(
+  file: File,
+  params?: {
+    strategy?: LabConfigImportStrategy;
+    dryRun?: boolean;
+    laboratoryId?: string;
+  },
+): Promise<LabConfigImportResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await apiFetch("lab-config/import", {
+    method: "POST",
+    body: form,
+    searchParams: {
+      strategy: params?.strategy,
+      dryRun: params?.dryRun != null ? String(params.dryRun) : undefined,
+      laboratoryId: params?.laboratoryId,
+    },
+  });
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("json")) {
+    const body = (await res.json()) as LabConfigImportResult & ProblemDetails;
+    if (typeof body.success === "boolean") {
+      return body;
+    }
+    if (!res.ok) {
+      const detail = typeof body.detail === "string" ? body.detail : `HTTP ${res.status}`;
+      const title = typeof body.title === "string" ? body.title : detail;
+      throw new ApiError(detail || title, res.status, body);
+    }
+  }
+  if (!res.ok) throw await parseErrorResponse(res);
+  throw new ApiError("Unexpected import response", res.status);
 }

@@ -291,6 +291,53 @@ export function displayName(me: MeResponse | null | undefined): string {
   return me?.email ?? "User";
 }
 
+/** Lab config Excel export bundle — query param on GET /lab-config/export. */
+export type LabConfigBundle =
+  | "reference-catalog"
+  | "method-ruleset"
+  | "instrument-setup"
+  | "lab-config-package";
+
+export const LAB_CONFIG_BUNDLE_LABEL: Record<LabConfigBundle, string> = {
+  "reference-catalog": "Reference catalog",
+  "method-ruleset": "Method ruleset",
+  "instrument-setup": "Instrument setup",
+  "lab-config-package": "Full lab config package",
+};
+
+export const LAB_CONFIG_BUNDLE_DESCRIPTION: Record<LabConfigBundle, string> = {
+  "reference-catalog": "Analytes, internal standards, and calibration levels",
+  "method-ruleset": "Method configuration and per-analyte criteria",
+  "instrument-setup": "Instruments and suppressed-analyte mappings",
+  "lab-config-package": "All configuration sheets plus optional custom roles",
+};
+
+/** Import conflict strategy — query param on POST /lab-config/import. */
+export type LabConfigImportStrategy = "skip" | "update" | "fail";
+
+export const LAB_CONFIG_IMPORT_STRATEGY_LABEL: Record<LabConfigImportStrategy, string> = {
+  skip: "Skip existing rows",
+  update: "Update existing rows",
+  fail: "Fail on first conflict",
+};
+
+export type LabConfigImportRowError = {
+  sheet?: string | null;
+  row?: number | null;
+  column?: string | null;
+  message?: string | null;
+};
+
+export type LabConfigImportResult = {
+  success?: boolean;
+  dryRun?: boolean;
+  created?: number;
+  updated?: number;
+  skipped?: number;
+  failed?: number;
+  errors?: LabConfigImportRowError[] | null;
+};
+
 /** Full permission catalog for role administration UIs (matches OpenAPI permissions reference). */
 export const ALL_PERMISSIONS = [
   PERMS.view,
