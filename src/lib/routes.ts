@@ -38,6 +38,8 @@ export const ROUTE_RULES: readonly RouteRule[] = [
   { pattern: /^\/method-configs\/new$/, permissions: [PERMS.configEdit] },
   { pattern: /^\/method-configs(\/|$)/, permissions: [PERMS.view] },
 
+  { pattern: /^\/lab-config(\/|$)/, permissions: [PERMS.view] },
+
   { pattern: /^\/runs\/upload$/, permissions: [PERMS.runsUpload] },
   { pattern: /^\/runs(\/|$)/, permissions: [PERMS.view] },
 

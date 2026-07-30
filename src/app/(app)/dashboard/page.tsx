@@ -307,6 +307,13 @@ export default function DashboardPage() {
                 </Link>
               </li>
             ) : null}
+            {canView ? (
+              <li>
+                <Link className="text-blue-600 underline dark:text-blue-400" href="/lab-config">
+                  {canManageConfig ? "Export or import lab configuration" : "Export lab configuration"}
+                </Link>
+              </li>
+            ) : null}
             {canManageConfig ? (
               <li>
                 <Link className="text-blue-600 underline dark:text-blue-400" href="/method-configs">
