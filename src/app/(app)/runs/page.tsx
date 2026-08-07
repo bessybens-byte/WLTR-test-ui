@@ -96,9 +96,14 @@ function RunsList() {
         title="Runs"
         description="Calibration and ICV runs in your laboratory."
         actions={
-          <Link href="/runs/upload">
-            <Button>Upload run</Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/runs/upload">
+              <Button>Paste text</Button>
+            </Link>
+            <Link href="/runs/upload-file">
+              <Button>Upload file</Button>
+            </Link>
+          </div>
         }
       />
 

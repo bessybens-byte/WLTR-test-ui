@@ -373,6 +373,32 @@ export async function createRun(body: unknown): Promise<Record<string, unknown>>
   return apiJson(`runs`, { method: "POST", body: JSON.stringify(body) });
 }
 
+/**
+ * Upload a calibration run (CAL or ICV) from an instrument export file.
+ * Multipart alternative to `createRun()` — send a file instead of pasting raw text.
+ * Returns the same `CreateRunResponse` shape with `id`, `warnings`, `measurementCount`,
+ * and `measurementWarnings`. Requires `perm.runs.upload`.
+ */
+export async function uploadRun(
+  file: File,
+  metadata: {
+    runType: string;
+    instrumentId: string;
+    runDate: string;
+    level?: string;
+    name?: string;
+  },
+): Promise<Record<string, unknown>> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("runType", metadata.runType);
+  form.append("instrumentId", metadata.instrumentId);
+  form.append("runDate", metadata.runDate);
+  if (metadata.level) form.append("level", metadata.level);
+  if (metadata.name) form.append("name", metadata.name);
+  return apiJson("runs/upload", { method: "POST", body: form });
+}
+
 export async function getRun(id: string): Promise<Record<string, unknown>> {
   return apiJson(`runs/${id}`);
 }
