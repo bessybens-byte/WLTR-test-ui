@@ -14,7 +14,7 @@ import {
   listAnalytes,
   resolveAnalyteMapping,
 } from "@/lib/api/wltr-api";
-import { PERMS, RUN_STATUS_LABEL, RUN_TYPE_LABEL, hasPermission } from "@/lib/types/wltr";
+import { PERMS, RUN_STATUS_LABEL, RUN_TYPE_LABEL, hasPermission, readIsGrouped } from "@/lib/types/wltr";
 import { useToast } from "@/providers/toast-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -186,6 +186,7 @@ export default function RunDetailPage() {
   const runTitle = s(runData.name).trim();
   const runType = typeof runData.runType === "number" ? runData.runType : 0;
   const status = typeof runData.status === "number" ? runData.status : 0;
+  const isGrouped = readIsGrouped(runData.isGrouped);
   const issues = collectIssues(validation.data);
 
   return (
@@ -227,6 +228,20 @@ export default function RunDetailPage() {
               <DetailRow label="Type">{RUN_TYPE_LABEL[runType] ?? String(runType)}</DetailRow>
               <DetailRow label="Status">
                 <Badge tone={runStatusTone(status)}>{RUN_STATUS_LABEL[status] ?? String(status)}</Badge>
+              </DetailRow>
+              <DetailRow label="Group membership">
+                {isGrouped === null ? (
+                  <span className="text-neutral-500">Not reported by this API build</span>
+                ) : (
+                  <span className="flex flex-wrap items-center gap-2">
+                    <Badge tone={isGrouped ? "warn" : "neutral"}>{isGrouped ? "Grouped" : "Free"}</Badge>
+                    <span className="text-xs text-neutral-600 dark:text-neutral-400">
+                      {isGrouped
+                        ? "At least one calibration group uses this run — deletion is refused."
+                        : "No calibration group uses this run."}
+                    </span>
+                  </span>
+                )}
               </DetailRow>
               <DetailRow label="Instrument">
                 {instrumentId ? (
@@ -437,8 +452,18 @@ export default function RunDetailPage() {
             Soft-deletes the run when it is not a member of any calibration group. If the run is still in a group, the
             server returns an error — remove it from the group first. Raw text is retained for audit.
           </p>
+          {isGrouped ? (
+            <Callout tone="warn" className="mt-3">
+              This run is grouped, so the server would refuse the delete. Remove it from every calibration group that
+              uses it first.
+            </Callout>
+          ) : null}
           <div className="mt-4">
-            <Button variant="danger" disabled={deleteMut.isPending} onClick={() => setConfirmDelete(true)}>
+            <Button
+              variant="danger"
+              disabled={deleteMut.isPending || isGrouped === true}
+              onClick={() => setConfirmDelete(true)}
+            >
               {deleteMut.isPending ? "Deleting…" : "Delete run"}
             </Button>
           </div>

@@ -399,6 +399,7 @@ export async function uploadRun(
   return apiJson("runs/upload", { method: "POST", body: form });
 }
 
+/** Run detail. `isGrouped` mirrors the delete guard: `true` means `deleteRun()` will return 409. */
 export async function getRun(id: string): Promise<Record<string, unknown>> {
   return apiJson(`runs/${id}`);
 }
@@ -740,15 +741,30 @@ export async function getInstrument(id: string): Promise<Record<string, unknown>
   return apiJson(`instruments/${id}`);
 }
 
+/**
+ * Paged runs for the caller's laboratory. Every item carries `isGrouped`.
+ * `isGrouped` narrows to runs no group uses (`false`) or runs at least one group already uses
+ * (`true`); omit it for all runs. Filtering happens before paging, so `totalCount` reflects it.
+ */
 export async function listRuns(params?: {
   instrumentId?: string;
   runType?: string;
   status?: string;
+  isGrouped?: boolean;
   page?: number;
   pageSize?: number;
   sort?: string;
 }): Promise<Paged<Record<string, unknown>>> {
-  return apiJson(`runs`, { searchParams: params });
+  const searchParams: Record<string, string | number | undefined> = {
+    instrumentId: params?.instrumentId,
+    runType: params?.runType,
+    status: params?.status,
+    page: params?.page,
+    pageSize: params?.pageSize,
+    sort: params?.sort,
+  };
+  if (params?.isGrouped !== undefined) searchParams.isGrouped = String(params.isGrouped);
+  return apiJson(`runs`, { searchParams });
 }
 
 export async function listCalibrationGroups(params?: {
@@ -772,7 +788,11 @@ export async function updateCalibrationGroup(id: string, body: unknown): Promise
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
-/** CAL and ICV run candidates with eligibility flags for a given instrument. */
+/**
+ * CAL and ICV run candidates with eligibility flags for a given instrument.
+ * Rows also carry `isGrouped`, which is advisory only — reuse across groups is allowed, so a
+ * grouped run stays eligible and selectable.
+ */
 export async function getCalibrationGroupCandidates(instrumentId: string): Promise<Record<string, unknown>> {
   return apiJson(`calibration-groups/candidates`, { searchParams: { instrumentId } });
 }

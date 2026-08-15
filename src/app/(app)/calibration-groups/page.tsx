@@ -8,7 +8,7 @@ import {
   listInstruments,
   listMethodConfigs,
 } from "@/lib/api/wltr-api";
-import { GROUP_STATUS_LABEL, groupStatusTone, hasPermission, PERMS } from "@/lib/types/wltr";
+import { GROUP_STATUS_LABEL, groupStatusTone, hasPermission, PERMS, readIsGrouped } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -27,6 +27,8 @@ type CandidateRun = {
   isEligibleAsCal: boolean;
   isEligibleAsIcv: boolean;
   ineligibilityReason: string | null;
+  /** Advisory only — a run another group already uses stays eligible and selectable. */
+  isGrouped: boolean | null;
 };
 
 function formatDate(iso: string) {
@@ -47,7 +49,15 @@ function mapCandidate(r: Record<string, unknown>): CandidateRun {
     isEligibleAsCal: Boolean(r.isEligibleAsCal),
     isEligibleAsIcv: Boolean(r.isEligibleAsIcv),
     ineligibilityReason: typeof r.ineligibilityReason === "string" ? r.ineligibilityReason : null,
+    isGrouped: readIsGrouped(r.isGrouped),
   };
+}
+
+/** Ineligible runs are dimmed hardest; already-grouped runs are only nudged back, since they stay selectable. */
+function candidateEmphasis(r: CandidateRun): string {
+  if (!r.isEligibleAsCal) return " opacity-50";
+  if (r.isGrouped) return " opacity-70";
+  return "";
 }
 
 type CalRunsContentProps = Readonly<{
@@ -68,7 +78,7 @@ function CalRunsContent({ instrumentSelected, isLoading, isError, candidates, se
     <ul className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
       {candidates.map((r) => {
         const calReason = r.isEligibleAsCal ? null : r.ineligibilityReason;
-        const rowClass = `flex cursor-pointer items-start gap-2 text-xs${r.isEligibleAsCal ? "" : " opacity-50"}`;
+        const rowClass = `flex cursor-pointer items-start gap-2 text-xs${candidateEmphasis(r)}`;
         return (
           <li key={r.id}>
             <label className={rowClass}>
@@ -93,6 +103,11 @@ function CalRunsContent({ instrumentSelected, isLoading, isError, candidates, se
                 <span>{formatDate(r.runDate)}</span>
                 {r.calibrationLevelId ? (
                   <span className="ml-1 text-neutral-500">level: {r.calibrationLevelId.slice(0, 8)}…</span>
+                ) : null}
+                {r.isGrouped ? (
+                  <Badge tone="warn" className="ml-1">
+                    In use
+                  </Badge>
                 ) : null}
                 {calReason ? (
                   <span className="ml-1 text-amber-700 dark:text-amber-400">— {calReason}</span>
@@ -385,7 +400,11 @@ export default function CalibrationGroupsPage() {
                 selectedIds={selectedCalIds}
                 onToggle={toggleCal}
               />
-              <p className="mt-1 text-xs text-neutral-500">Selected: {selectedCalIds.size} CAL run(s).</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Selected: {selectedCalIds.size} CAL run(s). Runs marked{" "}
+                <span className="font-medium">In use</span> already belong to another group — reusing them is allowed,
+                they are just dimmed.
+              </p>
             </div>
 
             <div>
@@ -404,6 +423,7 @@ export default function CalibrationGroupsPage() {
                       .map((r) => (
                         <option key={r.id} value={r.id}>
                           {(r.name ?? `${r.id.slice(0, 8)}…`)} · {formatDate(r.runDate)}
+                          {r.isGrouped ? " · in use" : ""}
                         </option>
                       ))}
                   </Select>

@@ -96,6 +96,16 @@ export const RUN_TYPE_LABEL: Record<number, string> = {
   1: "ICV",
 };
 
+/**
+ * Reads `isGrouped` off a run payload: true when at least one non-deleted calibration group
+ * references the run as a CAL member or as its ICV, whatever the group's status. Returns null
+ * against an API build that does not send the field, so callers can stay silent instead of
+ * claiming the run is ungrouped.
+ */
+export function readIsGrouped(v: unknown): boolean | null {
+  return typeof v === "boolean" ? v : null;
+}
+
 /** Display strings for method config `defaultRegressionType` / snapshot `regressionType` integers. */
 export const REGRESSION_TYPE_LABEL: Record<number, string> = {
   0: "Average",

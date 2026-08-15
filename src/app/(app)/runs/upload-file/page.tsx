@@ -82,7 +82,7 @@ function UploadFileForm() {
     setBusy(true);
     setError(null);
     try {
-      const metadata: Record<string, string> = {
+      const metadata: Parameters<typeof uploadRun>[1] = {
         runType: form.runType === 0 ? "CAL" : "ICV",
         instrumentId: form.instrumentId,
         runDate: new Date(form.runDate).toISOString(),

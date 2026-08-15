@@ -2,7 +2,7 @@
 
 import { Badge, Button, Card, Label, PageHeader, Select } from "@/components/ui";
 import { listInstruments, listRuns } from "@/lib/api/wltr-api";
-import { RUN_STATUS_LABEL, RUN_TYPE_LABEL } from "@/lib/types/wltr";
+import { RUN_STATUS_LABEL, RUN_TYPE_LABEL, readIsGrouped } from "@/lib/types/wltr";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -35,7 +35,15 @@ type RunRow = {
   status: number;
   calibrationLevelId: string | null;
   name: string | null;
+  isGrouped: boolean | null;
 };
+
+type RunsQueryParams = NonNullable<Parameters<typeof listRuns>[0]>;
+
+/** Empty string leaves `isGrouped` off the request, which returns runs of both kinds. */
+function asGroupedFilter(raw: string | null): "" | "true" | "false" {
+  return raw === "true" || raw === "false" ? raw : "";
+}
 
 function RunsList() {
   const router = useRouter();
@@ -45,6 +53,7 @@ function RunsList() {
     instrumentId: sp.get("instrumentId") ?? "",
     runType: "",
     status: "",
+    isGrouped: asGroupedFilter(sp.get("isGrouped")),
     page: 1,
   });
 
@@ -63,16 +72,17 @@ function RunsList() {
   );
 
   const queryParams = useMemo(() => {
-    const p: Record<string, string | number> = { page: filters.page, pageSize: 25, sort: "runDate:desc" };
+    const p: RunsQueryParams = { page: filters.page, pageSize: 25, sort: "runDate:desc" };
     if (filters.instrumentId) p.instrumentId = filters.instrumentId;
     if (filters.runType) p.runType = filters.runType;
     if (filters.status) p.status = filters.status;
+    if (filters.isGrouped) p.isGrouped = filters.isGrouped === "true";
     return p;
   }, [filters]);
 
   const runsQuery = useQuery({
     queryKey: ["runs", "list", queryParams],
-    queryFn: () => listRuns(queryParams as Parameters<typeof listRuns>[0]),
+    queryFn: () => listRuns(queryParams),
   });
 
   const items: RunRow[] = (runsQuery.data?.items ?? []).map((r) => ({
@@ -83,12 +93,13 @@ function RunsList() {
     status: typeof r.status === "number" ? r.status : 0,
     calibrationLevelId: typeof r.calibrationLevelId === "string" ? r.calibrationLevelId : null,
     name: typeof r.name === "string" && r.name.trim() ? r.name.trim() : null,
+    isGrouped: readIsGrouped(r.isGrouped),
   }));
 
   const totalCount = runsQuery.data?.totalCount ?? 0;
   const pageSize = runsQuery.data?.pageSize ?? 25;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-  const hasFilters = !!(filters.instrumentId || filters.runType || filters.status);
+  const hasFilters = !!(filters.instrumentId || filters.runType || filters.status || filters.isGrouped);
 
   return (
     <div className="space-y-6">
@@ -152,12 +163,27 @@ function RunsList() {
               <option value="Invalid">Invalid</option>
             </Select>
           </div>
+          <div>
+            <Label htmlFor="filterGrouped">Group membership</Label>
+            <Select
+              id="filterGrouped"
+              className="mt-1 min-w-[170px]"
+              value={filters.isGrouped}
+              onChange={(e) =>
+                setFilters({ ...filters, isGrouped: asGroupedFilter(e.target.value), page: 1 })
+              }
+            >
+              <option value="">All runs</option>
+              <option value="false">Ungrouped only</option>
+              <option value="true">Grouped only</option>
+            </Select>
+          </div>
           {hasFilters ? (
             <Button
               variant="secondary"
               type="button"
               onClick={() => {
-                setFilters({ instrumentId: "", runType: "", status: "", page: 1 });
+                setFilters({ instrumentId: "", runType: "", status: "", isGrouped: "", page: 1 });
                 router.replace("/runs");
               }}
             >
@@ -165,6 +191,10 @@ function RunsList() {
             </Button>
           ) : null}
         </div>
+        <p className="mt-3 text-xs text-neutral-600 dark:text-neutral-400">
+          <span className="font-medium">Ungrouped only</span> is the pool for assembling a new calibration group.
+          Grouped runs cannot be deleted. The filter applies before paging, so the count above reflects it.
+        </p>
       </Card>
 
       <Card>
@@ -192,6 +222,7 @@ function RunsList() {
                   <th className="pb-2 text-left font-medium">Name</th>
                   <th className="pb-2 text-left font-medium">Type</th>
                   <th className="pb-2 text-left font-medium">Status</th>
+                  <th className="pb-2 text-left font-medium">In group</th>
                   <th className="pb-2 text-left font-medium">Level</th>
                   <th className="pb-2 text-left font-medium">Run ID</th>
                   <th className="pb-2"></th>
@@ -211,6 +242,13 @@ function RunsList() {
                       <Badge tone={runStatusTone(row.status)}>
                         {RUN_STATUS_LABEL[row.status] ?? String(row.status)}
                       </Badge>
+                    </td>
+                    <td className="py-2 pr-4">
+                      {row.isGrouped === null ? (
+                        <span className="text-neutral-500">—</span>
+                      ) : (
+                        <Badge tone={row.isGrouped ? "warn" : "neutral"}>{row.isGrouped ? "Grouped" : "Free"}</Badge>
+                      )}
                     </td>
                     <td className="py-2 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
                       {row.calibrationLevelId ? `${row.calibrationLevelId.slice(0, 8)}…` : "—"}
