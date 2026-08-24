@@ -16,6 +16,9 @@ export const ROUTE_RULES: readonly RouteRule[] = [
   { pattern: /^\/laboratories\/new$/, permissions: [PERMS.laboratoriesCreate] },
   { pattern: /^\/laboratories(\/|$)/, permissions: [PERMS.view] },
 
+  { pattern: /^\/departments\/new$/, permissions: [PERMS.departmentsManage] },
+  { pattern: /^\/departments(\/|$)/, permissions: [PERMS.view] },
+
   { pattern: /^\/technicians\/new$/, permissions: [PERMS.usersManageLab] },
   { pattern: /^\/technicians(\/|$)/, permissions: [PERMS.view] },
 
@@ -81,5 +84,6 @@ export const PERMISSION_LABELS: Record<string, string> = {
   [PERMS.groupsApprove]: "Regression QA review (debug & charts)",
   [PERMS.laboratoriesManage]: "Manage laboratory settings",
   [PERMS.laboratoriesCreate]: "Create laboratories",
+  [PERMS.departmentsManage]: "Manage departments",
   [PERMS.platformManage]: "Platform administration",
 };

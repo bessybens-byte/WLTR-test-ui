@@ -45,6 +45,92 @@ export async function updateLaboratory(id: string, body: unknown): Promise<void>
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
+export async function listDepartments(params?: {
+  page?: number;
+  pageSize?: number;
+  sort?: string;
+  isActive?: boolean;
+  laboratoryId?: string;
+}): Promise<Paged<Record<string, unknown>>> {
+  const searchParams: Record<string, string | number | undefined> = {
+    page: params?.page,
+    pageSize: params?.pageSize,
+    sort: params?.sort,
+    laboratoryId: params?.laboratoryId,
+  };
+  if (params?.isActive !== undefined) searchParams.isActive = String(params.isActive);
+  return apiJson(`departments`, { searchParams });
+}
+
+export async function getDepartment(id: string): Promise<Record<string, unknown>> {
+  return apiJson(`departments/${id}`);
+}
+
+export async function createDepartment(body: {
+  name: string;
+  description?: string | null;
+}): Promise<Record<string, unknown>> {
+  return apiJson(`departments`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function updateDepartment(
+  id: string,
+  body: { name: string; description?: string | null; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`departments/${id}`, { method: "PUT", body: JSON.stringify(body) });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function setDepartmentActive(
+  id: string,
+  body: { isActive: boolean; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`departments/${id}/active`, { method: "PUT", body: JSON.stringify(body) });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Undo a mistaken create. Fails with 409 when anything still references the department. */
+export async function deleteDepartment(id: string): Promise<void> {
+  const res = await apiFetch(`departments/${id}`, { method: "DELETE" });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function setInstrumentDepartment(
+  id: string,
+  body: { departmentId: string; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`instruments/${id}/department`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function setMethodConfigDepartment(
+  id: string,
+  body: { departmentId: string },
+): Promise<void> {
+  const res = await apiFetch(`method-configs/${id}/department`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Assign or clear a user's home department. Pass `departmentId: null` to lift the partition. */
+export async function setUserDepartment(
+  userId: string,
+  body: { departmentId: string | null; worksAcrossDepartments: boolean },
+  params?: { laboratoryId?: string },
+): Promise<void> {
+  const res = await apiFetch(`Users/${encodeURIComponent(userId)}/department`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+    searchParams: params,
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
 export async function listTechnicians(params?: {
   page?: number;
   pageSize?: number;

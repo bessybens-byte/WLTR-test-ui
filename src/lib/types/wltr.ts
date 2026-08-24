@@ -220,6 +220,10 @@ export type MeResponse = {
   firstName?: string | null;
   lastName?: string | null;
   laboratoryId?: string | null;
+  /** Home department; null/absent means unpartitioned (sees the whole lab). */
+  departmentId?: string | null;
+  /** When true, caller sees every department in the laboratory. */
+  worksAcrossDepartments?: boolean | null;
   qualifications?: string | null;
   hireDate?: string | null;
   roleNames?: string[] | null;
@@ -284,6 +288,7 @@ export const PERMS = {
   groupsApprove: "perm.groups.approve",
   laboratoriesManage: "perm.laboratories.manage",
   laboratoriesCreate: "perm.laboratories.create",
+  departmentsManage: "perm.departments.manage",
   platformManage: "perm.platform.manage",
 } as const;
 
@@ -359,5 +364,6 @@ export const ALL_PERMISSIONS = [
   PERMS.rolesManageLab,
   PERMS.laboratoriesManage,
   PERMS.laboratoriesCreate,
+  PERMS.departmentsManage,
   PERMS.platformManage,
 ] as const;

@@ -27,6 +27,7 @@ export const navSections: NavSection[] = [
     title: "Laboratory",
     items: [
       { href: "/laboratories", label: "Laboratories", perm: PERMS.view },
+      { href: "/departments", label: "Departments", perm: PERMS.view },
       { href: "/technicians", label: "Technicians", perm: PERMS.view },
       { href: "/users", label: "Users", perm: PERMS.usersManageLab },
       { href: "/roles", label: "Roles", perm: PERMS.rolesManageLab },
