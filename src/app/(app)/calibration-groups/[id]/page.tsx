@@ -16,8 +16,6 @@ import { Badge, Button, Callout, Card, Input, Label, PageHeader, Select } from "
 import {
   getCalibrationGroup,
   getCalibrationGroupCandidates,
-  getInstrument,
-  getMethodConfig,
   listMethodConfigs,
   updateCalibrationGroup,
 } from "@/lib/api/wltr-api";
@@ -36,8 +34,10 @@ type GroupDetail = Readonly<{
   id: string;
   name: string | null;
   instrumentId: string;
+  instrumentName: string | null;
   status: number;
   methodConfigId: string;
+  methodConfigName: string | null;
   methodConfigSnapshotId: string | null;
   icvRunId: string | null;
   calRunIds: readonly string[];
@@ -53,6 +53,7 @@ type CandidateRun = Readonly<{
   runDate: string;
   status: number;
   calibrationLevelId: string | null;
+  calibrationLevelName: string | null;
   isEligibleAsCal: boolean;
   isEligibleAsIcv: boolean;
   ineligibilityReason: string | null;
@@ -84,8 +85,10 @@ function mapGroupDetail(row: Record<string, unknown>, id: string): GroupDetail {
     id: s(row.id, id),
     name: rawName || null,
     instrumentId: s(row.instrumentId),
+    instrumentName: typeof row.instrumentName === "string" ? row.instrumentName : null,
     status: normalizeGroupStatus(row.status),
     methodConfigId: s(row.methodConfigId),
+    methodConfigName: typeof row.methodConfigName === "string" ? row.methodConfigName : null,
     methodConfigSnapshotId: typeof row.methodConfigSnapshotId === "string" ? row.methodConfigSnapshotId : null,
     icvRunId: typeof row.icvRunId === "string" ? row.icvRunId : null,
     calRunIds: Array.isArray(row.calRunIds) ? (row.calRunIds as unknown[]).map((v) => s(v)) : [],
@@ -104,6 +107,7 @@ function mapCandidate(r: Record<string, unknown>): CandidateRun {
     runDate: s(r.runDate),
     status: typeof r.status === "number" ? r.status : 0,
     calibrationLevelId: typeof r.calibrationLevelId === "string" ? r.calibrationLevelId : null,
+    calibrationLevelName: typeof r.calibrationLevelName === "string" ? r.calibrationLevelName : null,
     isEligibleAsCal: Boolean(r.isEligibleAsCal),
     isEligibleAsIcv: Boolean(r.isEligibleAsIcv),
     ineligibilityReason: typeof r.ineligibilityReason === "string" ? r.ineligibilityReason : null,
@@ -153,7 +157,7 @@ function EditCalRuns({ isLoading, candidates, selectedIds, onToggle }: EditCalRu
                 <span>{RUN_STATUS_LABEL[r.status] ?? String(r.status)}</span>
                 {r.calibrationLevelId ? (
                   <span className="ml-1 text-neutral-500">
-                    level: {r.calibrationLevelId.slice(0, 8)}…
+                    level: {r.calibrationLevelName ?? r.calibrationLevelId.slice(0, 8) + "…"}
                   </span>
                 ) : null}
                 {calReason ? (
@@ -364,13 +368,11 @@ function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps
 
 type GroupDetailCardProps = Readonly<{
   group: GroupDetail;
-  instrumentName?: string | null;
-  methodName?: string | null;
   showEditButton: boolean;
   onEdit: () => void;
 }>;
 
-function GroupDetailCard({ group, instrumentName, methodName, showEditButton, onEdit }: GroupDetailCardProps) {
+function GroupDetailCard({ group, showEditButton, onEdit }: GroupDetailCardProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -419,7 +421,7 @@ function GroupDetailCard({ group, instrumentName, methodName, showEditButton, on
               className="text-blue-600 underline dark:text-blue-400"
               href={`/instruments/${group.instrumentId}`}
             >
-              {instrumentName || <span className="font-mono text-xs">{group.instrumentId}</span>}
+              {group.instrumentName || <span className="font-mono text-xs">{group.instrumentId}</span>}
             </Link>
           </dd>
         </div>
@@ -428,7 +430,7 @@ function GroupDetailCard({ group, instrumentName, methodName, showEditButton, on
           <ExcelAnnotation fieldKey="group.methodConfigId" compact className="mt-1" />
           <dd className="mt-0.5">
             <Link className="text-blue-600 underline dark:text-blue-400" href={`/method-configs/${group.methodConfigId}`}>
-              {methodName || <span className="font-mono text-xs">{group.methodConfigId}</span>}
+              {group.methodConfigName || <span className="font-mono text-xs">{group.methodConfigId}</span>}
             </Link>
           </dd>
         </div>
@@ -562,19 +564,6 @@ function CalibrationGroupDetailContent() {
     return mapGroupDetail(groupQuery.data, id);
   }, [groupQuery.data, id]);
 
-  const instrumentQuery = useQuery({
-    queryKey: ["instrument", group?.instrumentId],
-    queryFn: () => getInstrument(group!.instrumentId),
-    enabled: !!group?.instrumentId,
-  });
-  const methodQuery = useQuery({
-    queryKey: ["method-config", group?.methodConfigId],
-    queryFn: () => getMethodConfig(group!.methodConfigId),
-    enabled: !!group?.methodConfigId,
-  });
-  const instrumentName = s((instrumentQuery.data as Record<string, unknown> | undefined)?.name) || null;
-  const methodName = s((methodQuery.data as Record<string, unknown> | undefined)?.name) || null;
-
   const canEditGroup = canEdit && group !== null && isEditable(group.status);
   const computed = !!group && group.status >= CalibrationGroupStatus.Computed;
 
@@ -635,8 +624,6 @@ function CalibrationGroupDetailContent() {
               <Card>
                 <GroupDetailCard
                   group={group}
-                  instrumentName={instrumentName}
-                  methodName={methodName}
                   showEditButton={canEditGroup && !editing}
                   onEdit={() => setEditing(true)}
                 />

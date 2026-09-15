@@ -3,10 +3,19 @@
 import { ExcelAnnotation } from "@/components/excel-annotation";
 import { FieldLabel, Input, LabelWithHelp, Select } from "@/components/ui";
 import { METHOD_CONFIG_FIELD_DISPLAY, METHOD_CONFIG_FIELD_HELP } from "@/lib/method-config-field-help";
-import { LABEL_MODE_LABEL, LabelMode, QUANTITATION_MODE_LABEL, QuantitationMode } from "@/lib/types/wltr";
+import {
+  LABEL_MODE_LABEL,
+  LabelMode,
+  MethodFamily,
+  QUANTITATION_MODE_LABEL,
+  QuantitationMode,
+  type MethodFamilyDefault,
+} from "@/lib/types/wltr";
 
 export type MethodConfigFormState = {
   name: string;
+  /** Optional method family tag ("" = untagged). Pre-fills quantitation mode; frozen on next snapshot. */
+  methodFamily: string;
   /** API string enum: "RSquared" (display R²) | "R" (display √R² / correlation r) */
   labelMode: string;
   /** API string enum: "InternalStandard" | "ExternalStandard" */
@@ -32,11 +41,13 @@ export function MethodConfigFormFields({
   setForm,
   disabled = false,
   nameRequired = false,
+  familyDefaults,
 }: {
   readonly form: MethodConfigFormState;
   readonly setForm: (next: MethodConfigFormState) => void;
   readonly disabled?: boolean;
   readonly nameRequired?: boolean;
+  readonly familyDefaults?: MethodFamilyDefault[];
 }) {
   const h = METHOD_CONFIG_FIELD_HELP;
   const d = METHOD_CONFIG_FIELD_DISPLAY;
@@ -55,6 +66,37 @@ export function MethodConfigFormFields({
           disabled={disabled}
           required={nameRequired}
         />
+      </div>
+
+      <div>
+        <LabelWithHelp htmlFor="methodFamily" help={h.methodFamily}>
+          <FieldLabel {...d.methodFamily} />
+        </LabelWithHelp>
+        <ExcelAnnotation fieldKey="methodConfig.methodFamily" />
+        <Select
+          id="methodFamily"
+          value={form.methodFamily}
+          onChange={(e) => {
+            const fam = e.target.value;
+            const def = familyDefaults?.find((fd) => fd.methodFamily === fam);
+            setForm({
+              ...form,
+              methodFamily: fam,
+              ...(def?.quantitationMode ? { quantitationMode: def.quantitationMode } : {}),
+            });
+          }}
+          disabled={disabled}
+        >
+          <option value="">Untagged</option>
+          {Object.values(MethodFamily).map((v) => (
+            <option key={v} value={v}>
+              {v}
+            </option>
+          ))}
+        </Select>
+        <p className="mt-1 text-xs text-neutral-500">
+          Optional tag for report layout; selecting one pre-fills the quantitation mode. Not enforced against it.
+        </p>
       </div>
 
       <div className="border-t border-neutral-200 pt-4 dark:border-neutral-800">

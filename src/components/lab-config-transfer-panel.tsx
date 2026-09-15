@@ -196,6 +196,7 @@ export function LabConfigTransferPanel({
         toast.success("Import complete", `${result.created ?? 0} created, ${result.updated ?? 0} updated`);
         void qc.invalidateQueries({ queryKey: ["analytes"] });
         void qc.invalidateQueries({ queryKey: ["internal-standards"] });
+        void qc.invalidateQueries({ queryKey: ["calibration-level-sets"] });
         void qc.invalidateQueries({ queryKey: ["calibration-levels"] });
         void qc.invalidateQueries({ queryKey: ["instruments"] });
         void qc.invalidateQueries({ queryKey: ["method-configs"] });

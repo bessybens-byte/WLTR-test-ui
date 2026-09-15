@@ -34,6 +34,9 @@ type RunRow = {
   runDate: string;
   status: number;
   calibrationLevelId: string | null;
+  calibrationLevelSetId: string | null;
+  calibrationLevelName: string | null;
+  calibrationLevelSetName: string | null;
   name: string | null;
   isGrouped: boolean | null;
 };
@@ -92,6 +95,9 @@ function RunsList() {
     runDate: s(r.runDate),
     status: typeof r.status === "number" ? r.status : 0,
     calibrationLevelId: typeof r.calibrationLevelId === "string" ? r.calibrationLevelId : null,
+    calibrationLevelSetId: typeof r.calibrationLevelSetId === "string" ? r.calibrationLevelSetId : null,
+    calibrationLevelName: typeof r.calibrationLevelName === "string" ? r.calibrationLevelName : null,
+    calibrationLevelSetName: typeof r.calibrationLevelSetName === "string" ? r.calibrationLevelSetName : null,
     name: typeof r.name === "string" && r.name.trim() ? r.name.trim() : null,
     isGrouped: readIsGrouped(r.isGrouped),
   }));
@@ -224,6 +230,7 @@ function RunsList() {
                   <th className="pb-2 text-left font-medium">Status</th>
                   <th className="pb-2 text-left font-medium">In group</th>
                   <th className="pb-2 text-left font-medium">Level</th>
+                  <th className="pb-2 text-left font-medium">Level set</th>
                   <th className="pb-2 text-left font-medium">Run ID</th>
                   <th className="pb-2"></th>
                 </tr>
@@ -250,8 +257,11 @@ function RunsList() {
                         <Badge tone={row.isGrouped ? "warn" : "neutral"}>{row.isGrouped ? "Grouped" : "Free"}</Badge>
                       )}
                     </td>
-                    <td className="py-2 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
-                      {row.calibrationLevelId ? `${row.calibrationLevelId.slice(0, 8)}…` : "—"}
+                    <td className="py-2 pr-4 max-w-[180px] truncate" title={row.calibrationLevelName ?? undefined}>
+                      {row.calibrationLevelName ?? "—"}
+                    </td>
+                    <td className="py-2 pr-4 max-w-[180px] truncate" title={row.calibrationLevelSetName ?? undefined}>
+                      {row.calibrationLevelSetName ?? "—"}
                     </td>
                     <td className="py-2 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
                       {row.id.slice(0, 8)}…

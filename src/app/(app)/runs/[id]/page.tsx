@@ -14,7 +14,7 @@ import {
   listAnalytes,
   resolveAnalyteMapping,
 } from "@/lib/api/wltr-api";
-import { PERMS, RUN_STATUS_LABEL, RUN_TYPE_LABEL, hasPermission, readIsGrouped } from "@/lib/types/wltr";
+import { PERMS, RUN_STATUS_LABEL, RUN_TYPE_LABEL, IMPORT_FORMAT_LABEL, hasPermission, readIsGrouped } from "@/lib/types/wltr";
 import { useToast } from "@/providers/toast-provider";
 import { useAuth } from "@/providers/auth-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -256,6 +256,27 @@ export default function RunDetailPage() {
               {s(runData.dataFile) ? <DetailRow label="Data file">{s(runData.dataFile)}</DetailRow> : null}
               {s(runData.methodName) ? <DetailRow label="Method">{s(runData.methodName)}</DetailRow> : null}
               {s(runData.operator) ? <DetailRow label="Operator">{s(runData.operator)}</DetailRow> : null}
+              {s(runData.detectorSignal) ? <DetailRow label="Detector signal">{s(runData.detectorSignal)}</DetailRow> : null}
+              {s(runData.importFormat) ? (
+                <DetailRow label="Import format">
+                  {IMPORT_FORMAT_LABEL[s(runData.importFormat)] ?? s(runData.importFormat)}
+                </DetailRow>
+              ) : null}
+              {s(runData.calibrationLevelSetId) ? (
+                <DetailRow label="Level set">
+                  <Link
+                    className="text-blue-600 underline dark:text-blue-400"
+                    href={`/calibration-level-sets/${s(runData.calibrationLevelSetId)}`}
+                  >
+                    {s(runData.calibrationLevelSetName) || s(runData.calibrationLevelSetId)}
+                  </Link>
+                </DetailRow>
+              ) : null}
+              {s(runData.calibrationLevelId) ? (
+                <DetailRow label="Level">
+                  <span>{s(runData.calibrationLevelName) || s(runData.calibrationLevelId)}</span>
+                </DetailRow>
+              ) : null}
               <DetailRow label="Run date">{formatDate(s(runData.runDate) || s(runData.acquiredOn))}</DetailRow>
               {s(runData.createdAt) ? <DetailRow label="Uploaded">{formatDate(s(runData.createdAt))}</DetailRow> : null}
               {s(runData.textHash) ? (

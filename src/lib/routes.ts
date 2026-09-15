@@ -32,8 +32,9 @@ export const ROUTE_RULES: readonly RouteRule[] = [
   { pattern: /^\/internal-standards\/new$/, permissions: [PERMS.configEdit] },
   { pattern: /^\/internal-standards(\/|$)/, permissions: [PERMS.view] },
 
-  { pattern: /^\/calibration-levels\/new$/, permissions: [PERMS.configEdit] },
-  { pattern: /^\/calibration-levels(\/|$)/, permissions: [PERMS.view] },
+  { pattern: /^\/calibration-level-sets\/new$/, permissions: [PERMS.configEdit] },
+  { pattern: /^\/calibration-level-sets\/[^/]+\/levels\/new$/, permissions: [PERMS.configEdit] },
+  { pattern: /^\/calibration-level-sets(\/|$)/, permissions: [PERMS.view] },
 
   { pattern: /^\/instruments\/new$/, permissions: [PERMS.configEdit] },
   { pattern: /^\/instruments(\/|$)/, permissions: [PERMS.view] },

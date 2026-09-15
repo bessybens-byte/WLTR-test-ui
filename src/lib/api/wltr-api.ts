@@ -389,29 +389,84 @@ export async function deleteInternalStandard(id: string): Promise<void> {
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
-export async function listCalibrationLevels(params?: {
+export async function listCalibrationLevelSets(params?: {
   page?: number;
   pageSize?: number;
   sort?: string;
 }): Promise<Paged<Record<string, unknown>>> {
-  return apiJson(`calibration-levels`, { searchParams: params });
+  return apiJson(`calibration-level-sets`, { searchParams: params });
 }
 
-export async function getCalibrationLevel(id: string): Promise<Record<string, unknown>> {
-  return apiJson(`calibration-levels/${id}`);
+export async function getCalibrationLevelSet(id: string): Promise<Record<string, unknown>> {
+  return apiJson(`calibration-level-sets/${id}`);
 }
 
-export async function createCalibrationLevel(body: unknown): Promise<Record<string, unknown>> {
-  return apiJson(`calibration-levels`, { method: "POST", body: JSON.stringify(body) });
+export async function createCalibrationLevelSet(body: {
+  name: string;
+  departmentId?: string | null;
+}): Promise<Record<string, unknown>> {
+  return apiJson(`calibration-level-sets`, { method: "POST", body: JSON.stringify(body) });
 }
 
-export async function updateCalibrationLevel(id: string, body: unknown): Promise<void> {
-  const res = await apiFetch(`calibration-levels/${id}`, { method: "PUT", body: JSON.stringify(body) });
+/** Rename a set. The owning department is fixed at creation. Returns 409 on a stale `rowVersion`. */
+export async function updateCalibrationLevelSet(
+  id: string,
+  body: { name: string; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`calibration-level-sets/${id}`, { method: "PUT", body: JSON.stringify(body) });
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
-export async function deleteCalibrationLevel(id: string): Promise<void> {
-  const res = await apiFetch(`calibration-levels/${id}`, { method: "DELETE" });
+/** Retire (or reinstate) a ladder. Retired sets accept no new levels/runs but stay readable. */
+export async function setCalibrationLevelSetActive(
+  id: string,
+  body: { isActive: boolean; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`calibration-level-sets/${id}/active`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Undo a mistaken create. Fails with 409 when a method config or run still references the set. */
+export async function deleteCalibrationLevelSet(id: string): Promise<void> {
+  const res = await apiFetch(`calibration-level-sets/${id}`, { method: "DELETE" });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function listCalibrationLevels(
+  setId: string,
+  params?: { page?: number; pageSize?: number; sort?: string },
+): Promise<Paged<Record<string, unknown>>> {
+  return apiJson(`calibration-level-sets/${setId}/levels`, { searchParams: params });
+}
+
+export async function getCalibrationLevel(setId: string, id: string): Promise<Record<string, unknown>> {
+  return apiJson(`calibration-level-sets/${setId}/levels/${id}`);
+}
+
+export async function createCalibrationLevel(
+  setId: string,
+  body: { levelName: string; trueConcentration: number; sortOrder: number },
+): Promise<Record<string, unknown>> {
+  return apiJson(`calibration-level-sets/${setId}/levels`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function updateCalibrationLevel(
+  setId: string,
+  id: string,
+  body: { levelName: string; trueConcentration: number; sortOrder: number; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`calibration-level-sets/${setId}/levels/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function deleteCalibrationLevel(setId: string, id: string): Promise<void> {
+  const res = await apiFetch(`calibration-level-sets/${setId}/levels/${id}`, { method: "DELETE" });
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
@@ -444,6 +499,16 @@ export async function deleteMethodConfig(id: string): Promise<void> {
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
+/**
+ * Server-owned family → quantitation-mode defaults so clients don't hardcode
+ * VOC→ISTD, DRO→ESTD, etc. Used to pre-fill the method config form on family selection.
+ */
+export async function getMethodConfigFamilyDefaults(): Promise<
+  { methodFamily?: string | null; quantitationMode?: string | null }[]
+> {
+  return apiJson(`method-configs/family-defaults`);
+}
+
 export async function listMethodConfigSnapshots(
   id: string,
   params?: { page?: number; pageSize?: number },
@@ -472,6 +537,8 @@ export async function uploadRun(
     instrumentId: string;
     runDate: string;
     level?: string;
+    calibrationLevelSetId?: string;
+    importFormat?: string;
     name?: string;
   },
 ): Promise<Record<string, unknown>> {
@@ -481,6 +548,8 @@ export async function uploadRun(
   form.append("instrumentId", metadata.instrumentId);
   form.append("runDate", metadata.runDate);
   if (metadata.level) form.append("level", metadata.level);
+  if (metadata.calibrationLevelSetId) form.append("calibrationLevelSetId", metadata.calibrationLevelSetId);
+  if (metadata.importFormat) form.append("importFormat", metadata.importFormat);
   if (metadata.name) form.append("name", metadata.name);
   return apiJson("runs/upload", { method: "POST", body: form });
 }

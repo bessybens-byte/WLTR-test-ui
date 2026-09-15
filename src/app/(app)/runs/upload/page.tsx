@@ -1,8 +1,10 @@
 "use client";
 
 import { ExcelAnnotation, ExcelPageGuide } from "@/components/excel-annotation";
+import { CalibrationLevelSetPicker } from "@/components/calibration-level-set-picker";
 import { Button, Card, Input, Label, PageHeader, Select, Textarea } from "@/components/ui";
 import { createRun, listCalibrationLevels, listInstruments } from "@/lib/api/wltr-api";
+import { ImportFormat, IMPORT_FORMAT_LABEL } from "@/lib/types/wltr";
 import { MANUAL_INSTRUMENT_VALUE, pushRecentInstrument, pushRecentRun } from "@/lib/client-recent";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,6 +29,7 @@ function UploadForm() {
       (instrumentsQuery.data?.items ?? []).map((r) => ({
         id: s(r.id),
         name: s(r.name, s(r.id)),
+        departmentId: s(r.departmentId),
       })),
     [instrumentsQuery.data],
   );
@@ -38,18 +41,30 @@ function UploadForm() {
   const [form, setForm] = useState({
     runType: 0,
     level: "",
+    calibrationLevelSetId: "",
     instrumentId: initialInstrument,
     runDate: new Date().toISOString().slice(0, 16),
     name: "",
+    importFormat: "",
     rawText: "",
   });
 
+  const instrumentDepartmentId = useMemo(() => {
+    if (!form.instrumentId) return "";
+    const match = instrumentOptions.find((i) => i.id === form.instrumentId);
+    return match?.departmentId ?? "";
+  }, [instrumentOptions, form.instrumentId]);
+
   const levelsQuery = useQuery({
-    queryKey: ["calibration-levels", "upload-picker"],
+    queryKey: ["calibration-levels", "upload-picker", form.calibrationLevelSetId],
     queryFn: async () => {
-      const page = await listCalibrationLevels({ pageSize: 100, sort: "sortOrder:asc" });
+      const page = await listCalibrationLevels(form.calibrationLevelSetId, {
+        pageSize: 100,
+        sort: "sortOrder:asc",
+      });
       return page.items ?? [];
     },
+    enabled: form.runType === 0 && !!form.calibrationLevelSetId,
   });
 
   const levelRows = useMemo(
@@ -77,7 +92,11 @@ function UploadForm() {
         runDate: new Date(form.runDate).toISOString(),
         rawText: form.rawText,
       };
-      if (form.runType === 0) payload.level = form.level || undefined;
+      if (form.runType === 0) {
+        payload.level = form.level || undefined;
+        payload.calibrationLevelSetId = form.calibrationLevelSetId || undefined;
+      }
+      if (form.importFormat) payload.importFormat = form.importFormat;
       const trimmedName = form.name.trim();
       if (trimmedName) payload.name = trimmedName.slice(0, 256);
       const res = await createRun(payload);
@@ -116,8 +135,13 @@ function UploadForm() {
             <div>
               <Label htmlFor="level">Calibration level</Label>
               <ExcelAnnotation fieldKey="run.level" />
-              {levelsQuery.isLoading ? <div className="mt-2 text-sm text-neutral-500">Loading levels…</div> : null}
-              {levelsQuery.isError ? (
+              {!form.calibrationLevelSetId ? (
+                <div className="mt-2 text-sm text-neutral-500">
+                  Select a calibration level set to see its levels.
+                </div>
+              ) : levelsQuery.isLoading ? (
+                <div className="mt-2 text-sm text-neutral-500">Loading levels…</div>
+              ) : levelsQuery.isError ? (
                 <div className="mt-2 text-sm text-amber-700 dark:text-amber-300">
                   Could not load levels — type the level name to match your export.
                 </div>
@@ -132,7 +156,7 @@ function UploadForm() {
                     if (v) setForm((f) => ({ ...f, level: v }));
                   }}
                 >
-                  <option value="">Quick pick from catalog…</option>
+                  <option value="">Quick pick from this set…</option>
                   {levelRows
                     .filter((r) => r.name)
                     .map((r) => (
@@ -148,7 +172,7 @@ function UploadForm() {
                 className="mt-1"
                 value={form.level}
                 onChange={(e) => setForm({ ...form, level: e.target.value })}
-                placeholder="e.g. Cal_10ppb — normalized match to calibration level name"
+                placeholder="e.g. Cal_10ppb — normalized match to a level in the chosen set"
               />
             </div>
           ) : (
@@ -157,6 +181,21 @@ function UploadForm() {
             </div>
           )}
         </div>
+        {form.runType === 0 ? (
+          <div>
+            <Label htmlFor="calibrationLevelSetId">Calibration level set</Label>
+            <CalibrationLevelSetPicker
+              id="calibrationLevelSetId"
+              value={form.calibrationLevelSetId}
+              onChange={(v) => setForm((f) => ({ ...f, calibrationLevelSetId: v, level: "" }))}
+              required
+              departmentId={instrumentDepartmentId || undefined}
+            />
+            <p className="mt-1 text-xs text-neutral-500">
+              The ladder this run&apos;s level belongs to. Must match the run&apos;s instrument department.
+            </p>
+          </div>
+        ) : null}
         <div>
           <Label htmlFor="instrumentPick">Instrument</Label>
           <ExcelAnnotation fieldKey="run.instrumentId" />
@@ -216,12 +255,34 @@ function UploadForm() {
           <p className="mt-1 text-xs text-neutral-500">Max 256 characters; shown in run lists and group builder.</p>
         </div>
         <div>
+          <Label htmlFor="importFormat">Import format</Label>
+          <ExcelAnnotation fieldKey="run.importFormat" />
+          <Select
+            id="importFormat"
+            value={form.importFormat}
+            onChange={(e) => setForm({ ...form, importFormat: e.target.value })}
+          >
+            <option value="">Auto-detect (MassHunter / generic)</option>
+            {Object.values(ImportFormat).map((v) => (
+              <option key={v} value={v}>
+                {IMPORT_FORMAT_LABEL[v]}
+              </option>
+            ))}
+          </Select>
+          <p className="mt-1 text-xs text-neutral-500">
+            Explicit format selects the parser; never inferred from a filename. Omit to auto-detect only.
+          </p>
+        </div>
+        <div>
           <Label htmlFor="rawText">Raw text</Label>
           <ExcelAnnotation fieldKey="run.rawText" />
           <Textarea id="rawText" value={form.rawText} onChange={(e) => setForm({ ...form, rawText: e.target.value })} />
         </div>
         {error ? <div className="text-sm text-red-600">{error}</div> : null}
-        <Button type="submit" disabled={busy || !instrumentChoice || !form.instrumentId.trim()}>
+        <Button
+          type="submit"
+          disabled={busy || !instrumentChoice || !form.instrumentId.trim() || (form.runType === 0 && !form.calibrationLevelSetId)}
+        >
           {busy ? "Uploading…" : "Upload"}
         </Button>
       </form>

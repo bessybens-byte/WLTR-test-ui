@@ -27,6 +27,8 @@ const ISSUE_CODE_NAMES: Record<number, string> = {
   8: "CalibrationRunReferenceMissing",
   9: "InvalidCalibrationRunStatus",
   10: "InvalidResponseRatio",
+  11: "CalibrationLevelSetMismatch",
+  12: "ImportFormatMismatch",
 };
 
 function issueRowKey(raw: Record<string, unknown>, prefix: string, index: number): string {

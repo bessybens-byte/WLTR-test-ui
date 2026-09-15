@@ -1947,14 +1947,11 @@ export interface paths {
          *                 compare the application's output against the legacy Excel workbook step by step.
          *
          *     <strong>ICV verification (workbook "ICV Calculator" parity):</strong> the response carries
-         *                 `icvTrueConcentration`, `icvCalculatedConcentration`, `icvPercentDiff`, `icvPassed`, `icvRecoveryPercent`,
+         *                 `icvTrueConcentration`, `icvCalculatedConcentration`, `icvPercentDiff`, `icvPassed`,
          *                 and the CDS-parity fields, plus the per-analyte recovery window it is judged against —
          *                 `icvLcsLowerControlLimit` / `icvLcsUpperControlLimit` (from the method-config snapshot;
          *                 `null` when not configured). These bounds are the same snapshot values that drive
-         *                 `icvLcsRecoveryPassed`, so the number and the pass/fail always agree. The instrument block —
-         *                 `icvObservedResponse`, `icvObservedResponseRatio`, `icvInternalStandardResponse`, `icvAmountRatio`,
-         *                 `icvResponseFactor` — carries the ICV run's own area/IS-area/ratios directly (the ICV run is not a
-         *                 member of `points[]`, which only covers CAL levels).
+         *                 `icvLcsRecoveryPassed`, so the number and the pass/fail always agree.
          *
          *     <strong>Status prerequisite:</strong> the endpoint returns <strong>404</strong> when the group
          *                 has not yet been computed (no `CalibrationCurve` row exists for this analyte), when the
@@ -3787,7 +3784,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/calibration-levels": {
+    "/api/calibration-level-sets": {
         parameters: {
             query?: never;
             header?: never;
@@ -3795,26 +3792,416 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Returns a page of calibration levels for the caller's laboratory.
-         * @description Results are always scoped to the `LaboratoryId` claim in the caller's JWT.
-         *     Platform operators without a laboratory claim receive an empty page.
-         *     Soft-deleted levels are excluded.
+         * Returns a page of calibration level sets for the caller's laboratory.
+         * @description Scoped to the caller's laboratory; soft-deleted sets are excluded.
          */
         get: {
             parameters: {
                 query?: {
-                    /** @description 1-based page index (default 1). */
                     page?: number;
-                    /** @description Items per page, capped at 100 (default 25). */
                     pageSize?: number;
-                    /**
-                     * @description Optional sort expression: `field` or `field:asc` / `field:desc`.
-                     *     Supported fields: `sortOrder` (default), `levelName`, `trueConcentration`, `createdAt`.
-                     */
                     sort?: string;
                 };
                 header?: never;
                 path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["PagedResultOfCalibrationLevelSetListItemDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        /** Creates a new calibration level set for the caller's laboratory. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Set name and optional target department. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["CreateCalibrationLevelSetRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CreateCalibrationLevelSetResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-level-sets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Returns full calibration level set detail by id. */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["CalibrationLevelSetDetailDto"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        /** Renames a calibration level set. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Replacement name and concurrency token. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["UpdateCalibrationLevelSetRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /** Deletes a calibration level set that nothing references, along with its levels. */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-level-sets/{id}/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Retires or reinstates a calibration level set. */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            /** @description Target active state and concurrency token. */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["SetCalibrationLevelSetActiveRequest"];
+                };
+            };
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/calibration-level-sets/{setId}/levels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Returns a page of calibration levels in the given set. */
+        get: {
+            parameters: {
+                query?: {
+                    page?: number;
+                    pageSize?: number;
+                    sort?: string;
+                };
+                header?: never;
+                path: {
+                    setId: string;
+                };
                 cookie?: never;
             };
             requestBody?: never;
@@ -3846,28 +4233,29 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
             };
         };
         put?: never;
-        /**
-         * Creates a new calibration level for the caller's laboratory.
-         * @description The laboratory is derived from the `LaboratoryId` JWT claim; the caller cannot specify a
-         *     different lab. Returns <strong>400</strong> if there is no laboratory claim in the token.
-         *
-         *     <strong>Name uniqueness:</strong> the name is normalized (trimmed, lowercased, underscores/hyphens/
-         *     whitespace stripped) before the uniqueness check. `Cal_1ppb` and `CAL 1 PPB` collide;
-         *     the duplicate returns <strong>400</strong> with the conflicting name in the error detail.
-         *     On success the response body contains the new level's GUID and the `Location` header
-         *     points to `GET /api/calibration-levels/{id}`.
-         */
+        /** Adds a calibration level to the given set. */
         post: {
             parameters: {
                 query?: never;
                 header?: never;
-                path?: never;
+                path: {
+                    setId: string;
+                };
                 cookie?: never;
             };
-            /** @description Level name, true concentration (≥ 0), and display sort order (≥ 0). */
+            /** @description Level name, true concentration, and sort order. */
             requestBody?: {
                 content: {
                     "application/json": components["schemas"]["CreateCalibrationLevelRequest"];
@@ -3910,6 +4298,15 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -3918,25 +4315,20 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/calibration-levels/{id}": {
+    "/api/calibration-level-sets/{setId}/levels/{id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Returns full calibration level detail by id.
-         * @description Returns <strong>404</strong> if the level does not exist, has been soft-deleted, or belongs to a
-         *     different laboratory than the caller's JWT claim. Cross-lab reads are not distinguished from
-         *     not-found to prevent IDOR enumeration.
-         */
+        /** Returns full calibration level detail by id within its set. */
         get: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Calibration level GUID. */
+                    setId: string;
                     id: string;
                 };
                 cookie?: never;
@@ -3981,26 +4373,18 @@ export interface paths {
                 };
             };
         };
-        /**
-         * Updates a calibration level. Edits apply to future work only; historical computations are unaffected.
-         * @description "Future work only" means that `CalibrationPoint` rows already computed retain the concentration
-         *     values used at computation time. Only new runs and recomputations will use the updated value.
-         *
-         *     If the name changes, the same normalization and per-laboratory uniqueness check as create is applied;
-         *     a collision returns <strong>400</strong>. Attempting to update a level that belongs to a different
-         *     laboratory also returns <strong>400</strong> (IDOR protection).
-         */
+        /** Updates a calibration level. */
         put: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Calibration level GUID to update. */
+                    setId: string;
                     id: string;
                 };
                 cookie?: never;
             };
-            /** @description Replacement level name, true concentration (≥ 0), and display sort order (≥ 0). */
+            /** @description Replacement level fields and concurrency token. */
             requestBody?: {
                 content: {
                     "application/json": components["schemas"]["UpdateCalibrationLevelRequest"];
@@ -4041,25 +4425,34 @@ export interface paths {
                         "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
             };
         };
         post?: never;
-        /**
-         * Soft-deletes a calibration level. Returns 409 if referenced by any run or computed point.
-         * @description The level is soft-deleted (excluded from all queries) rather than physically removed to preserve
-         *     audit trail integrity.
-         *
-         *     Returns <strong>409 Conflict</strong> if at least one `CalibrationRun` or
-         *     `CalibrationPoint` references this level. Remove or reassign those records first.
-         *     Returns <strong>400</strong> if the level is not found, has already been deleted, or belongs to
-         *     a different laboratory than the caller's JWT claim.
-         */
+        /** Soft-deletes a calibration level. */
         delete: {
             parameters: {
                 query?: never;
                 header?: never;
                 path: {
-                    /** @description Calibration level GUID to delete. */
+                    setId: string;
                     id: string;
                 };
                 cookie?: never;
@@ -4093,6 +4486,15 @@ export interface paths {
                 };
                 /** @description Forbidden */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -7787,6 +8189,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/method-configs/family-defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Returns the server-owned method-family → quantitation-mode defaults.
+         * @description A single server-owned map so clients do not hardcode VOC→ISTD, DRO→ESTD, etc. Used to pre-fill the method config form when a family is selected.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["MethodFamilyDefaultsResponse"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -8058,6 +8517,10 @@ export interface components {
              */
             isComputationStale?: boolean;
             approval?: components["schemas"]["ApprovalRecordResponse"];
+            /** @description Instrument display name; falls back to "" only if the row is unresolvable. */
+            instrumentName?: string | null;
+            /** @description Method config display name; falls back to "" only if the row is unresolvable. */
+            methodConfigName?: string | null;
         };
         /** @description Summary row returned by `GET /api/calibration-groups`. */
         CalibrationGroupListItemResponse: {
@@ -8099,6 +8562,10 @@ export interface components {
              * @description UTC creation timestamp.
              */
             createdAt?: string;
+            /** @description Instrument display name; falls back to "" only if the row is unresolvable. */
+            instrumentName?: string | null;
+            /** @description Method config display name; falls back to "" only if the row is unresolvable. */
+            methodConfigName?: string | null;
         };
         /** @description Regression readiness payload for `GET /api/calibration-groups/{id}/readiness` (`application/json`). */
         CalibrationGroupReadinessResponse: {
@@ -8177,13 +8644,18 @@ export interface components {
         CalibrationLevelDetailDto: {
             /** Format: uuid */
             id?: string;
-            /** Format: uuid */
-            laboratoryId?: string;
             levelName?: string | null;
             /** Format: double */
             trueConcentration?: number;
             /** Format: int32 */
             sortOrder?: number;
+            /** Format: uuid */
+            calibrationLevelSetId?: string;
+            /**
+             * Format: byte
+             * @description Concurrency token that an update must echo back.
+             */
+            rowVersion?: string;
         };
         /** @description Lightweight projection for calibration level list responses. */
         CalibrationLevelListItemDto: {
@@ -8194,6 +8666,8 @@ export interface components {
             trueConcentration?: number;
             /** Format: int32 */
             sortOrder?: number;
+            /** Format: uuid */
+            calibrationLevelSetId?: string;
         };
         /** @description One parsed compound row with analyte resolution, raw instrument values, and optional IS-normalized fields for review UIs and regression prep. */
         CalibrationMeasurementListItemDto: {
@@ -8293,6 +8767,15 @@ export interface components {
             calibrationLevelId?: string | null;
             /** @description User-supplied display label; defaults to `"{RunType} {RunDate:yyyy-MM-dd}"` when not provided at upload. */
             name?: string | null;
+            /**
+             * Format: uuid
+             * @description Calibration level set that owns the run's level; null for ICV / unbound.
+             */
+            calibrationLevelSetId?: string | null;
+            /** @description Resolved calibration level label (e.g. "Cal_10ppb"); null for ICV / unbound. */
+            calibrationLevelName?: string | null;
+            /** @description Name of the owning calibration level set; null for ICV / unbound. */
+            calibrationLevelSetName?: string | null;
         };
         /** @enum {string} */
         CompoundCategory: "Unknown" | "Target" | "InternalStandard" | "SystemMonitoring" | "Surrogate";
@@ -8560,6 +9043,16 @@ export interface components {
              * @description Optional inclusive upper bound for mean IS response (summary warnings).
              */
             internalStandardResponseMax?: number | null;
+            /**
+             * Format: uuid
+             * @description Calibration level set this configuration evaluates against; must belong to the same department as the config.
+             */
+            calibrationLevelSetId?: string;
+            /**
+             * @description Optional method family tag; null/absent means untagged.
+             * @enum {string|null}
+             */
+            methodFamily?: "VOC" | "GRO" | "BTEX" | "DRO" | "ORO" | "Anions" | null;
         };
         /** @description Response body for `POST /api/method-configs` on success. */
         CreateMethodConfigResponse: {
@@ -8591,6 +9084,16 @@ export interface components {
              *     Maximum 256 characters.
              */
             name?: string | null;
+            /**
+             * Format: uuid
+             * @description Calibration level set that owns the level. Required for CAL runs; ignored for ICV.
+             */
+            calibrationLevelSetId?: string | null;
+            /**
+             * @description Parser selector; null means conservative auto-detect only.
+             * @enum {string|null}
+             */
+            importFormat?: "MassHunterText" | "ChemStationCsv" | "PidText" | "IcSlk" | "IcCsv" | "Generic" | null;
         };
         /** @description Response body for `POST /api/runs` on success. */
         CreateRunResponse: {
@@ -8737,6 +9240,15 @@ export interface components {
             isEligibleAsIcv?: boolean;
             /** @description Human-readable reason when not eligible for the row's type. */
             ineligibilityReason?: string | null;
+            /**
+             * Format: uuid
+             * @description Calibration level set a CAL run was bound to; null for ICV or unbound runs.
+             */
+            calibrationLevelSetId?: string | null;
+            /** @description Display name of the resolved calibration level; null when the run has no level. */
+            calibrationLevelName?: string | null;
+            /** @description Display name of the bound calibration level set; null for ICV or unbound runs. */
+            calibrationLevelSetName?: string | null;
         };
         /** @description Response for `GET /api/calibration-groups/candidates`. */
         GroupCandidatesResponse: {
@@ -9173,6 +9685,16 @@ export interface components {
             internalStandardResponseMax?: number | null;
             /** Format: int32 */
             currentVersion?: number;
+            /**
+             * @description Optional method family tag; null/absent means untagged.
+             * @enum {string|null}
+             */
+            methodFamily?: "VOC" | "GRO" | "BTEX" | "DRO" | "ORO" | "Anions" | null;
+            /**
+             * Format: uuid
+             * @description Calibration level set this configuration evaluates against. Non-nullable: every config has one.
+             */
+            calibrationLevelSetId?: string;
         };
         /** @description Summary item for method-config list endpoints. */
         MethodConfigListItemDto: {
@@ -9227,6 +9749,18 @@ export interface components {
             internalStandardResponseMax?: number | null;
             /** Format: date-time */
             createdAt?: string;
+            /**
+             * @description Optional method family tag; null/absent means untagged.
+             * @enum {string|null}
+             */
+            methodFamily?: "VOC" | "GRO" | "BTEX" | "DRO" | "ORO" | "Anions" | null;
+            /**
+             * Format: uuid
+             * @description Frozen calibration level set id (schema v6+); null for historical pre-set rows.
+             */
+            calibrationLevelSetId?: string | null;
+            /** @description Name of the frozen calibration level set; null exactly when calibrationLevelSetId is null. */
+            calibrationLevelSetName?: string | null;
         };
         /** @description Paginated list envelope per API conventions; JSON uses camelCase (`items`, `totalCount`, `page`, `pageSize`). */
         PagedResultOfAnalyteListItemDto: {
@@ -9745,46 +10279,6 @@ export interface components {
             icvPassed?: boolean | null;
             /**
              * Format: double
-             * @description Recovery % = 100 + IcvPercentDiff (100% = perfect); `null` when no ICV run was linked or no true concentration is configured.
-             */
-            icvRecoveryPercent?: number | null;
-            /**
-             * Format: double
-             * @description Raw ICV response (area) from the linked ICV run; `null` when no ICV run is linked or not exported.
-             */
-            icvObservedResponse?: number | null;
-            /**
-             * Format: double
-             * @description ICV response ratio (Y-value) = analyte area / internal-standard area; `null` when no ICV run was linked.
-             */
-            icvObservedResponseRatio?: number | null;
-            /**
-             * Format: double
-             * @description Internal-standard response (area) from the linked ICV run; `null` when no ICV run is linked or no IS row matched.
-             */
-            icvInternalStandardResponse?: number | null;
-            /**
-             * Format: double
-             * @description ICV amount ratio (X-value) = true concentration / internal-standard concentration; `null` when no true concentration is configured.
-             */
-            icvAmountRatio?: number | null;
-            /**
-             * Format: double
-             * @description ICV response factor = IcvObservedResponseRatio / IcvAmountRatio; `null` when IcvAmountRatio is unavailable.
-             */
-            icvResponseFactor?: number | null;
-            /**
-             * Format: double
-             * @description Instrument (CDS) reported ICV concentration; `null` when not exported or no ICV run is linked.
-             */
-            icvCdsReportedConcentration?: number | null;
-            /**
-             * Format: int32
-             * @description This variant's relative rank against its siblings on ICV %Diff, used by the report-card ranking breakdown; `null` when no ICV run was linked.
-             */
-            icvRank?: number | null;
-            /**
-             * Format: double
              * @description Arithmetic mean of per-point response factors (ResponseRatio / AmountRatio) across included points; `null` when not computed.
              */
             meanResponseFactor?: number | null;
@@ -10246,6 +10740,27 @@ export interface components {
              * @description Number of compound measurements stored for this run.
              */
             measurementCount?: number;
+            /**
+             * @description Parser selector; null means conservative auto-detect only.
+             * @enum {string|null}
+             */
+            importFormat?: "MassHunterText" | "ChemStationCsv" | "PidText" | "IcSlk" | "IcCsv" | "Generic" | null;
+            /** @description ChemStation Signal: file metadata (not a Front/Back picker); null on MassHunter/PID. */
+            detectorSignal?: string | null;
+            /**
+             * Format: uuid
+             * @description Resolved calibration level for CAL runs, if any.
+             */
+            calibrationLevelId?: string | null;
+            /**
+             * Format: uuid
+             * @description Calibration level set that owns the run's level; null for ICV / unbound.
+             */
+            calibrationLevelSetId?: string | null;
+            /** @description Resolved calibration level label (e.g. "Cal_10ppb"); null for ICV / unbound. */
+            calibrationLevelName?: string | null;
+            /** @description Name of the owning calibration level set; null for ICV / unbound. */
+            calibrationLevelSetName?: string | null;
         };
         /** @enum {string} */
         RunStatus: "Pending" | "Valid" | "ValidWithWarnings" | "Invalid";
@@ -10255,7 +10770,7 @@ export interface components {
          * @description Identifies the kind of validation issue on a calibration measurement row or group-level readiness finding.
          * @enum {string}
          */
-        RunValidationIssueCode: "NonPositiveResponse" | "MissingAnalyteMapping" | "MissingInternalStandard" | "MalformedConcentrationOrRatio" | "NonPositiveInternalStandardResponse" | "InsufficientCalibrationLevels" | "CalibrationRunLevelUnresolved" | "DuplicateCalibrationLevelInGroup" | "CalibrationRunReferenceMissing" | "InvalidCalibrationRunStatus" | "InvalidResponseRatio";
+        RunValidationIssueCode: "NonPositiveResponse" | "MissingAnalyteMapping" | "MissingInternalStandard" | "MalformedConcentrationOrRatio" | "NonPositiveInternalStandardResponse" | "InsufficientCalibrationLevels" | "CalibrationRunLevelUnresolved" | "DuplicateCalibrationLevelInGroup" | "CalibrationRunReferenceMissing" | "InvalidCalibrationRunStatus" | "InvalidResponseRatio" | "CalibrationLevelSetMismatch" | "ImportFormatMismatch";
         /**
          * @description One validation finding: `GET /api/runs/{id}/validation` (errors/warnings) or
          *     `GET /api/calibration-groups/{id}/readiness` (`blockingIssues`/`warnings`).
@@ -10534,13 +11049,6 @@ export interface components {
              * @description ICV recovery percent (`100 + IcvPercentDiff`), where 100% is a perfect recovery; null when ICV %Diff is not available.
              */
             icvRecoveryPercent?: number | null;
-            /**
-             * Format: double
-             * @description ICV response ratio (Y-value) = analyte area / internal-standard area; null when no ICV run was linked. The
-             *     fuller instrument block (IS response, amount ratio, response factor) is only available from `GET …/curves` and
-             *     `GET …/regression-debug`, not from this summary report.
-             */
-            icvObservedResponseRatio?: number | null;
             points?: components["schemas"]["SummaryReportLdrPointDto"][] | null;
         };
         /** @description One calibration level's fit quality within the Linear Dynamic Range table. */
@@ -10707,6 +11215,11 @@ export interface components {
              * @description Display ordering hint.
              */
             sortOrder?: number;
+            /**
+             * Format: byte
+             * @description Concurrency token from the last read of the level.
+             */
+            rowVersion?: string | null;
         };
         /** @description Request body for replacing mutable fields on an instrument. */
         UpdateInstrumentRequest: {
@@ -10857,6 +11370,16 @@ export interface components {
              * @description Optional inclusive upper bound for mean IS response (summary warnings).
              */
             internalStandardResponseMax?: number | null;
+            /**
+             * Format: uuid
+             * @description Calibration level set this configuration evaluates against; must belong to the same department as the config.
+             */
+            calibrationLevelSetId?: string;
+            /**
+             * @description Optional method family tag; null/absent means untagged.
+             * @enum {string|null}
+             */
+            methodFamily?: "VOC" | "GRO" | "BTEX" | "DRO" | "ORO" | "Anions" | null;
         };
         /** @description Response body for `PUT /api/method-configs/{id}`. */
         UpdateMethodConfigResponse: {
@@ -11053,6 +11576,90 @@ export interface components {
          * @enum {string}
          */
         WeightingMode: "None" | "InverseX" | "InverseXSquared";
+        /** @description Lightweight projection for calibration level set list responses. */
+        CalibrationLevelSetListItemDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            laboratoryId?: string;
+            /** Format: uuid */
+            departmentId?: string;
+            departmentName?: string | null;
+            name?: string | null;
+            isActive?: boolean;
+        };
+        /** @description Full detail projection for a single calibration level set. */
+        CalibrationLevelSetDetailDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            laboratoryId?: string;
+            /** Format: uuid */
+            departmentId?: string;
+            departmentName?: string | null;
+            name?: string | null;
+            isActive?: boolean;
+            /** Format: byte */
+            rowVersion?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            createdBy?: string | null;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            updatedBy?: string | null;
+        };
+        /** @description Request body for creating a department-scoped calibration level set. */
+        CreateCalibrationLevelSetRequest: {
+            /** @description Display name; unique within the department after normalization. */
+            name?: string | null;
+            /**
+             * Format: uuid
+             * @description Owning department; inferred for single-department labs.
+             */
+            departmentId?: string | null;
+        };
+        /** @description Request body for renaming a calibration level set. */
+        UpdateCalibrationLevelSetRequest: {
+            /** @description New display name; unique within the set's department. */
+            name?: string | null;
+            /** Format: byte */
+            rowVersion?: string | null;
+        };
+        /** @description Request body for retiring or reinstating a calibration level set. */
+        SetCalibrationLevelSetActiveRequest: {
+            /** @description False retires the ladder so it accepts no new work. */
+            isActive?: boolean;
+            /** Format: byte */
+            rowVersion?: string | null;
+        };
+        /** @description Response returned when a calibration level set is created. */
+        CreateCalibrationLevelSetResponse: {
+            /** Format: uuid */
+            id?: string;
+        };
+        /** @description Paginated list envelope per API conventions. */
+        PagedResultOfCalibrationLevelSetListItemDto: {
+            items?: components["schemas"]["CalibrationLevelSetListItemDto"][] | null;
+            /** Format: int32 */
+            totalCount?: number;
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            pageSize?: number;
+        };
+        /** @description One row of GET /api/method-configs/family-defaults. */
+        MethodFamilyDefaultsResponse: {
+            /**
+             * @description Optional method family tag; null/absent means untagged.
+             * @enum {string|null}
+             */
+            methodFamily?: "VOC" | "GRO" | "BTEX" | "DRO" | "ORO" | "Anions" | null;
+            /**
+             * @description Server-chosen quantitation mode for the family.
+             * @enum {string|null}
+             */
+            quantitationMode?: "InternalStandard" | "ExternalStandard" | null;
+        };
     };
     responses: never;
     parameters: never;

@@ -1,6 +1,7 @@
 "use client";
 
 import { DepartmentPicker } from "@/components/department-picker";
+import { CalibrationLevelSetPicker } from "@/components/calibration-level-set-picker";
 import { MethodConfigAnalyteCriteriaPanel } from "@/components/method-config-analyte-criteria-panel";
 import { MethodConfigFormFields, type MethodConfigFormState } from "@/components/method-config-form-fields";
 import { ExcelPageGuide } from "@/components/excel-annotation";
@@ -10,6 +11,7 @@ import { Button, Card, Label, PageHeader } from "@/components/ui";
 import {
   deleteMethodConfig,
   getMethodConfig,
+  getMethodConfigFamilyDefaults,
   setMethodConfigDepartment,
   updateMethodConfig,
 } from "@/lib/api/wltr-api";
@@ -23,6 +25,7 @@ import { useEffect, useState } from "react";
 
 const defaultForm: MethodConfigFormState = {
   name: "",
+  methodFamily: "",
   labelMode: "RSquared",
   quantitationMode: "InternalStandard",
   minCorrelation: 0,
@@ -57,17 +60,23 @@ export default function MethodConfigDetailPage() {
     queryFn: () => getMethodConfig(id),
     enabled: !!id,
   });
+  const familyDefaultsQuery = useQuery({
+    queryKey: ["method-config-family-defaults"],
+    queryFn: () => getMethodConfigFamilyDefaults(),
+  });
   const [form, setForm] = useState<MethodConfigFormState>(defaultForm);
   const [versionNote, setVersionNote] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [departmentId, setDepartmentId] = useState("");
   const [departmentName, setDepartmentName] = useState("");
+  const [calibrationLevelSetId, setCalibrationLevelSetId] = useState("");
 
   useEffect(() => {
     if (!q.data) return;
     const d = q.data as Record<string, unknown>;
     setForm({
       name: String(d.name ?? ""),
+      methodFamily: typeof d.methodFamily === "string" ? d.methodFamily : "",
       labelMode: typeof d.labelMode === "string" ? d.labelMode : "RSquared",
       quantitationMode: typeof d.quantitationMode === "string" ? d.quantitationMode : "InternalStandard",
       minCorrelation: Number(d.minCorrelation ?? 0),
@@ -89,12 +98,15 @@ export default function MethodConfigDetailPage() {
     });
     setDepartmentId(s(d.departmentId));
     setDepartmentName(s(d.departmentName));
+    setCalibrationLevelSetId(s(d.calibrationLevelSetId));
   }, [q.data]);
 
   const save = useMutation({
     mutationFn: async () =>
       updateMethodConfig(id, {
         ...form,
+        methodFamily: form.methodFamily || undefined,
+        calibrationLevelSetId,
         soilDilutionFactor: form.soilDilutionFactor === "" ? null : Number(form.soilDilutionFactor),
         aqueousDilutionFactor: form.aqueousDilutionFactor === "" ? null : Number(form.aqueousDilutionFactor),
         internalStandardResponseMin:
@@ -171,12 +183,33 @@ export default function MethodConfigDetailPage() {
                 <span className="font-medium text-neutral-900 dark:text-neutral-100">{departmentName}</span>
               </p>
             ) : null}
-            <MethodConfigFormFields form={form} setForm={setForm} disabled={!canEdit} />
+            <div>
+              <Label htmlFor="calibrationLevelSetId">Calibration level set</Label>
+              <CalibrationLevelSetPicker
+                id="calibrationLevelSetId"
+                value={calibrationLevelSetId}
+                onChange={setCalibrationLevelSetId}
+                required
+                disabled={!canEdit}
+                departmentId={departmentId || undefined}
+                includeInactive
+              />
+              <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+                The ladder this method evaluates against. Must belong to the same department as the method
+                config. Changing it is a material change (version bump + snapshot).
+              </p>
+            </div>
+            <MethodConfigFormFields
+              form={form}
+              setForm={setForm}
+              disabled={!canEdit}
+              familyDefaults={familyDefaultsQuery.data}
+            />
             {save.isError ? <div className="text-sm text-red-600">{(save.error as Error).message}</div> : null}
             {versionNote ? <div className="text-sm text-neutral-700 dark:text-neutral-300">{versionNote}</div> : null}
             {canEdit ? (
               <div className="flex flex-wrap gap-2">
-                <Button type="submit" disabled={save.isPending}>
+                <Button type="submit" disabled={save.isPending || !calibrationLevelSetId}>
                   Save changes
                 </Button>
                 <Button type="button" variant="danger" disabled={del.isPending} onClick={() => setConfirmDelete(true)}>

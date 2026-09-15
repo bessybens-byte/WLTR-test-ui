@@ -70,6 +70,58 @@ export const LABEL_MODE_LABEL: Record<string, string> = {
   R: "√R² (correlation r)",
 };
 
+/**
+ * Method family — optional tag on a method config for UI pre-fill and report layout.
+ * Not enforced against `quantitationMode`; frozen on the next snapshot (schema v7).
+ */
+export const MethodFamily = {
+  VOC: "VOC",
+  GRO: "GRO",
+  BTEX: "BTEX",
+  DRO: "DRO",
+  ORO: "ORO",
+  Anions: "Anions",
+} as const;
+export type MethodFamily = (typeof MethodFamily)[keyof typeof MethodFamily];
+
+export const METHOD_FAMILY_LABEL: Record<string, string> = {
+  VOC: "VOC",
+  GRO: "GRO",
+  BTEX: "BTEX",
+  DRO: "DRO",
+  ORO: "ORO",
+  Anions: "Anions",
+};
+
+/** One row of GET /api/method-configs/family-defaults — server-owned family → quantitation-mode map. */
+export type MethodFamilyDefault = {
+  methodFamily?: string | null;
+  quantitationMode?: string | null;
+};
+
+/**
+ * Import format — selects the parser for a run upload.
+ * Omit to auto-detect MassHunter/Generic only; an explicit format never falls back.
+ */
+export const ImportFormat = {
+  MassHunterText: "MassHunterText",
+  ChemStationCsv: "ChemStationCsv",
+  PidText: "PidText",
+  IcSlk: "IcSlk",
+  IcCsv: "IcCsv",
+  Generic: "Generic",
+} as const;
+export type ImportFormat = (typeof ImportFormat)[keyof typeof ImportFormat];
+
+export const IMPORT_FORMAT_LABEL: Record<string, string> = {
+  MassHunterText: "MassHunter (text)",
+  ChemStationCsv: "ChemStation (CSV)",
+  PidText: "PID (text)",
+  IcSlk: "Ion chromatograph (SLK)",
+  IcCsv: "Ion chromatograph (CSV)",
+  Generic: "Generic",
+};
+
 export const AnalyteMappingApplyScope = {
   RunOnly: 0,
   Laboratory: 1,

@@ -24,6 +24,7 @@ type CandidateRun = {
   runDate: string;
   name: string | null;
   calibrationLevelId: string | null;
+  calibrationLevelName: string | null;
   isEligibleAsCal: boolean;
   isEligibleAsIcv: boolean;
   ineligibilityReason: string | null;
@@ -46,6 +47,7 @@ function mapCandidate(r: Record<string, unknown>): CandidateRun {
     runDate: s(r.runDate),
     name: nm ? nm : null,
     calibrationLevelId: typeof r.calibrationLevelId === "string" ? r.calibrationLevelId : null,
+    calibrationLevelName: typeof r.calibrationLevelName === "string" ? r.calibrationLevelName : null,
     isEligibleAsCal: Boolean(r.isEligibleAsCal),
     isEligibleAsIcv: Boolean(r.isEligibleAsIcv),
     ineligibilityReason: typeof r.ineligibilityReason === "string" ? r.ineligibilityReason : null,
@@ -102,7 +104,7 @@ function CalRunsContent({ instrumentSelected, isLoading, isError, candidates, se
                 {" · "}
                 <span>{formatDate(r.runDate)}</span>
                 {r.calibrationLevelId ? (
-                  <span className="ml-1 text-neutral-500">level: {r.calibrationLevelId.slice(0, 8)}…</span>
+                  <span className="ml-1 text-neutral-500">level: {r.calibrationLevelName ?? r.calibrationLevelId.slice(0, 8) + "…"}</span>
                 ) : null}
                 {r.isGrouped ? (
                   <Badge tone="warn" className="ml-1">
@@ -141,8 +143,10 @@ export default function CalibrationGroupsPage() {
       id: s(r.id),
       name: nm || null,
       instrumentId: s(r.instrumentId),
+      instrumentName: typeof r.instrumentName === "string" ? r.instrumentName : null,
       status: typeof r.status === "number" ? r.status : 0,
       methodConfigId: s(r.methodConfigId),
+      methodConfigName: typeof r.methodConfigName === "string" ? r.methodConfigName : null,
       createdAt: s(r.createdAt),
     };
   });
@@ -285,11 +289,19 @@ export default function CalibrationGroupsPage() {
                     <td className="py-2 pr-4 max-w-[200px] truncate" title={row.name ?? undefined}>
                       {row.name ?? "—"}
                     </td>
-                    <td className="py-2 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
-                      {row.instrumentId.slice(0, 8)}…
+                    <td className="py-2 pr-4 max-w-[180px] truncate" title={row.instrumentName ?? undefined}>
+                      {row.instrumentName ?? (
+                        <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+                          {row.instrumentId.slice(0, 8)}…
+                        </span>
+                      )}
                     </td>
-                    <td className="py-2 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
-                      {row.methodConfigId.slice(0, 8)}…
+                    <td className="py-2 pr-4 max-w-[180px] truncate" title={row.methodConfigName ?? undefined}>
+                      {row.methodConfigName ?? (
+                        <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+                          {row.methodConfigId.slice(0, 8)}…
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 pr-4">{formatDate(row.createdAt)}</td>
                     <td className="py-2 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">

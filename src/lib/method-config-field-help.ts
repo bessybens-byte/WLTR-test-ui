@@ -3,6 +3,7 @@ export type FieldDisplay = { text: string; abbrev?: string };
 /** Visible labels: plain language plus optional familiar abbreviation in parentheses. */
 export const METHOD_CONFIG_FIELD_DISPLAY = {
   name: { text: "Name" },
+  methodFamily: { text: "Method family" },
   labelMode: { text: "Label mode", abbrev: "R² / r" },
   quantitationMode: { text: "Quantitation mode", abbrev: "ISTD / ESTD" },
   minCorrelation: { text: "Minimum correlation", abbrev: "r / R²" },
@@ -40,6 +41,8 @@ export const METHOD_ANALYTE_CRITERIA_FIELD_DISPLAY = {
 /** Plain-language help for method configuration form fields. */
 export const METHOD_CONFIG_FIELD_HELP = {
   name: "A short name for this method (for example “EPA 8270 ISTD”). Shown when picking a method for calibration groups.",
+  methodFamily:
+    "Optional family tag (VOC, DRO, …) used to pre-fill the quantitation mode and drive report layout. Not enforced against quantitation mode, and frozen on the next snapshot.",
   labelMode:
     "How fit quality is labeled on reports: R² (coefficient of determination) or the square root of R². Does not change the math — only the display.",
   quantitationMode:

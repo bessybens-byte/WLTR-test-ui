@@ -1,12 +1,14 @@
 "use client";
 
 import { DepartmentPicker, useActiveDepartmentCount } from "@/components/department-picker";
+import { CalibrationLevelSetPicker } from "@/components/calibration-level-set-picker";
 import { MethodConfigFormFields, type MethodConfigFormState } from "@/components/method-config-form-fields";
 import { ExcelPageGuide } from "@/components/excel-annotation";
 import { Button, Card, Label, PageHeader } from "@/components/ui";
-import { createMethodConfig } from "@/lib/api/wltr-api";
+import { createMethodConfig, getMethodConfigFamilyDefaults } from "@/lib/api/wltr-api";
 import { isPlatformOperator } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -19,8 +21,10 @@ export default function NewMethodConfigPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [departmentId, setDepartmentId] = useState("");
+  const [calibrationLevelSetId, setCalibrationLevelSetId] = useState("");
   const [form, setForm] = useState<MethodConfigFormState>({
     name: "",
+    methodFamily: "",
     labelMode: "RSquared",
     quantitationMode: "InternalStandard",
     minCorrelation: 0.99,
@@ -39,6 +43,11 @@ export default function NewMethodConfigPage() {
     internalStandardResponseMax: "",
   });
 
+  const familyDefaultsQuery = useQuery({
+    queryKey: ["method-config-family-defaults"],
+    queryFn: () => getMethodConfigFamilyDefaults(),
+  });
+
   useEffect(() => {
     if (departmentCount === 1 && !departmentId) {
       const only = departmentItems[0] as Record<string, unknown> | undefined;
@@ -53,11 +62,17 @@ export default function NewMethodConfigPage() {
       setError("Select a department — this laboratory has more than one.");
       return;
     }
+    if (!calibrationLevelSetId) {
+      setError("Select a calibration level set — the method must evaluate against a ladder.");
+      return;
+    }
     setBusy(true);
     setError(null);
     try {
       const res = await createMethodConfig({
         ...form,
+        methodFamily: form.methodFamily || undefined,
+        calibrationLevelSetId,
         soilDilutionFactor: form.soilDilutionFactor === "" ? null : Number(form.soilDilutionFactor),
         aqueousDilutionFactor: form.aqueousDilutionFactor === "" ? null : Number(form.aqueousDilutionFactor),
         internalStandardResponseMin:
@@ -81,7 +96,12 @@ export default function NewMethodConfigPage() {
       <ExcelPageGuide pageKey="method-configs" />
       <Card>
         <form className="space-y-4" onSubmit={onSubmit}>
-          <MethodConfigFormFields form={form} setForm={setForm} nameRequired />
+          <MethodConfigFormFields
+            form={form}
+            setForm={setForm}
+            nameRequired
+            familyDefaults={familyDefaultsQuery.data}
+          />
           {!platform ? (
             <div>
               <Label htmlFor="departmentId">Department</Label>
@@ -98,8 +118,21 @@ export default function NewMethodConfigPage() {
               </p>
             </div>
           ) : null}
+          <div>
+            <Label htmlFor="calibrationLevelSetId">Calibration level set</Label>
+            <CalibrationLevelSetPicker
+              id="calibrationLevelSetId"
+              value={calibrationLevelSetId}
+              onChange={setCalibrationLevelSetId}
+              required
+              departmentId={departmentId || undefined}
+            />
+            <p className="mt-1 text-xs text-neutral-500">
+              The ladder this method evaluates against. Must belong to the same department as the method config.
+            </p>
+          </div>
           {error ? <div className="text-sm text-red-600">{error}</div> : null}
-          <Button type="submit" disabled={busy || (departmentRequired && !departmentId)}>
+          <Button type="submit" disabled={busy || (departmentRequired && !departmentId) || !calibrationLevelSetId}>
             {busy ? "Creating…" : "Create"}
           </Button>
         </form>

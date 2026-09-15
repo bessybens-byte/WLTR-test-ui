@@ -32,6 +32,10 @@ export const EXCEL_FIELD: Record<string, ExcelFieldAnnotation> = {
     status: "renamed",
     note: "Excel embeds full method title; UI stores a short config name.",
   },
+  "methodConfig.methodFamily": {
+    status: "na",
+    note: "WLTR categorization (VOC/DRO/…) for report layout and quantitation pre-fill — Excel embeds the method title only.",
+  },
   "methodConfig.labelMode": {
     sheet: "Summary Report",
     location: "G11",
@@ -251,6 +255,10 @@ export const EXCEL_FIELD: Record<string, ExcelFieldAnnotation> = {
     excelLabel: "Full Agilent Quantitation Report",
     status: "same",
     note: "MID/VALUE formulas parse visible columns from paste in A.",
+  },
+  "run.importFormat": {
+    status: "na",
+    note: "WLTR parser selector (MassHunter/ChemStation/PID/IC). Excel preload is a single Agilent/MassHunter report.",
   },
   "run.resolve.rawCompoundName": {
     sheet: "Cal / ICV",

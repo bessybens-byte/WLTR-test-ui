@@ -39,7 +39,7 @@ export const navSections: NavSection[] = [
     items: [
       { href: "/analytes", label: "Analytes", perm: PERMS.view },
       { href: "/internal-standards", label: "Internal standards", perm: PERMS.view },
-      { href: "/calibration-levels", label: "Calibration levels", perm: PERMS.view },
+      { href: "/calibration-level-sets", label: "Calibration level sets", perm: PERMS.view },
       { href: "/instruments", label: "Instruments", perm: PERMS.view },
       { href: "/method-configs", label: "Method configs", perm: PERMS.view },
       { href: "/lab-config", label: "Export / import", perm: PERMS.view },

@@ -99,6 +99,19 @@ export default function MethodConfigSnapshotDetailPage() {
                   <dd className="font-mono">v{String(schemaVersion)}</dd>
                 </div>
               ) : null}
+              {s(data.calibrationLevelSetId) ? (
+                <div className="flex justify-between gap-4 border-b border-neutral-100 py-1.5 dark:border-neutral-900">
+                  <dt className="text-neutral-500">Calibration level set</dt>
+                  <dd className="font-mono text-xs">
+                    <Link
+                      className="text-blue-600 underline dark:text-blue-400"
+                      href={`/calibration-level-sets/${s(data.calibrationLevelSetId)}`}
+                    >
+                      {s(data.calibrationLevelSetName) || s(data.calibrationLevelSetId).slice(0, 8) + "…"}
+                    </Link>
+                  </dd>
+                </div>
+              ) : null}
               {s(data.quantitationMode) ? (
                 <div className="flex justify-between gap-4 border-b border-neutral-100 py-1.5 dark:border-neutral-900">
                   <dt className="text-neutral-500">Quantitation mode</dt>
