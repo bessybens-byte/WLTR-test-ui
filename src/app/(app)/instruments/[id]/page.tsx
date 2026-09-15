@@ -1,10 +1,16 @@
 "use client";
 
+import { DepartmentPicker } from "@/components/department-picker";
 import { InstrumentSuppressedAnalytesPanel } from "@/components/instrument-suppressed-analytes-panel";
 import { ConfirmDialog } from "@/components/modal";
 import { Badge, Button, Card, Input, Label, PageHeader, Textarea } from "@/components/ui";
-import { deleteInstrument, getInstrument, updateInstrument } from "@/lib/api/wltr-api";
-import { hasPermission, PERMS } from "@/lib/types/wltr";
+import {
+  deleteInstrument,
+  getInstrument,
+  setInstrumentDepartment,
+  updateInstrument,
+} from "@/lib/api/wltr-api";
+import { hasPermission, isPlatformOperator, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
 import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -45,7 +51,10 @@ export default function InstrumentDetailPage() {
   const qc = useQueryClient();
   const toast = useToast();
   const canEdit = hasPermission(me, PERMS.configEdit);
+  const platform = isPlatformOperator(me);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [departmentId, setDepartmentId] = useState("");
+  const [departmentName, setDepartmentName] = useState("");
 
   const q = useQuery({
     queryKey: ["instrument", id],
@@ -68,6 +77,8 @@ export default function InstrumentDetailPage() {
       isActive: Boolean(d.isActive ?? true),
       rowVersion: s(d.rowVersion),
     });
+    setDepartmentId(s(d.departmentId));
+    setDepartmentName(s(d.departmentName));
   }, [q.data]);
 
   const save = useMutation({
@@ -101,7 +112,25 @@ export default function InstrumentDetailPage() {
     onError: (err: unknown) => toast.error("Delete failed", err instanceof Error ? err.message : undefined),
   });
 
+  const moveDepartment = useMutation({
+    mutationFn: async () => {
+      await setInstrumentDepartment(id, {
+        departmentId,
+        rowVersion: form.rowVersion,
+      });
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["instrument", id] });
+      await qc.invalidateQueries({ queryKey: ["instruments"] });
+      toast.success("Department updated", "Draft calibration groups on this instrument follow the move.");
+    },
+    onError: (err: unknown) =>
+      toast.error("Could not move department", err instanceof Error ? err.message : undefined),
+  });
+
   const title = q.isSuccess && form.name.trim() ? form.name : "Instrument";
+  const currentDepartmentId = s((q.data as Record<string, unknown> | undefined)?.departmentId);
+  const departmentDirty = departmentId !== "" && departmentId !== currentDepartmentId;
 
   return (
     <div className="space-y-6">
@@ -148,6 +177,10 @@ export default function InstrumentDetailPage() {
                   <dd className="mt-1 font-mono text-xs">{String((q.data as Record<string, unknown>).laboratoryId)}</dd>
                 </div>
               ) : null}
+              <div>
+                <dt className="text-neutral-600 dark:text-neutral-400">Department</dt>
+                <dd className="mt-1">{departmentName || "—"}</dd>
+              </div>
             </dl>
 
             <form
@@ -246,6 +279,33 @@ export default function InstrumentDetailPage() {
           </>
         ) : null}
       </Card>
+
+      {q.isSuccess && canEdit && !platform ? (
+        <Card>
+          <div className="text-sm font-medium">Move to department</div>
+          <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+            Filing change only. Draft groups follow; computed/approved/rejected groups keep their history.
+          </p>
+          <div className="mt-3 max-w-md">
+            <Label htmlFor="instrument-department">Department</Label>
+            <DepartmentPicker
+              id="instrument-department"
+              value={departmentId}
+              onChange={setDepartmentId}
+              required
+            />
+          </div>
+          <div className="mt-3">
+            <Button
+              type="button"
+              disabled={moveDepartment.isPending || !departmentDirty || !form.rowVersion}
+              onClick={() => moveDepartment.mutate()}
+            >
+              {moveDepartment.isPending ? "Moving…" : "Save department"}
+            </Button>
+          </div>
+        </Card>
+      ) : null}
 
       {q.isSuccess ? <InstrumentSuppressedAnalytesPanel instrumentId={id} canEdit={canEdit} /> : null}
 

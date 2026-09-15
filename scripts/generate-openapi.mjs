@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { applyCalibrationSetsPatch, applyIcSlkParserPatch } from "./openapi-calibration-sets-patch.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
@@ -39,6 +40,12 @@ function copyRichOpenApi() {
     console.error(`WLTR OpenAPI: ${src} must declare a "paths" object.`);
     process.exit(1);
   }
+  // Bridge the gap while the backend export predates the calibration level sets
+  // feature. Idempotent: a no-op once the export is re-generated upstream.
+  applyCalibrationSetsPatch(doc);
+  // feat/ic-slk-parser additions: methodFamily, importFormat, detectorSignal,
+  // family-defaults, and validation codes 11/12.
+  applyIcSlkParserPatch(doc);
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(doc, null, 2));
   console.log(`WLTR OpenAPI: wrote ${path.relative(root, OUT)} from ${path.relative(root, src)}`);
@@ -60,8 +67,11 @@ const paths = {
   "/api/Auth/logout": ["post"],
   "/api/Auth/forgot-password": ["post"],
   "/api/Auth/reset-password": ["post"],
-  "/api/calibration-levels": ["get", "post"],
-  "/api/calibration-levels/{id}": ["get", "put", "delete"],
+  "/api/calibration-level-sets": ["get", "post"],
+  "/api/calibration-level-sets/{id}": ["get", "put", "delete"],
+  "/api/calibration-level-sets/{id}/active": ["put"],
+  "/api/calibration-level-sets/{setId}/levels": ["get", "post"],
+  "/api/calibration-level-sets/{setId}/levels/{id}": ["get", "put", "delete"],
   "/api/instruments": ["get", "post"],
   "/api/instruments/{id}": ["get", "put", "delete"],
   "/api/instruments/{id}/suppressed-analytes": ["get", "post"],
@@ -75,6 +85,7 @@ const paths = {
   "/api/Laboratories": ["get", "post"],
   "/api/Laboratories/{id}": ["get", "put"],
   "/api/method-configs": ["get", "post"],
+  "/api/method-configs/family-defaults": ["get"],
   "/api/method-configs/{id}": ["get", "put", "delete"],
   "/api/method-configs/{id}/snapshots": ["get"],
   "/api/method-configs/{id}/snapshots/{version}": ["get"],
@@ -133,8 +144,14 @@ const TAGS = [
       "HTTP API for calibration groups: draft assembly, readiness, internal-standard summaries, and regression input previews.",
   },
   {
+    name: "Calibration level sets",
+    description:
+      "HTTP API for department-scoped calibration level sets (named ladders of calibration standards).",
+  },
+  {
     name: "Calibration levels",
-    description: "HTTP API for laboratory-scoped calibration levels (true concentration reference data).",
+    description:
+      "HTTP API for the calibration levels inside one calibration level set (true concentration reference data).",
   },
   { name: "Instruments", description: "HTTP API for laboratory instruments." },
   {
@@ -175,6 +192,7 @@ const GET_NO_LIST_QUERIES = new Set([
   "/api/LabTechnicians/me",
   "/api/runs/{id}/measurements",
   "/api/runs/{id}/validation",
+  "/api/method-configs/family-defaults",
   "/api/calibration-groups/{id}/regression-inputs",
   "/api/method-configs/{id}/snapshots/{version}",
 ]);
@@ -184,7 +202,9 @@ function openapiTag(routePath) {
   if (routePath.startsWith("/api/analytes")) return "Analytes";
   if (routePath.startsWith("/api/Auth")) return "Authentication";
   if (routePath.startsWith("/api/calibration-groups")) return "Calibration groups";
-  if (routePath.startsWith("/api/calibration-levels")) return "Calibration levels";
+  if (routePath.startsWith("/api/calibration-level-sets") && routePath.includes("/levels"))
+    return "Calibration levels";
+  if (routePath.startsWith("/api/calibration-level-sets")) return "Calibration level sets";
   if (routePath.startsWith("/api/instruments")) return "Instruments";
   if (routePath.startsWith("/api/internal-standards")) return "Internal standards";
   if (routePath.startsWith("/api/Invitations")) return "Invitations";

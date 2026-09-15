@@ -41,6 +41,7 @@ export default function MethodConfigsPage() {
               <thead>
                 <tr className="border-b border-neutral-200 text-left dark:border-neutral-800">
                   <th className="py-2 pr-3">Name</th>
+                  <th className="py-2 pr-3">Department</th>
                   <th className="py-2 pr-3">Version</th>
                   <th className="py-2 pr-3" />
                 </tr>
@@ -52,6 +53,7 @@ export default function MethodConfigsPage() {
                   return (
                     <tr key={id} className="border-b border-neutral-100 dark:border-neutral-900">
                       <td className="py-2 pr-3">{String(r.name ?? "")}</td>
+                      <td className="py-2 pr-3">{String(r.departmentName ?? "—")}</td>
                       <td className="py-2 pr-3">{String(r.currentVersion ?? "")}</td>
                       <td className="py-2 pr-3 text-right">
                         <Link className="underline" href={`/method-configs/${id}`}>

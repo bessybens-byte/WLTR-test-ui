@@ -8,7 +8,7 @@ import {
   listInstruments,
   listMethodConfigs,
 } from "@/lib/api/wltr-api";
-import { GROUP_STATUS_LABEL, hasPermission, PERMS } from "@/lib/types/wltr";
+import { GROUP_STATUS_LABEL, groupStatusTone, hasPermission, PERMS, readIsGrouped } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -24,9 +24,12 @@ type CandidateRun = {
   runDate: string;
   name: string | null;
   calibrationLevelId: string | null;
+  calibrationLevelName: string | null;
   isEligibleAsCal: boolean;
   isEligibleAsIcv: boolean;
   ineligibilityReason: string | null;
+  /** Advisory only — a run another group already uses stays eligible and selectable. */
+  isGrouped: boolean | null;
 };
 
 function formatDate(iso: string) {
@@ -37,12 +40,6 @@ function formatDate(iso: string) {
   }
 }
 
-function groupStatusTone(status: number): "ok" | "warn" | "bad" | "neutral" {
-  if (status === 2) return "ok";
-  if (status === 3) return "bad";
-  return "neutral";
-}
-
 function mapCandidate(r: Record<string, unknown>): CandidateRun {
   const nm = typeof r.name === "string" ? r.name.trim() : "";
   return {
@@ -50,10 +47,19 @@ function mapCandidate(r: Record<string, unknown>): CandidateRun {
     runDate: s(r.runDate),
     name: nm ? nm : null,
     calibrationLevelId: typeof r.calibrationLevelId === "string" ? r.calibrationLevelId : null,
+    calibrationLevelName: typeof r.calibrationLevelName === "string" ? r.calibrationLevelName : null,
     isEligibleAsCal: Boolean(r.isEligibleAsCal),
     isEligibleAsIcv: Boolean(r.isEligibleAsIcv),
     ineligibilityReason: typeof r.ineligibilityReason === "string" ? r.ineligibilityReason : null,
+    isGrouped: readIsGrouped(r.isGrouped),
   };
+}
+
+/** Ineligible runs are dimmed hardest; already-grouped runs are only nudged back, since they stay selectable. */
+function candidateEmphasis(r: CandidateRun): string {
+  if (!r.isEligibleAsCal) return " opacity-50";
+  if (r.isGrouped) return " opacity-70";
+  return "";
 }
 
 type CalRunsContentProps = Readonly<{
@@ -74,7 +80,7 @@ function CalRunsContent({ instrumentSelected, isLoading, isError, candidates, se
     <ul className="max-h-56 space-y-1 overflow-y-auto rounded-lg border border-neutral-200 p-2 dark:border-neutral-800">
       {candidates.map((r) => {
         const calReason = r.isEligibleAsCal ? null : r.ineligibilityReason;
-        const rowClass = `flex cursor-pointer items-start gap-2 text-xs${r.isEligibleAsCal ? "" : " opacity-50"}`;
+        const rowClass = `flex cursor-pointer items-start gap-2 text-xs${candidateEmphasis(r)}`;
         return (
           <li key={r.id}>
             <label className={rowClass}>
@@ -98,7 +104,12 @@ function CalRunsContent({ instrumentSelected, isLoading, isError, candidates, se
                 {" · "}
                 <span>{formatDate(r.runDate)}</span>
                 {r.calibrationLevelId ? (
-                  <span className="ml-1 text-neutral-500">level: {r.calibrationLevelId.slice(0, 8)}…</span>
+                  <span className="ml-1 text-neutral-500">level: {r.calibrationLevelName ?? r.calibrationLevelId.slice(0, 8) + "…"}</span>
+                ) : null}
+                {r.isGrouped ? (
+                  <Badge tone="warn" className="ml-1">
+                    In use
+                  </Badge>
                 ) : null}
                 {calReason ? (
                   <span className="ml-1 text-amber-700 dark:text-amber-400">— {calReason}</span>
@@ -132,8 +143,10 @@ export default function CalibrationGroupsPage() {
       id: s(r.id),
       name: nm || null,
       instrumentId: s(r.instrumentId),
+      instrumentName: typeof r.instrumentName === "string" ? r.instrumentName : null,
       status: typeof r.status === "number" ? r.status : 0,
       methodConfigId: s(r.methodConfigId),
+      methodConfigName: typeof r.methodConfigName === "string" ? r.methodConfigName : null,
       createdAt: s(r.createdAt),
     };
   });
@@ -276,11 +289,19 @@ export default function CalibrationGroupsPage() {
                     <td className="py-2 pr-4 max-w-[200px] truncate" title={row.name ?? undefined}>
                       {row.name ?? "—"}
                     </td>
-                    <td className="py-2 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
-                      {row.instrumentId.slice(0, 8)}…
+                    <td className="py-2 pr-4 max-w-[180px] truncate" title={row.instrumentName ?? undefined}>
+                      {row.instrumentName ?? (
+                        <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+                          {row.instrumentId.slice(0, 8)}…
+                        </span>
+                      )}
                     </td>
-                    <td className="py-2 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
-                      {row.methodConfigId.slice(0, 8)}…
+                    <td className="py-2 pr-4 max-w-[180px] truncate" title={row.methodConfigName ?? undefined}>
+                      {row.methodConfigName ?? (
+                        <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+                          {row.methodConfigId.slice(0, 8)}…
+                        </span>
+                      )}
                     </td>
                     <td className="py-2 pr-4">{formatDate(row.createdAt)}</td>
                     <td className="py-2 pr-4 font-mono text-xs text-neutral-600 dark:text-neutral-400">
@@ -391,7 +412,11 @@ export default function CalibrationGroupsPage() {
                 selectedIds={selectedCalIds}
                 onToggle={toggleCal}
               />
-              <p className="mt-1 text-xs text-neutral-500">Selected: {selectedCalIds.size} CAL run(s).</p>
+              <p className="mt-1 text-xs text-neutral-500">
+                Selected: {selectedCalIds.size} CAL run(s). Runs marked{" "}
+                <span className="font-medium">In use</span> already belong to another group — reusing them is allowed,
+                they are just dimmed.
+              </p>
             </div>
 
             <div>
@@ -410,6 +435,7 @@ export default function CalibrationGroupsPage() {
                       .map((r) => (
                         <option key={r.id} value={r.id}>
                           {(r.name ?? `${r.id.slice(0, 8)}…`)} · {formatDate(r.runDate)}
+                          {r.isGrouped ? " · in use" : ""}
                         </option>
                       ))}
                   </Select>

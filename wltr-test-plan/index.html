@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WLTR Validation Test Plan — MS4 VOC (624/8260) ICAL · Web UI walkthrough</title>
+<style>
+  :root{
+    --bg:#0f1729; --panel:#ffffff; --ink:#1f2733; --muted:#5b6675; --line:#e3e8ef;
+    --brand:#1d4ed8; --brand-2:#0e7490; --ok:#137333; --ok-bg:#e6f4ea; --warn:#8a5a00; --warn-bg:#fff4e0;
+    --bad:#b3261e; --bad-bg:#fce8e6; --cell:#0b3b8f; --cell-bg:#eaf1ff; --code-bg:#0b1220; --code-ink:#e6edf7;
+    --chip:#f3f6fb; --xui:#6d28d9; --xui-bg:#f5f0ff; --xui-line:#ddd0fb;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;font:15px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#f5f7fb}
+  header.hero{background:linear-gradient(135deg,#0f1729,#123a63);color:#eaf1ff;padding:34px 28px 26px}
+  header.hero h1{margin:0 0 6px;font-size:26px;letter-spacing:.2px}
+  header.hero p{margin:4px 0;color:#b9c6da;max-width:74ch}
+  .wrap{display:grid;grid-template-columns:255px 1fr;gap:0;align-items:start}
+  nav{position:sticky;top:0;align-self:start;height:100vh;overflow:auto;background:#0f1729;color:#c7d2e0;padding:18px 14px}
+  nav h2{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:#8aa0bd;margin:16px 6px 6px}
+  nav a{display:block;color:#c7d2e0;text-decoration:none;padding:6px 10px;border-radius:7px;font-size:13.5px}
+  nav a:hover{background:#1b2b45;color:#fff}
+  main{padding:26px 30px 80px;max-width:1080px}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px 24px;margin:0 0 20px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+  h2.sec{margin:0 0 4px;font-size:20px;color:#0f1729}
+  h3{margin:22px 0 8px;font-size:16px;color:#123a63}
+  h4{margin:16px 0 6px;font-size:14px;color:#334}
+  p{margin:8px 0}
+  .lead{color:var(--muted)}
+  .step{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 8px;border-radius:14px;background:var(--brand);color:#fff;font-weight:700;font-size:13px;margin-right:8px}
+  table{border-collapse:collapse;width:100%;margin:12px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+  th{background:#f0f4fa;font-weight:600;color:#243}
+  tbody tr:nth-child(even){background:#fafcff}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}
+  .cell{display:inline-block;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;background:var(--cell-bg);color:var(--cell);border:1px solid #cfe0ff;border-radius:5px;padding:1px 6px;white-space:nowrap}
+  .val{font-weight:700}
+  pre{background:var(--code-bg);color:var(--code-ink);border-radius:10px;padding:14px 16px;overflow:auto;font-size:12.5px;line-height:1.5}
+  /* UI element chips */
+  .ui{display:inline-block;font-size:12px;font-weight:600;border-radius:6px;padding:1px 8px;white-space:nowrap;border:1px solid transparent}
+  .ui.nav{background:#0f1729;color:#eaf1ff}
+  .ui.tab{background:#eef6ff;color:#1d4ed8;border-color:#cfe0ff}
+  .ui.btn{background:#1d4ed8;color:#fff}
+  .ui.field{background:#f3f6fb;color:#334;border-color:var(--line);font-weight:500}
+  .xui{display:inline-block;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;background:var(--xui-bg);color:var(--xui);border:1px solid var(--xui-line);border-radius:5px;padding:1px 6px;white-space:nowrap}
+  .badge{display:inline-block;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700}
+  .badge.ok{background:var(--ok-bg);color:var(--ok)}.badge.warn{background:var(--warn-bg);color:var(--warn)}.badge.bad{background:var(--bad-bg);color:var(--bad)}
+  .badge.neutral{background:var(--chip);color:var(--muted);border:1px solid var(--line)}
+  .callout{border-left:4px solid var(--brand);background:#f4f8ff;border-radius:0 10px 10px 0;padding:12px 16px;margin:14px 0}
+  .callout.exp{border-color:var(--ok);background:var(--ok-bg)}
+  .callout.warn{border-color:var(--warn);background:var(--warn-bg)}
+  .callout.xui{border-color:var(--xui);background:var(--xui-bg)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:#f3f6fb;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px}
+  details{border:1px solid var(--line);border-radius:8px;padding:0 12px;margin:10px 0;background:#fbfcfe}
+  details>summary{cursor:pointer;font-weight:600;padding:10px 0;color:#123a63}
+  .muted{color:var(--muted)}
+  .small{font-size:12.5px}
+  .tag{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--brand-2)}
+  hr{border:0;border-top:1px solid var(--line);margin:18px 0}
+  a.inline{color:var(--brand);text-decoration:none}a.inline:hover{text-decoration:underline}
+  .legend span{margin-right:14px}
+  .path{font-size:13px}
+  .path .sep{color:#9aa7b8;margin:0 4px}
+  footer{color:var(--muted);font-size:12.5px;padding:10px 30px 40px;max-width:1080px}
+</style>
+</head>
+<body>
+<header class="hero">
+  <h1>WLTR Validation Test Plan — Web UI walkthrough</h1>
+  <p><strong>Method:</strong> VOC by GC/MS (624/8260) — MS4 Initial Calibration (ICAL) + ICV verification.</p>
+  <p><strong>What this is:</strong> a manual, click-through validation of the <strong>WLTR web application</strong>. You drive the app through its screens — the sidebar, forms, tabs, and buttons — exactly as a lab analyst would. No Swagger, no curl, no scripting required.</p>
+  <p><strong>Source of truth:</strong> workbook <code>230120_MS4_VOC_Preloaded (5) - Unlocked.xlsm</code>. Every value you enter and every result you read on screen is traced to a specific <span class="cell">Sheet!Cell</span> — and the app <em>shows you that cell inline</em> via its built-in <span class="xui">Excel↔UI</span> cross-reference hints.</p>
+</header>
+
+<div class="wrap">
+<nav>
+  <h2>Contents</h2>
+  <a href="#how">How to use this plan</a>
+  <a href="#app">The app &amp; how to navigate it</a>
+  <a href="#xref">Excel↔UI cross-reference mode</a>
+  <a href="#trace">Traceability &amp; the workbook</a>
+  <a href="#prereq">Prerequisites (create these)</a>
+  <a href="#criteria">Acceptance criteria</a>
+  <h2>Test stages</h2>
+  <a href="#sSetup">S · Build the prerequisites</a>
+  <a href="#s0">0 · Sign in</a>
+  <a href="#s1">1 · Upload 13 CAL runs</a>
+  <a href="#s2">2 · Upload ICV run</a>
+  <a href="#s3">3 · Verify parsing</a>
+  <a href="#s4">4 · Create group</a>
+  <a href="#s4b">4b · Readiness check</a>
+  <a href="#s5">5 · Compute</a>
+  <a href="#s6">6 · Report Card</a>
+  <a href="#s6b">6b · Point exclusions</a>
+  <a href="#s7">7 · Select models</a>
+  <a href="#s8">8 · Summary Report</a>
+  <a href="#s9">9 · Approve &amp; lock</a>
+  <h2>Reference</h2>
+  <a href="#deep">Deep-dive expected results</a>
+  <a href="#appendix">Appendix: raw data &amp; UI map</a>
+</nav>
+
+<main>
+
+<section id="how">
+  <h2 class="sec">How to use this plan</h2>
+  <p class="lead">This is a black-box validation of WLTR's calibration analytics through its own user interface. Work top-to-bottom; each stage names the exact screen, the exact data to enter, and the exact result to expect on screen.</p>
+  <ul>
+    <li><strong>Everything happens in the browser.</strong> Open the WLTR web app (dev default <code>http://localhost:3000</code>, talking to the API at <code>http://localhost:5000</code>) and sign in. All navigation is via the left sidebar and on-page tabs and buttons.</li>
+    <li><strong>Follow the chips.</strong> <span class="ui nav">Sidebar</span> = a left-nav destination · <span class="ui tab">Tab</span> = a tab within a page · <span class="ui field">Field</span> = a form field · <span class="ui btn">Button</span> = a button you click.</li>
+    <li><strong>Enter the data verbatim.</strong> Raw instrument text is provided as ready-to-paste files in <code>./rawdata/</code> (see the <a class="inline" href="#appendix">Appendix</a>). You paste the whole file into a <span class="ui field">Raw text</span> box — WLTR parses it; you never type individual peak areas.</li>
+    <li><strong>Compare against the green boxes.</strong> Each <span class="badge ok">Expected</span> box states the value WLTR must display and the workbook cell it comes from. The app also prints that cell next to the field as a violet <span class="xui">Excel↔UI</span> hint, so you can confirm the mapping without leaving the screen.</li>
+    <li><strong>Scope &amp; starting state:</strong> a fresh WLTR database seeds <em>only</em> the permission roles and the configuration-driven root admin. <strong>Nothing else is pre-seeded</strong> — no laboratory, users, instrument, analytes, internal standards, calibration levels, or method config. You build the full chain first (<a class="inline" href="#sSetup">Stage S</a>) before the upload → group → compute → report → approve flow this plan validates.</li>
+    <li><strong>When WLTR disagrees with a green box,</strong> record it as a <em>product defect</em> (with the screen, what you entered, and both values) — not as a tester error. The expected values are traced to the workbook and are the source of truth.</li>
+    <li><strong>Gold values need the workbook's point trims.</strong> Stage&nbsp;8 numbers (mean RF, %RSD, Acceptable) assume the same end-point exclusions the workbook analyst made (e.g. Bromomethane 13→10). Computing on all 13 levels first will <em>not</em> match those green boxes — complete Stage&nbsp;6b before treating Stage&nbsp;8 as a pass/fail gate.</li>
+  </ul>
+  <div class="callout">
+    <strong>Legend.</strong>
+    <span class="legend small">
+      <span><span class="cell">Sheet!Cell</span> = a workbook cell</span>
+      <span><span class="xui">Excel↔UI</span> = the app's on-screen cell hint</span>
+      <span><span class="badge ok">Expected</span> pass · <span class="badge warn">Note</span> · <span class="badge bad">Fail-check</span></span>
+    </span>
+  </div>
+</section>
+
+<section id="app">
+  <h2 class="sec">The app &amp; how to navigate it</h2>
+  <p>The left sidebar groups every screen you need. Items appear only if your user has the matching permission — the lab-admin user you create in <a class="inline" href="#sSetup">Stage&nbsp;S</a> sees them all.</p>
+  <table>
+    <thead><tr><th>Sidebar group</th><th>Screens</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Overview</strong></td><td>Dashboard · My profile · Technician record</td><td>Your account and system status</td></tr>
+      <tr><td><strong>Laboratory</strong></td><td>Laboratories · Technicians · Users · Roles · Invitations</td><td>Identity &amp; access setup (Stage S)</td></tr>
+      <tr><td><strong>Configuration</strong></td><td>Analytes · Internal standards · Calibration levels · Instruments · Method configs</td><td>The method chain (Stage S)</td></tr>
+      <tr><td><strong>Calibration workflow</strong></td><td>Runs · Calibration groups</td><td>Upload → group → compute → approve (Stages 1–9)</td></tr>
+      <tr><td><strong>Reference</strong></td><td>API guide · API explorer <span class="muted">(platform only)</span></td><td>Docs and a live endpoint sandbox — optional</td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Group workflow lives on one page: open a group from <span class="ui nav">Calibration groups</span> and use its tabs — <span class="ui tab">Overview</span>, <span class="ui tab">Setup &amp; readiness</span>, <span class="ui tab">Compute &amp; model</span>, <span class="ui tab">Review</span>, and (approvers) <span class="ui tab">QA debug</span>. A progress <strong>stepper</strong> at the top (Setup → Compute → Model → QA sign-off) tracks where the group is.</p>
+</section>
+
+<section id="xref">
+  <h2 class="sec">Excel↔UI cross-reference mode</h2>
+  <p>WLTR ships a built-in traceability aid that makes this plan largely self-checking. It is on by default in the dev build:</p>
+  <ul>
+    <li>A dashed <strong>“Dev UI — Excel cross-reference mode”</strong> banner sits at the top of every page with a quick lookup of the most common UI hints → workbook locations.</li>
+    <li>A violet <strong>“Excel mapping”</strong> guide banner heads each major screen (upload, group compute, report card, summary report), naming the sheet(s) and where to look.</li>
+    <li>A small violet <span class="xui">Excel↔UI · Sheet!Cell</span> hint appears under individual fields and table columns, so the workbook cell in every green box below is also printed right on the control.</li>
+  </ul>
+  <div class="callout xui"><strong>How to use it during testing.</strong> When a stage says “verify <span class="cell">Summary!I57 = QIC</span>”, you can confirm two things on screen: the <em>value</em> WLTR shows, and — via the field's <span class="xui">Excel↔UI</span> hint — that WLTR is pointing at a related workbook location. A <em>value</em> mismatch vs this plan's green boxes is a compute defect. A hint that cites a different cell than this plan (e.g. UI shows <span class="cell">G10</span> while the plan cites <span class="cell">J10</span> for the same RSD limit) is often a cover-page vs detail-layout difference — check both, and only flag a mapping defect if the <em>meaning</em> is wrong.</div>
+  <p class="small muted">Full field-by-field map: <code>docs/EXCEL_UI_FIELD_MAP.md</code>. The banner may show a slightly different workbook filename suffix (e.g. <code>…Unlocked (2).xlsm</code>) — same preload family. If your build hides these hints, the plan still stands — the workbook cells are listed inline in every table.</p>
+</section>
+
+<section id="trace">
+  <h2 class="sec">Traceability &amp; the workbook</h2>
+  <p>The workbook has six sheets. WLTR replaces them with UI screens as follows:</p>
+  <table>
+    <thead><tr><th>Workbook sheet</th><th>Role</th><th>WLTR screen</th></tr></thead>
+    <tbody>
+      <tr><td><code>Cal Data</code></td><td>13 raw MassHunter Quantitation Reports (one CAL standard per level)</td><td>13 uploads on <span class="ui nav">Runs</span> ▸ <span class="ui btn">Upload run</span> (<span class="ui field">Run type = Calibration (CAL)</span>)</td></tr>
+      <tr><td><code>ICV Data</code></td><td>1 raw report for the verification standard</td><td>1 upload (<span class="ui field">Run type = ICV</span>)</td></tr>
+      <tr><td><code>Ref Table</code></td><td>QC acceptance criteria (global + per-analyte)</td><td><span class="ui nav">Method configs</span> + per-analyte criteria (frozen into a snapshot at compute)</td></tr>
+      <tr><td><code>Data Visualization Deck (DVD)</code></td><td>9 regression variants per analyte + back-calculated concentration &amp; %Diff per level</td><td>Compute engine → <span class="ui tab">Compute &amp; model</span> (report card) and <span class="ui tab">Review</span> (regression inputs/charts)</td></tr>
+      <tr><td><code>Summary Report</code></td><td>Per-analyte pass/fail evaluation &amp; ICV verification</td><td><span class="ui tab">Review</span> ▸ <strong>Summary report</strong></td></tr>
+      <tr><td><code>Report Writer</code></td><td>Presentation layer</td><td>(formatting only — not tested here)</td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Note: the <code>Cal Data</code> sheet stores each report as a single tall text column (Level 1 in column A, Level 2 in column K, then every 10th column). The ready-to-paste files in <code>./rawdata/</code> are those columns reconstructed line-for-line — paste them straight into <span class="ui field">Raw text</span>.</p>
+</section>
+
+<section id="prereq">
+  <h2 class="sec">Prerequisites (you create these — nothing here is pre-seeded)</h2>
+  <p>None of the entities below exist on a fresh database. This section is the <em>reference</em> for the values; <a class="inline" href="#sSetup">Stage&nbsp;S</a> gives the exact screens that create them, in order. Values in brackets are where the workbook defines them.</p>
+
+  <h3>Identity &amp; instrument</h3>
+  <ul>
+    <li>A laboratory (created by the platform/root admin from <span class="ui nav">Laboratories</span>), then a lab-admin user via <span class="ui nav">Invitations</span> + accept, carrying <code>perm.runs.upload</code>, <code>perm.config.edit</code> and <code>perm.groups.approve</code>.</li>
+    <li>A <strong>Technician</strong> profile linked to that user (required before you can upload runs or compute) — <span class="ui nav">Technicians</span>.</li>
+    <li>Instrument <strong>“GC/MS #4”</strong> <span class="cell">Ref Table!Q12 = "GC/MS #4"</span>, type GC/MS — <span class="ui nav">Instruments</span>.</li>
+  </ul>
+
+  <h3>Internal standards (IS) — Concentration = 10 µg/L each</h3>
+  <table>
+    <thead><tr><th>Internal standard</th><th>IS Concentration</th><th>Workbook cell</th></tr></thead>
+    <tbody>
+      <tr><td>Fluorobenzene</td><td class="val">10 µg/L</td><td><span class="cell">Ref Table!W21 / X21 = 10</span></td></tr>
+      <tr><td>Chlorobenzene-d5</td><td class="val">10 µg/L</td><td><span class="cell">Ref Table!W22 / X22 = 10</span></td></tr>
+      <tr><td>1,4-Dichlorobenzene-d4</td><td class="val">10 µg/L</td><td><span class="cell">Ref Table!W23 / X23 = 10</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small">The three early-eluting focus analytes below are normalized against <strong>Fluorobenzene</strong>. The IS concentration drives the <em>Amount Ratio</em> X-axis (X = analyte true conc ÷ IS conc) and the Response Factor.</p>
+
+  <h3>13 calibration levels (true concentration, µg/L)</h3>
+  <p>Create 13 calibration levels with these true concentrations <span class="cell">Summary Report!D149:P149</span> on <span class="ui nav">Calibration levels</span>. The level <em>name</em> is up to you; you reference each by name when uploading (Stage 1).</p>
+  <table>
+    <thead><tr><th>Level</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th><th>13</th></tr></thead>
+    <tbody>
+      <tr><th>True conc (µg/L)</th><td>0.1</td><td>0.2</td><td>0.5</td><td>1</td><td>2</td><td>4</td><td>8</td><td>20</td><td>50</td><td>100</td><td>120</td><td>140</td><td>160</td></tr>
+      <tr><th>Data file</th><td>0120-06</td><td>0120-07</td><td>0120-08</td><td>0120-09</td><td>0120-10</td><td>0120-11</td><td>0120-12</td><td>0120-13</td><td>0120-14</td><td>0120-16</td><td>0120-18</td><td>0120-20</td><td>0120-22</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Method configuration (from the Ref Table)</h3>
+  <p>A method config named e.g. “VOC by GC/MS (624/8260)” <span class="cell">Ref Table!Q15</span> carrying the global criteria and per-analyte limits in the next section — created on <span class="ui nav">Method configs</span>.</p>
+</section>
+
+<section id="criteria">
+  <h2 class="sec">Acceptance criteria (what the pass/fail is judged against)</h2>
+  <p>These are frozen into the method snapshot at compute time and are echoed on <span class="ui tab">Review</span> ▸ <strong>Summary report</strong> ▸ “1. Administrative summary”. The workbook also restates them cleanly on the Summary Report cover page, so both cell references are given.</p>
+
+  <h3>Global criteria</h3>
+  <table>
+    <thead><tr><th>Criterion</th><th>Value</th><th>Summary Report cell</th><th>Ref Table cell</th></tr></thead>
+    <tbody>
+      <tr><td>Response Factor %RSD limit</td><td class="val">≤ 15 %</td><td><span class="cell">J10 = 15</span></td><td><span class="cell">Q40 = 15</span></td></tr>
+      <tr><td>Correlation — Coefficient of Determination r²</td><td class="val">≥ 0.990025 (r ≥ 0.995)</td><td><span class="cell">J11 = 0.990025</span></td><td><span class="cell">R44 = 0.990025 / Q43 = 0.995</span></td></tr>
+      <tr><td>ICAL %Diff (curve-refit bounds)</td><td class="val">±20 % (×1.2 / ×0.8)</td><td><span class="cell">J12 = 20 · J13/K13 = 1.2/0.8</span></td><td><span class="cell">Q52 = 20 · Q53/S53</span></td></tr>
+      <tr><td>Max allowable CAL-point failures</td><td class="val">2</td><td><span class="cell">J14 = 2</span></td><td><span class="cell">Q56 = 2</span></td></tr>
+      <tr><td>RSE %</td><td class="val">≤ 15 %</td><td><span class="cell">P10 = 15</span></td><td><span class="cell">Q59 = 15</span></td></tr>
+      <tr><td>Minimum # CAL points (Average / LS / Quad)</td><td class="val">4 / 5 / 6</td><td><span class="cell">M13/N13/O13 = 4/5/6</span></td><td><span class="cell">Q64/R64/S64 = 4/5/6</span></td></tr>
+      <tr><td>ICV parity (instrument − external calc)</td><td class="val">≤ 0.01 %</td><td><span class="cell">V10 = 0.01</span></td><td><span class="cell">Q70 = 0.01</span></td></tr>
+      <tr><td>ICV %Diff from true</td><td class="val">≤ 20 %</td><td><span class="cell">V11 = 20</span></td><td><span class="cell">Q77 = 20</span></td></tr>
+      <tr><td>IS / Surrogate %RSD</td><td class="val">≤ 20 %</td><td><span class="cell">P14 = 20</span></td><td><span class="cell">Q92 = 20</span></td></tr>
+      <tr><td>Dilution factor — Soil / Aqueous</td><td class="val">50 / 1</td><td><span class="cell">V13/V14 = 50/1</span></td><td><span class="cell">Q81 = 50 · Q87 = 1</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">On the method config form these map to <span class="ui field">RF %RSD limit</span>, <span class="ui field">Min correlation</span>, <span class="ui field">%Diff low/high bound</span>, <span class="ui field">Max missed points</span>, <span class="ui field">Max RSE</span>, <span class="ui field">Min points required</span>, <span class="ui field">ICV limit %</span>, <span class="ui field">ICV CDS parity %</span>, <span class="ui field">IS %RSD limit</span>, and <span class="ui field">Soil / Aqueous dilution factor</span> — each carrying its own <span class="xui">Excel↔UI</span> hint.</p>
+
+  <h3>Per-analyte limits — focus analytes</h3>
+  <table>
+    <thead><tr><th>Analyte</th><th>Method-Blank (Aq / Soil) µg/L</th><th>SPCC min RF</th><th>CCC max %RSD</th><th>ICV conc</th><th>ICV LCL–UCL (% rec)</th><th>Ref Table row</th></tr></thead>
+    <tbody>
+      <tr><td>Dichlorodifluoromethane</td><td>2.5 / 62.5</td><td>—</td><td>—</td><td>50</td><td class="val">50 – 160 %</td><td><span class="cell">X46/Y46 · AC46 · AD46/AE46</span></td></tr>
+      <tr><td>Vinyl Chloride-C</td><td>1 / 25</td><td>—</td><td class="val">30 %</td><td>50</td><td class="val">80 – 120 %</td><td><span class="cell">X48/Y48 · AA48 · AC48 · AD48/AE48</span></td></tr>
+      <tr><td>Bromomethane</td><td>5 / 125</td><td>—</td><td>—</td><td>50</td><td class="val">22 – 187 %</td><td><span class="cell">X49/Y49 · AC49 · AD49/AE49</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Per-analyte criteria are attached from the method config detail page (<span class="ui nav">Method configs</span> ▸ open one ▸ analyte-criteria panel). They feed the Stage&nbsp;8 ICV / CCC checks.</p>
+</section>
+
+<!-- ============ STAGES ============ -->
+
+<section id="sSetup">
+  <h2 class="sec"><span class="step">S</span>Build the prerequisites</h2>
+  <p>Do these once, in order, on a fresh database. Each screen returns an entity you reference later. Steps S.2 and S.5 are platform-level and need the <strong>root admin</strong>; everything else is done as the <strong>lab-admin user</strong> you create in S.4.</p>
+
+  <h4>S.1 — Sign in as root admin</h4>
+  <p>Open <code>/login</code>, enter the configured root-admin credentials from the API host's seed config (<code>Seed:RootAdmin:Email</code> / <code>Seed:RootAdmin:Password</code> — often <code>root@example.com</code> / <code>Root#Admin123!</code> in local harness scripts), and click <span class="ui btn">Sign in</span>. You land on <span class="ui nav">Dashboard</span>.</p>
+  <div class="callout warn"><span class="badge warn">Credentials are environment-specific</span> A <code>401 Unauthorized</code> means this API instance was seeded differently — do not invent passwords. Read the API's launch config / <code>run-api.ps1</code> env vars, or use a lab account that already exists on the instance. Platform-only steps (create laboratory, create technician for another user) still need a root/platform token.</div>
+
+  <h4>S.2 — Create the laboratory (as root)</h4>
+  <p><span class="ui nav">Laboratories</span> ▸ <span class="ui btn">New laboratory</span>. Fill name/address/contact (e.g. “Aqua Env Labs”, Denver CO) and save.</p>
+
+  <h4>S.3 — Invite a lab user, then accept</h4>
+  <p><span class="ui nav">Invitations</span> ▸ create an invite for <code>analyst@aqua.test</code> scoped to the new lab with the <strong>LabAdmin</strong> role.</p>
+  <div class="callout warn"><span class="badge warn">Email note</span> If email is disabled for local testing (<code>AzureEmail:Enabled=false</code>), the Invitations page shows the invite link / raw token directly. Open that accept-invite link, set password <code>Analyst#123!</code>, and submit.</div>
+
+  <h4>S.4 — Create the Technician profile (as root)</h4>
+  <p>First grab the invited user's <strong>Identity user id</strong>: open <span class="ui nav">Users</span>, find <code>analyst@aqua.test</code> (they must have accepted the invite), and copy their user id. Then <span class="ui nav">Technicians</span> ▸ <span class="ui btn">New technician</span> and paste it into <span class="ui field">Identity user id</span>, with <span class="ui field">First name</span>/<span class="ui field">Last name</span> and <span class="ui field">Qualifications</span> “VOC GC/MS”. A run cannot be uploaded until the acting user has a technician profile.</p>
+
+  <h4>S.5 — Sign out, then sign in as the lab user</h4>
+  <p>Use <span class="ui btn">Sign out</span> (bottom of sidebar), then sign in as <code>analyst@aqua.test</code> / <code>Analyst#123!</code>. All remaining setup and the entire test flow runs as this lab-scoped user, so laboratory scoping is automatic (no lab-ID prompts).</p>
+
+  <h4>S.6 — Instrument, internal standard, analytes (as lab user)</h4>
+  <ul>
+    <li><span class="ui nav">Instruments</span> ▸ <span class="ui btn">New instrument</span>: name <span class="cell">GC/MS #4</span>, type GC/MS.</li>
+    <li><span class="ui nav">Internal standards</span> ▸ <span class="ui btn">New internal standard</span>: <span class="ui field">Name</span> <strong>Fluorobenzene</strong>, <span class="ui field">Spike concentration</span> = 10.</li>
+    <li><span class="ui nav">Analytes</span> ▸ <span class="ui btn">New analyte</span> ×3 — set <span class="ui field">Name</span>, <span class="ui field">Role</span> = Target, and <span class="ui field">Default internal standard</span> = Fluorobenzene for each:
+      Dichlorodifluoromethane, Vinyl Chloride-C, Bromomethane.</li>
+  </ul>
+  <div class="callout warn"><span class="badge warn">Aliases (recommended)</span> The parser matches raw compound names to analytes by canonical name/alias. If a raw name differs from the analyte name, resolve it later on the run detail page (<strong>Resolve analyte mapping</strong>, Stage 3) and tick <span class="ui field">Save as a lab-wide alias</span>. Only the analytes you define are mapped — the other ~80 compounds per report are expected to stay <em>unmapped</em> (informational, not defects).</div>
+
+  <h4>S.7 — 13 calibration levels (as lab user)</h4>
+  <p><span class="ui nav">Calibration levels</span> ▸ <span class="ui btn">New</span> once per level, using the true concentrations from the <a class="inline" href="#prereq">Prerequisites</a> table and an incrementing sort order (Cal 1 → 0.1 … Cal 13 → 160).</p>
+
+  <h4>S.8 — Method configuration (as lab user)</h4>
+  <p><span class="ui nav">Method configs</span> ▸ <span class="ui btn">New method config</span>. Enter the global criteria from the <a class="inline" href="#criteria">Acceptance criteria</a> section:</p>
+  <table>
+    <thead><tr><th>Field</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td><span class="ui field">Name</span></td><td>VOC by GC/MS (624/8260)</td></tr>
+      <tr><td><span class="ui field">Label mode</span> / <span class="ui field">Quantitation mode</span></td><td>R² (RSquared) / Internal standard</td></tr>
+      <tr><td><span class="ui field">Min correlation</span></td><td>0.990025</td></tr>
+      <tr><td><span class="ui field">Max RSE</span></td><td>15</td></tr>
+      <tr><td><span class="ui field">%Diff low / high bound</span></td><td>−20 / 20</td></tr>
+      <tr><td><span class="ui field">Min points required</span> / <span class="ui field">Max missed points</span></td><td>4 / 2</td></tr>
+      <tr><td><span class="ui field">RF %RSD limit</span></td><td>15</td></tr>
+      <tr><td><span class="ui field">ICV limit %</span> / <span class="ui field">IS %RSD limit</span></td><td>20 / 20</td></tr>
+      <tr><td><span class="ui field">ICV CDS parity %</span></td><td>0.01</td></tr>
+      <tr><td><span class="ui field">Soil / Aqueous dilution factor</span></td><td>50 / 1</td></tr>
+    </tbody>
+  </table>
+  <p>Click <span class="ui btn">Create</span> — the app opens the new config's detail page. There, use its <strong>analyte-criteria</strong> panel to add per-analyte rows for the three focus analytes (CCC <span class="ui field">Max %RSD</span> = 30, ICV/LCS <span class="ui field">concentration</span> = 40, LCL/UCL = 70 / 130) and save. The panel replaces the whole set, so add all three rows before saving.</p>
+  <div class="callout exp"><span class="badge ok">Why attach per-analyte criteria</span> Without them, the Stage&nbsp;8 ICV / CCC checks evaluate to <em>not evaluated</em> (null). When ICV/LCS concentration is set it is used as the ICV true concentration for LCS recovery. They are captured by the initial method snapshot at compute.</div>
+</section>
+
+<section id="s0">
+  <h2 class="sec"><span class="step">0</span>Sign in</h2>
+  <p>Open <code>/login</code> and sign in as the lab-admin user from <a class="inline" href="#sSetup">Stage&nbsp;S</a> (<code>analyst@aqua.test</code> / <code>Analyst#123!</code>), then click <span class="ui btn">Sign in</span>.</p>
+  <div class="callout exp"><span class="badge ok">Expected</span> You are redirected to <span class="ui nav">Dashboard</span>; the sidebar shows your name, lab, and role chips, plus the Configuration and Calibration-workflow groups. Bad credentials keep you on the login page with an error. If workflow screens are missing, the user lacks <code>perm.runs.upload</code> / <code>perm.groups.approve</code>.</div>
+</section>
+
+<section id="s1">
+  <h2 class="sec"><span class="step">1</span>Upload the 13 CAL runs</h2>
+  <p><span class="ui nav">Runs</span> ▸ <span class="ui btn">Upload run</span> — once per calibration level. On the upload form:</p>
+  <ol>
+    <li><span class="ui field">Run type</span> → <strong>Calibration (CAL)</strong>.</li>
+    <li><span class="ui field">Calibration level</span> → pick from <em>Quick pick from catalog…</em> (or type the level name) matching the true concentration in the table.</li>
+    <li><span class="ui field">Instrument</span> → <strong>GC/MS #4</strong>.</li>
+    <li><span class="ui field">Run date</span> → <code>2023-01-20 20:24</code> (any valid date is fine for parsing).</li>
+    <li><span class="ui field">Raw text</span> → paste the entire matching file from <code>./rawdata/</code>.</li>
+    <li>Click <span class="ui btn">Upload</span>.</li>
+  </ol>
+
+  <table>
+    <thead><tr><th>#</th><th>True conc</th><th>Raw-text file to paste</th><th>Data file <span class="cell">Cal Data!row 4</span></th><th>Sample label</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>0.1</td><td><code>rawdata/cal-01_0.1ugL_0120-06.txt</code></td><td>0120-06 <span class="cell">A4</span></td><td>01 VOC CAL</td></tr>
+      <tr><td>2</td><td>0.2</td><td><code>rawdata/cal-02_0.2ugL_0120-07.txt</code></td><td>0120-07 <span class="cell">K4</span></td><td>02 VOC CAL</td></tr>
+      <tr><td>3</td><td>0.5</td><td><code>rawdata/cal-03_0.5ugL_0120-08.txt</code></td><td>0120-08 <span class="cell">U4</span></td><td>0.5 VOC CAL</td></tr>
+      <tr><td>4</td><td>1</td><td><code>rawdata/cal-04_1ugL_0120-09.txt</code></td><td>0120-09 <span class="cell">AE4</span></td><td>1 VOC CAL</td></tr>
+      <tr><td>5</td><td>2</td><td><code>rawdata/cal-05_2ugL_0120-10.txt</code></td><td>0120-10 <span class="cell">AO4</span></td><td>2 VOC CAL</td></tr>
+      <tr><td>6</td><td>4</td><td><code>rawdata/cal-06_4ugL_0120-11.txt</code></td><td>0120-11 <span class="cell">AY4</span></td><td>4 VOC CAL</td></tr>
+      <tr><td>7</td><td>8</td><td><code>rawdata/cal-07_8ugL_0120-12.txt</code></td><td>0120-12 <span class="cell">BI4</span></td><td>8 VOC CAL</td></tr>
+      <tr><td>8</td><td>20</td><td><code>rawdata/cal-08_20ugL_0120-13.txt</code></td><td>0120-13 <span class="cell">BS4</span></td><td>20 VOC CAL</td></tr>
+      <tr><td>9</td><td>50</td><td><code>rawdata/cal-09_50ugL_0120-14.txt</code></td><td>0120-14 <span class="cell">CC4</span></td><td>50 VOC CAL</td></tr>
+      <tr><td>10</td><td>100</td><td><code>rawdata/cal-10_100ugL_0120-16.txt</code></td><td>0120-16 <span class="cell">CM4</span></td><td>100 VOC CAL</td></tr>
+      <tr><td>11</td><td>120</td><td><code>rawdata/cal-11_120ugL_0120-18.txt</code></td><td>0120-18 <span class="cell">CW4</span></td><td>120 VOC CAL</td></tr>
+      <tr><td>12</td><td>140</td><td><code>rawdata/cal-12_140ugL_0120-20.txt</code></td><td>0120-20 <span class="cell">DG4</span></td><td>140 VOC CAL</td></tr>
+      <tr><td>13</td><td>160</td><td><code>rawdata/cal-13_160ugL_0120-22.txt</code></td><td>0120-22 <span class="cell">DQ4</span></td><td>160 VOC CAL</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout exp"><span class="badge ok">Expected (each upload)</span> The app navigates to the new run's detail page. The <strong>Measurements</strong> table lists <strong>80+</strong> parsed compound rows, and the status badge reads <span class="badge ok">Valid</span> or <span class="badge warn">Valid with warnings</span> (qualifier-suffix <code>#</code> / <code>Below Cal</code> / <code>N.D.</code> lines are non-fatal warnings shown in the <strong>Validation</strong> card).</div>
+  <div class="callout warn"><span class="badge warn">Note — unmapped compounds are expected</span> Only the analytes you defined in <a class="inline" href="#sSetup">Stage&nbsp;S</a> map; ~80 other compounds per report stay unmapped and appear in a warning banner on the Measurements card. That is fine — they are informational. To map a specific one, use <strong>Resolve analyte mapping</strong> (Stage 3).</div>
+
+  <details><summary>Show the first lines of Level 4 (1 µg/L, 0120-09) — the exact content to paste</summary>
+<pre>                                       Quantitation Report    (Not Reviewed)
+  Data File : 0120-09.D
+  Acq On    : 20 Jan 2023  08:24 pm
+  Sample    : 1 VOC CAL
+   Internal Standards
+     8) Fluorobenzene               6.531   96   312823    10.00 ug/L     0.01
+   Target Compounds                                                   Qvalue
+     9) Dichlorodifluoromethane     1.189   85     6965     1.08 ug/L      99
+    11) Vinyl Chloride-C            1.426   62    10242     1.22 ug/L      98
+    12) Bromomethane                1.710   94     6627     1.35 ug/L      97
+&hellip; (full 111-line report is in rawdata/cal-04_1ugL_0120-09.txt)</pre>
+  </details>
+</section>
+
+<section id="s2">
+  <h2 class="sec"><span class="step">2</span>Upload the ICV run</h2>
+  <p><span class="ui nav">Runs</span> ▸ <span class="ui btn">Upload run</span> with <span class="ui field">Run type</span> = <strong>ICV</strong> (the calibration-level field disappears). Set <span class="ui field">Instrument</span> = GC/MS #4, paste <code>./rawdata/icv-01_0120-25.txt</code> into <span class="ui field">Raw text</span>, and click <span class="ui btn">Upload</span>.</p>
+  <table>
+    <thead><tr><th>Field</th><th>Value</th><th>Workbook cell</th></tr></thead>
+    <tbody>
+      <tr><td>Data file</td><td>0120-25</td><td><span class="cell">ICV Data!A4</span></td></tr>
+      <tr><td>Sample</td><td>VOC ICV1</td><td><span class="cell">ICV Data!A7</span></td></tr>
+      <tr><td>IS Fluorobenzene response</td><td class="val">327727</td><td><span class="cell">ICV Data!H22</span></td></tr>
+      <tr><td>Dichlorodifluoromethane response / CDS conc</td><td class="val">244519 / 38.06</td><td><span class="cell">ICV Data!H46 / I46</span></td></tr>
+      <tr><td>Vinyl Chloride-C response / CDS conc</td><td class="val">427463 / 45.12</td><td><span class="cell">ICV Data!H48 / I48</span></td></tr>
+      <tr><td>Bromomethane response / CDS conc</td><td class="val">285416 / 43.12</td><td><span class="cell">ICV Data!H49 / I49</span></td></tr>
+    </tbody>
+  </table>
+  <div class="callout exp"><span class="badge ok">Expected</span> Run detail opens with a <span class="badge neutral">ICV</span> type badge and status <span class="badge ok">Valid</span>/<span class="badge warn">Valid with warnings</span>.</div>
+</section>
+
+<section id="s3">
+  <h2 class="sec"><span class="step">3</span>(Optional) Verify parsing &amp; response ratios</h2>
+  <p>On the Level-4 run's detail page, the <strong>Measurements</strong> table confirms the parser + IS normalization before you compute anything. Column headers carry <span class="xui">Excel↔UI</span> hints pointing back to Cal/ICV Data and DVD rows.</p>
+  <table>
+    <thead><tr><th>Analyte (Level 4, 1 µg/L)</th><th>Response</th><th>IS response</th><th>Response Ratio (Y)</th><th>Cell (Cal Data col AE)</th></tr></thead>
+    <tbody>
+      <tr><td>Dichlorodifluoromethane</td><td>6965</td><td>312823</td><td class="val">0.022265</td><td><span class="cell">≈ 6965 / 312823</span></td></tr>
+      <tr><td>Vinyl Chloride-C</td><td>10242</td><td>312823</td><td class="val">0.032740</td><td><span class="cell">≈ 10242 / 312823</span></td></tr>
+      <tr><td>Bromomethane</td><td>6627</td><td>312823</td><td class="val">0.021185</td><td><span class="cell">≈ 6627 / 312823</span></td></tr>
+    </tbody>
+  </table>
+  <div class="callout exp"><span class="badge ok">Expected</span> Each target's <strong>Response ratio</strong> column = response ÷ internal-standard response, matching the Y-values above (the Amount Ratio X used later = trueConc ÷ 10).</div>
+  <div class="callout"><strong>Resolving a compound.</strong> If a focus analyte shows as unresolved, scroll to <strong>Resolve analyte mapping</strong>: pick the <span class="ui field">Raw compound name</span>, choose the <span class="ui field">Canonical analyte</span>, tick <span class="ui field">Save as a lab-wide alias</span>, and click <span class="ui btn">Resolve mapping</span>. The measurement flips to resolved.</div>
+</section>
+
+<section id="s4">
+  <h2 class="sec"><span class="step">4</span>Create the calibration group</h2>
+  <p><span class="ui nav">Calibration groups</span> ▸ <strong>Create draft group</strong> card. Fill it in:</p>
+  <ol>
+    <li><span class="ui field">Group name</span> → “MS4 VOC ICAL 2023-01-20”.</li>
+    <li><span class="ui field">Instrument</span> → <strong>GC/MS #4</strong> (this loads the eligible CAL/ICV runs).</li>
+    <li><span class="ui field">Method configuration</span> → VOC by GC/MS (624/8260).</li>
+    <li><span class="ui field">CAL runs</span> → tick all 13 uploaded CAL runs (ineligible runs are greyed out with a reason).</li>
+    <li><span class="ui field">ICV run</span> → select the ICV upload.</li>
+    <li>Click <span class="ui btn">Create draft group</span>.</li>
+  </ol>
+  <div class="callout exp"><span class="badge ok">Expected</span> The app opens the new group detail page with a <span class="badge neutral">Draft</span> status badge and the stepper on <strong>Setup</strong>. The <span class="ui tab">Overview</span> tab lists all 13 CAL runs + the ICV run. Each CAL run must map to a distinct calibration level (13 distinct levels).</div>
+  <div class="callout warn"><span class="badge warn">Fail-checks</span> Picking two runs of the same level, a config from another lab, or the ICV among the CAL runs prevents creation with an inline error.</div>
+</section>
+
+<section id="s4b">
+  <h2 class="sec"><span class="step">4b</span>Readiness check</h2>
+  <p>On the group page, open the <span class="ui tab">Setup &amp; readiness</span> tab and read the <strong>Regression readiness</strong> card (click <span class="ui btn">Refresh</span> if needed).</p>
+  <div class="callout exp"><span class="badge ok">Expected (focused 3-analyte catalog)</span> If you only defined the three focus analytes in Stage&nbsp;S, <strong>Ready for compute:</strong> should be <span class="badge ok">Yes</span> with an empty <strong>Blocking issues</strong> table. Unmapped compounds should appear under <strong>Warnings</strong> only.</div>
+  <div class="callout warn"><span class="badge warn">Full VOC catalog instances</span> If the lab already has ~80+ analytes (parity / full Method 8260 catalog), readiness often shows <strong>Ready for compute: No</strong> with a long <strong>Blocking issues</strong> table full of <code>MissingAnalyteMapping</code> / <code>MissingInternalStandard</code> rows whose severity badge still says <em>Warning</em>. The <span class="ui btn">Compute calibration</span> button then stays disabled with “Readiness check reports blocking issues…”. Workaround for this validation: exclude non-focus analytes on the <strong>Target analytes</strong> panel, or map/alias the compounds you care about, until Ready flips to Yes — or note whether compute was already run (status <span class="badge neutral">Computed</span>) so you can continue reviewing without recomputing.</div>
+  <div class="callout"><strong>Target analytes.</strong> The <strong>Target analytes</strong> panel on the same tab lists every resolved target in the group's CAL runs (3 in a focused seed; dozens in a full catalog). Each has <span class="ui btn">Exclude</span> / <span class="ui btn">Re-include</span>. Excluded analytes are skipped at compute. For workbook parity on the three focus compounds, leave those three included.</div>
+</section>
+
+<section id="s5">
+  <h2 class="sec"><span class="step">5</span>Compute the regression</h2>
+  <p>Open the <span class="ui tab">Compute &amp; model</span> tab and click <span class="ui btn">Compute calibration</span> on the <strong>Run regression</strong> card. This freezes the method snapshot and fits the <strong>9 workbook variants</strong> per analyte (Average/None; Linear ×{None,1/x,1/x²}; LinearForcedZero/None; Quadratic ×{None,1/x,1/x²}; QuadraticForcedZero/None).</p>
+  <div class="callout exp"><span class="badge ok">Expected</span> A success note appears (“Regression completed”), the status badge flips to <span class="badge neutral">Computed</span>, the stepper advances to <strong>Model</strong>, and the report card renders below. The <span class="ui tab">Overview</span> tab now shows a “Computed …” timestamp and a snapshot id, with no “Recompute needed” warning.</div>
+  <div class="callout warn"><span class="badge warn">Note</span> The <span class="ui btn">Compute calibration</span> button is disabled while readiness reports blocking issues. Recompute clears any manual point exclusions and prior model selections.</div>
+</section>
+
+<section id="s6">
+  <h2 class="sec"><span class="step">6</span>Report Card — recommended model per analyte</h2>
+  <p>Still on <span class="ui tab">Compute &amp; model</span>, scroll to <strong>Report card — model comparison</strong>. Every analyte gets a table of all 9 variants scored “like golf — fewer points wins; Rank 1 is best”. The footer names the <strong>Best overall</strong> and <strong>Best non-forced-0</strong> model. Confirm the top-ranked pick matches the workbook's “Chosen CAL Model”.</p>
+  <table>
+    <thead><tr><th>Analyte</th><th>Expected recommended model</th><th>UI enum (RegressionType / WeightingMode)</th><th>Workbook cell</th></tr></thead>
+    <tbody>
+      <tr><td>Bromomethane</td><td class="val">A — Average RF</td><td><code>Average</code> / <code>None</code></td><td><span class="cell">Summary!I60 = "A"</span></td></tr>
+      <tr><td>Vinyl Chloride-C</td><td class="val">QIC — Quadratic, 1/x</td><td><code>Quadratic</code> / <code>InverseX</code></td><td><span class="cell">Summary!I59 = "QIC"</span></td></tr>
+      <tr><td>Dichlorodifluoromethane</td><td class="val">QIC — Quadratic, 1/x</td><td><code>Quadratic</code> / <code>InverseX</code></td><td><span class="cell">Summary!I57 = "QIC"</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Use the <span class="ui field">Analyte</span> selector above the table to switch analytes. Model-code key: <code>A</code>=Average/None · <code>LS</code>=Linear/None · <code>LSIC</code>=Linear/1&#8239;x · <code>LSISC</code>=Linear/1&#8239;x² · <code>LSF0</code>=LinearForcedZero/None · <code>Q</code>=Quadratic/None · <code>QIC</code>=Quadratic/1&#8239;x · <code>QISC</code>=Quadratic/1&#8239;x² · <code>QF0</code>=QuadraticForcedZero/None.</p>
+  <div class="callout warn"><span class="badge warn">Do not trust “Suggested variant” for workbook parity</span> The workflow card's <em>Suggested variant (highest pass-count)</em> and the table footer's blue <em>Best overall</em> often pick a <strong>forced-zero</strong> model (e.g. Quad Forced 0). The workbook never chooses forced-zero for these analytes. For each focus analyte, use the footer's red line — <strong>Best ranked non-forced 0 calibration model</strong> — and/or the green boxes above (A / QIC / QIC). <span class="ui btn">Apply to all analytes</span> applies one variant to <em>every</em> analyte in the group (dozens on a full catalog) and will mismatch the per-analyte workbook picks.</div>
+</section>
+
+<section id="s6b">
+  <h2 class="sec"><span class="step">6b</span>Point inclusion &amp; manual exclusions</h2>
+  <div class="callout"><span class="badge">How the workbook decides inclusion</span> The workbook's point inclusion is <strong>not a formula</strong>. VBA macros behind command buttons write the chosen model and the <em>number of included points</em> (e.g. 11 of 13) per analyte; pre-generated <code>LINEST</code>/<code>AVERAGE</code>/<code>STDEV</code> formulas switch on those cells. In other words, an analyst trims the calibration range (drops the worst end levels) until the curve passes — an <strong>analyst-driven decision</strong>. WLTR mirrors this: you exclude points by hand and recompute.</div>
+  <p>Point exclusion lives on the <span class="ui tab">Review</span> tab under <strong>Regression input tables</strong>. Pick an analyte, then per calibration point you get an <span class="ui btn">Exclude</span> / <span class="ui btn">Re-include</span> action. Each row shows Amount ratio (X), Response ratio (Y), RF, predicted ŷ, residual, and % diff — use these to spot the worst end points (RF far from the mean, %Diff beyond ±20 %).</p>
+  <div class="callout exp"><span class="badge ok">Worked example — Dichlorodifluoromethane (required for Stage&nbsp;8 gold)</span> Its all-points RF %RSD fails the 15 % average-model gate (live all-points often ≈ 29 %). Exclude deviant end levels until included points match the workbook's count (11 for Dichlorodifluoromethane, 12 for Vinyl Chloride-C, 10 for Bromomethane — see Stage&nbsp;8 table), then recompute. Never trim below the method's <em>Min points required</em>.</div>
+  <p>To exclude: click <span class="ui btn">Exclude</span> on the point → choose a <span class="ui field">Reason</span> (<em>Manual exclude</em> or <em>% diff out of range</em>) → type a required <span class="ui field">Note</span> (audit justification) → <span class="ui btn">Confirm exclude</span>. Then return to <span class="ui tab">Compute &amp; model</span> and click <span class="ui btn">Compute calibration</span> again.</p>
+  <div class="callout"><span class="badge ok">What to confirm</span> After excluding an end point and recomputing, the analyte's RF %RSD drops; if it now clears the limit, the Average (mean-RF) model becomes usable again — mirroring the workbook's 13→N point trims (e.g. Bromomethane 13→10). Recomputing marks prior results stale until you re-run; the report card and summary refresh from the new fit.</div>
+</section>
+
+<section id="s7">
+  <h2 class="sec"><span class="step">7</span>Select a model per analyte</h2>
+  <p>Approval requires every non-excluded target analyte to have a selected model. Two ways, both on <span class="ui tab">Compute &amp; model</span>:</p>
+  <ul>
+    <li><strong>Bulk:</strong> the <strong>Calibration workflow</strong> card shows a <em>Suggested variant</em> (highest pass-count) with an <span class="ui btn">Apply to all analytes</span> button — one click selects it for every analyte.</li>
+    <li><strong>Per analyte:</strong> in the report card table, click <span class="ui btn">Select</span> on the chosen variant row for that analyte. The row shows a green ✓ once selected.</li>
+  </ul>
+  <div class="callout exp"><span class="badge ok">Expected</span> Selecting is confirmed by a toast and a ✓ on the row. Select <strong>per analyte</strong> to match the workbook: Bromomethane → Average RF; Vinyl Chloride-C → Quad (Inv Conct); Dichlorodifluoromethane → Quad (Inv Conct). Skip <span class="ui btn">Apply to all analytes</span> unless you intentionally want one model for every compound.</div>
+  <p class="small muted">Once all non-excluded analytes have a selection, Step&nbsp;2 of the workflow card turns green and the summary report becomes available. On a full catalog that means every included target — not only the three focus analytes.</p>
+</section>
+
+<section id="s8">
+  <h2 class="sec"><span class="step">8</span>Summary Report — the pass/fail verification</h2>
+  <p>Open the <span class="ui tab">Review</span> tab ▸ <strong>Summary report</strong>. It reproduces the entire <code>Summary Report</code> sheet as four sections — 1. Administrative summary, 2. Executive summary, 3. Response factor summary, 4. Linear dynamic range (with the ICV calculator). Verify the executive row for each focus analyte against these cells (workbook rows 57–60).</p>
+
+  <table>
+    <thead>
+      <tr><th>Metric</th><th>Bromomethane</th><th>Vinyl Chloride-C</th><th>Dichlorodifluoromethane</th><th>Column</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Chosen model</td><td>A</td><td>QIC</td><td>QIC</td><td><span class="cell">I60 / I59 / I57</span></td></tr>
+      <tr><td>Mean Response Factor (RF mean)</td><td class="val">0.201983</td><td class="val">0.299803</td><td class="val">0.196300</td><td><span class="cell">F60 / F59 / F57</span></td></tr>
+      <tr><td>RF %RSD</td><td>6.833 %</td><td>12.753 %</td><td>21.331 %</td><td><span class="cell">G60 / G59 / G57</span></td></tr>
+      <tr><td>%RSD &lt; 15 % ?</td><td><span class="badge ok">Y</span></td><td><span class="badge ok">Y</span></td><td><span class="badge bad">N</span> → use curve</td><td><span class="cell">H60 / H59 / H57</span></td></tr>
+      <tr><td>r²</td><td class="val">1.000000</td><td class="val">0.997915</td><td class="val">0.994862</td><td><span class="cell">K60 / K59 / K57</span></td></tr>
+      <tr><td>r² &gt; 0.99 ?</td><td><span class="badge ok">Y</span></td><td><span class="badge ok">Y</span></td><td><span class="badge ok">Y</span></td><td><span class="cell">L60 / L59 / L57</span></td></tr>
+      <tr><td># CAL points used</td><td>10</td><td>12</td><td>11</td><td><span class="cell">N60 / N59 / N57</span></td></tr>
+      <tr><td>Min points allowable</td><td>4</td><td>6</td><td>6</td><td><span class="cell">O60 / O59 / O57</span></td></tr>
+      <tr><td>Points missed (out of %Diff)</td><td>0</td><td>0</td><td class="val">2</td><td><span class="cell">R60 / R59 / R57</span></td></tr>
+      <tr><td>≤ max (2) failures ?</td><td><span class="badge ok">Y</span></td><td><span class="badge ok">Y</span></td><td><span class="badge ok">Y</span></td><td><span class="cell">S60 / S59 / S57</span></td></tr>
+      <tr><td>ICV / ICV CDS / ICV-LCS checks</td><td><span class="badge ok">Y/Y/Y</span></td><td><span class="badge ok">Y/Y/Y</span></td><td><span class="badge ok">Y/Y/Y</span></td><td><span class="cell">U,V,W (60/59/57)</span></td></tr>
+      <tr><td><strong>Overall (Status)</strong></td><td><span class="badge ok">Acceptable</span></td><td><span class="badge ok">Acceptable</span></td><td><span class="badge ok">Acceptable</span></td><td><span class="cell">AD60 / AD59 / AD57</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">The executive table columns (Status, R², r, RSE, RF mean, RF %RSD, ICV, ICV CDS, ICV/LCS, SPCC RF, CCC RSD) each carry an <span class="xui">Excel↔UI</span> header hint. Any failure reasons print in red under the analyte name.</p>
+
+  <div class="callout"><strong>Reading the Dichlorodifluoromethane case.</strong> Its %RSD (21.33 %) fails the average-model gate <span class="cell">H57=N</span>, so the average RF is not usable — WLTR falls back to a fitted curve and picks <strong>QIC</strong> <span class="cell">I57</span>, whose r² = 0.994862 <span class="cell">K57</span> passes and whose back-calculation keeps missed points at 2 <span class="cell">R57</span> (≤ the allowed 2), yielding <em>Acceptable</em>. This is the key non-trivial behaviour to confirm.</div>
+  <div class="callout warn"><span class="badge warn">If Status = Fail with wrong RF / %RSD</span> Confirm Stage&nbsp;6b exclusions were applied and the group was recomputed <em>before</em> model select. An all-points compute commonly shows e.g. Bromomethane RF mean ≈ 0.22 / %RSD ≈ 26 % and Status <span class="badge bad">Fail</span> — that is expected until the range is trimmed to match the workbook. Also confirm the executive table is showing the <em>selected</em> model (ICV Calculator captions under section 4 name the selected type).</div>
+</section>
+
+<section id="s9">
+  <h2 class="sec"><span class="step">9</span>Approve &amp; lock</h2>
+  <p>Back on <span class="ui tab">Compute &amp; model</span>, use the <strong>QA decision</strong> card (visible to approvers). Optionally type a <span class="ui field">Comment</span> (“Validated against MS4 workbook”), then click <span class="ui btn">Approve calibration</span>.</p>
+  <div class="callout exp"><span class="badge ok">Expected</span> A success toast (“Calibration group approved”); status badge → <span class="badge ok">Approved</span>; the stepper's <strong>QA sign-off</strong> step turns green; the group is locked (edit/exclude/select controls disappear). The approval is recorded in the audit trail.</div>
+  <div class="callout warn"><span class="badge warn">Fail-checks</span> The card blocks approval with an error if any <em>included</em> analyte lacks a selected model or the computation is stale (recompute first). <span class="ui btn">Reject</span> is terminal and asks for confirmation before recording in the audit log.</div>
+  <div class="callout warn"><span class="badge warn">Approval ≠ executive Acceptable</span> QA can approve even when the Summary report shows Status <span class="badge bad">Fail</span> for some analytes. Stage&nbsp;9 validates the <em>lock / audit</em> path; Stage&nbsp;8 remains the pass/fail gate for workbook parity.</div>
+</section>
+
+<!-- ============ DEEP DIVE ============ -->
+<section id="deep">
+  <h2 class="sec">Deep-dive expected results (traced per level)</h2>
+  <p>For each focus analyte, the per-level Response Factor (RF = Y ÷ X) is listed with its exact <code>Summary Report</code> cell, followed by the aggregate fit. Cross-check these against the per-point rows in <span class="ui tab">Review</span> ▸ <strong>Regression input tables</strong> / <strong>Response factor summary</strong>. (Empty cells = level not used for that analyte.)</p>
+
+  <h3>Bromomethane — Average RF model <span class="tag">clean case</span></h3>
+  <table>
+    <thead><tr><th>Level / conc</th><th>Cal3&nbsp;0.5</th><th>Cal4&nbsp;1</th><th>Cal5&nbsp;2</th><th>Cal6&nbsp;4</th><th>Cal7&nbsp;8</th><th>Cal8&nbsp;20</th><th>Cal9&nbsp;50</th><th>Cal10&nbsp;100</th><th>Cal11&nbsp;120</th><th>Cal12&nbsp;140</th></tr></thead>
+    <tbody>
+      <tr><th>RF</th><td>0.23478</td><td>0.21185</td><td>0.20071</td><td>0.20782</td><td>0.20125</td><td>0.19286</td><td>0.19069</td><td>0.19878</td><td>0.19388</td><td>0.18721</td></tr>
+      <tr><th>Cell (row 154)</th><td colspan="10" class="small"><span class="cell">Summary!F154:O154</span> · mean <span class="cell">Y154 = 0.201983</span> · %RSD <span class="cell">AA154 = 6.833</span> · r² <span class="cell">AB154 = 1.0</span> · model <span class="cell">AD154 = "A"</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Vinyl Chloride-C — Quadratic, 1/x <span class="tag">CCC compound</span></h3>
+  <table>
+    <thead><tr><th>Level / conc</th><th>Cal1&nbsp;0.1</th><th>Cal2&nbsp;0.2</th><th>Cal3&nbsp;0.5</th><th>Cal4&nbsp;1</th><th>Cal5&nbsp;2</th><th>Cal6&nbsp;4</th><th>Cal7&nbsp;8</th><th>Cal8&nbsp;20</th><th>Cal9&nbsp;50</th><th>Cal10&nbsp;100</th><th>Cal11&nbsp;120</th><th>Cal12&nbsp;140</th></tr></thead>
+    <tbody>
+      <tr><th>RF</th><td>0.33119</td><td>0.33018</td><td>0.29479</td><td>0.32741</td><td>0.31614</td><td>0.35143</td><td>0.32660</td><td>0.30756</td><td>0.27515</td><td>0.25702</td><td>0.24720</td><td>0.23295</td></tr>
+      <tr><th>Cell (row 153)</th><td colspan="12" class="small"><span class="cell">Summary!D153:O153</span> · mean <span class="cell">Y153 = 0.299803</span> · %RSD <span class="cell">AA153 = 12.753</span> · r² <span class="cell">AB153 = 0.997915</span> · model <span class="cell">AD153 = "QIC"</span> · CCC %RSD ≤ 30 % ✔</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Dichlorodifluoromethane — Quadratic, 1/x <span class="tag">%RSD fails → curve · 2 missed points</span></h3>
+  <table>
+    <thead><tr><th>Level / conc</th><th>Cal1&nbsp;0.1</th><th>Cal2&nbsp;0.2</th><th>Cal3&nbsp;0.5</th><th>Cal4&nbsp;1</th><th>Cal5&nbsp;2</th><th>Cal6&nbsp;4</th><th>Cal7&nbsp;8</th><th>Cal8&nbsp;20</th><th>Cal9&nbsp;50</th><th>Cal10&nbsp;100</th><th>Cal11&nbsp;120</th></tr></thead>
+    <tbody>
+      <tr><th>RF</th><td>0.18785</td><td>0.19586</td><td>0.16888</td><td>0.22265</td><td>0.20494</td><td>0.27589</td><td>0.24130</td><td>0.21037</td><td>0.17624</td><td>0.14492</td><td>0.13040</td></tr>
+      <tr><th>Cell (row 151)</th><td colspan="11" class="small"><span class="cell">Summary!D151:N151</span> · mean <span class="cell">Y151 = 0.196300</span> · %RSD <span class="cell">AA151 = 21.331</span> · r² <span class="cell">AB151 = 0.994862</span> (r <span class="cell">AG151 = 0.997428</span>) · model <span class="cell">AD151 = "QIC"</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>ICV verification (all three under their selected model)</h3>
+  <p>Shown in <span class="ui tab">Review</span> ▸ <strong>Summary report</strong> ▸ “4. Linear dynamic range”, where each analyte's <strong>ICV Calculator</strong> inverts the selected curve.</p>
+  <table>
+    <thead><tr><th>Analyte</th><th>ICV response</th><th>IS resp</th><th>CDS conc</th><th>True</th><th>Expected outcome</th></tr></thead>
+    <tbody>
+      <tr><td>Dichlorodifluoromethane</td><td>244519 <span class="cell">ICV!H46</span></td><td>327727</td><td>38.06</td><td>50</td><td>within 50–160 % LCL/UCL → <span class="badge ok">pass</span></td></tr>
+      <tr><td>Vinyl Chloride-C</td><td>427463 <span class="cell">ICV!H48</span></td><td>327727</td><td>45.12</td><td>50</td><td>within 80–120 % → <span class="badge ok">pass</span></td></tr>
+      <tr><td>Bromomethane</td><td>285416 <span class="cell">ICV!H49</span></td><td>327727</td><td>43.12</td><td>50</td><td>within 22–187 % → <span class="badge ok">pass</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">WLTR inverts the selected curve for the ICV response ratio to get calculated concentration, then recovery = 100 + %Diff-from-true, judged against the per-analyte LCL/UCL. The instrument-vs-external-calculator parity check (≤ 0.01 % <span class="cell">Summary!V10</span>) is informational and shown on the Linear Dynamic Range summary. All three report <span class="badge ok">Acceptable</span> overall <span class="cell">AD57/AD59/AD60</span>.</p>
+</section>
+
+<section id="appendix">
+  <h2 class="sec">Appendix</h2>
+  <h3>Ready-to-paste raw data files (<code>./rawdata/</code>)</h3>
+  <table>
+    <thead><tr><th>File</th><th>Run</th><th>Upload as</th></tr></thead>
+    <tbody>
+      <tr><td><code>cal-01_0.1ugL_0120-06.txt</code> … <code>cal-13_160ugL_0120-22.txt</code></td><td>13 CAL levels</td><td>Stage 1 · <span class="ui field">Run type = Calibration (CAL)</span></td></tr>
+      <tr><td><code>icv-01_0120-25.txt</code></td><td>ICV verification</td><td>Stage 2 · <span class="ui field">Run type = ICV</span></td></tr>
+    </tbody>
+  </table>
+  <p class="small muted">Each file is one MassHunter Quantitation Report reconstructed verbatim from the workbook (111 lines). Paste the entire file contents into the <span class="ui field">Raw text</span> box.</p>
+
+  <h3>Model-code mapping (workbook → WLTR)</h3>
+  <table>
+    <thead><tr><th>Workbook</th><th>RegressionType</th><th>WeightingMode</th></tr></thead>
+    <tbody>
+      <tr><td>A</td><td>Average</td><td>None</td></tr>
+      <tr><td>LS</td><td>Linear</td><td>None</td></tr>
+      <tr><td>LSIC</td><td>Linear</td><td>InverseX (1/x)</td></tr>
+      <tr><td>LSISC</td><td>Linear</td><td>InverseXSquared (1/x²)</td></tr>
+      <tr><td>LSF0</td><td>LinearForcedZero</td><td>None</td></tr>
+      <tr><td>Q</td><td>Quadratic</td><td>None</td></tr>
+      <tr><td>QIC</td><td>Quadratic</td><td>InverseX (1/x)</td></tr>
+      <tr><td>QISC</td><td>Quadratic</td><td>InverseXSquared (1/x²)</td></tr>
+      <tr><td>QF0</td><td>QuadraticForcedZero</td><td>None</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Stage → where in the UI</h3>
+  <table>
+    <thead><tr><th>Stage</th><th>Screen / control</th></tr></thead>
+    <tbody>
+      <tr><td>S Prerequisites</td><td><span class="ui nav">Laboratories</span> · <span class="ui nav">Invitations</span> · <span class="ui nav">Technicians</span> · <span class="ui nav">Instruments</span> · <span class="ui nav">Internal standards</span> · <span class="ui nav">Analytes</span> · <span class="ui nav">Calibration levels</span> · <span class="ui nav">Method configs</span></td></tr>
+      <tr><td>0 Sign in</td><td><code>/login</code> ▸ <span class="ui btn">Sign in</span></td></tr>
+      <tr><td>1 Upload CAL ×13</td><td><span class="ui nav">Runs</span> ▸ <span class="ui btn">Upload run</span> (Run type = CAL)</td></tr>
+      <tr><td>2 Upload ICV</td><td><span class="ui nav">Runs</span> ▸ <span class="ui btn">Upload run</span> (Run type = ICV)</td></tr>
+      <tr><td>3 Verify parse</td><td>Run detail ▸ <strong>Measurements</strong> table</td></tr>
+      <tr><td>4 Create group</td><td><span class="ui nav">Calibration groups</span> ▸ <span class="ui btn">Create draft group</span></td></tr>
+      <tr><td>4b Readiness</td><td>Group ▸ <span class="ui tab">Setup &amp; readiness</span> ▸ Regression readiness</td></tr>
+      <tr><td>5 Compute</td><td>Group ▸ <span class="ui tab">Compute &amp; model</span> ▸ <span class="ui btn">Compute calibration</span></td></tr>
+      <tr><td>6 Report Card</td><td>Group ▸ <span class="ui tab">Compute &amp; model</span> ▸ Report card — model comparison</td></tr>
+      <tr><td>6b Point exclusions</td><td>Group ▸ <span class="ui tab">Review</span> ▸ Regression input tables ▸ <span class="ui btn">Exclude</span> → recompute</td></tr>
+      <tr><td>7 Select models</td><td>Group ▸ <span class="ui tab">Compute &amp; model</span> ▸ <span class="ui btn">Apply to all analytes</span> or per-row <span class="ui btn">Select</span></td></tr>
+      <tr><td>8 Summary Report</td><td>Group ▸ <span class="ui tab">Review</span> ▸ Summary report</td></tr>
+      <tr><td>9 Approve</td><td>Group ▸ <span class="ui tab">Compute &amp; model</span> ▸ QA decision ▸ <span class="ui btn">Approve calibration</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>Scripted alternative (optional)</h3>
+  <p>If you'd rather drive the underlying API instead of clicking, the bundled <code>./run-test.ps1</code> executes the same Stages S–9 against <code>http://localhost:5000</code> and writes each response under <code>./results/</code>. It is safe on Windows PowerShell 5.1 (uses <code>curl.exe --data-binary @file</code> and a string-safe JSON builder). Use it to reproduce the flow quickly, then use these UI stages to inspect the values on screen. The <span class="ui nav">API guide</span> and <span class="ui nav">API explorer</span> screens document and sandbox the same endpoints.</p>
+</section>
+
+</main>
+</div>
+<footer>
+  Generated for WLTR validation · web UI walkthrough · all expected values traced to <code>230120_MS4_VOC_Preloaded (5) - Unlocked.xlsm</code> · focus analytes: Bromomethane, Vinyl Chloride-C, Dichlorodifluoromethane.
+</footer>
+</body>
+</html>

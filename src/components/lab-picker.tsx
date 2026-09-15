@@ -24,6 +24,15 @@ function rememberLabId(id: string) {
   }
 }
 
+/** Clears the remembered laboratory selection for platform operators. */
+export function clearRememberedLabId() {
+  try {
+    sessionStorage.removeItem(LAST_LAB_KEY);
+  } catch {
+    // ignore
+  }
+}
+
 function s(v: unknown, fallback = ""): string {
   return typeof v === "string" ? v : fallback;
 }

@@ -70,6 +70,58 @@ export const LABEL_MODE_LABEL: Record<string, string> = {
   R: "√R² (correlation r)",
 };
 
+/**
+ * Method family — optional tag on a method config for UI pre-fill and report layout.
+ * Not enforced against `quantitationMode`; frozen on the next snapshot (schema v7).
+ */
+export const MethodFamily = {
+  VOC: "VOC",
+  GRO: "GRO",
+  BTEX: "BTEX",
+  DRO: "DRO",
+  ORO: "ORO",
+  Anions: "Anions",
+} as const;
+export type MethodFamily = (typeof MethodFamily)[keyof typeof MethodFamily];
+
+export const METHOD_FAMILY_LABEL: Record<string, string> = {
+  VOC: "VOC",
+  GRO: "GRO",
+  BTEX: "BTEX",
+  DRO: "DRO",
+  ORO: "ORO",
+  Anions: "Anions",
+};
+
+/** One row of GET /api/method-configs/family-defaults — server-owned family → quantitation-mode map. */
+export type MethodFamilyDefault = {
+  methodFamily?: string | null;
+  quantitationMode?: string | null;
+};
+
+/**
+ * Import format — selects the parser for a run upload.
+ * Omit to auto-detect MassHunter/Generic only; an explicit format never falls back.
+ */
+export const ImportFormat = {
+  MassHunterText: "MassHunterText",
+  ChemStationCsv: "ChemStationCsv",
+  PidText: "PidText",
+  IcSlk: "IcSlk",
+  IcCsv: "IcCsv",
+  Generic: "Generic",
+} as const;
+export type ImportFormat = (typeof ImportFormat)[keyof typeof ImportFormat];
+
+export const IMPORT_FORMAT_LABEL: Record<string, string> = {
+  MassHunterText: "MassHunter (text)",
+  ChemStationCsv: "ChemStation (CSV)",
+  PidText: "PID (text)",
+  IcSlk: "Ion chromatograph (SLK)",
+  IcCsv: "Ion chromatograph (CSV)",
+  Generic: "Generic",
+};
+
 export const AnalyteMappingApplyScope = {
   RunOnly: 0,
   Laboratory: 1,
@@ -96,6 +148,16 @@ export const RUN_TYPE_LABEL: Record<number, string> = {
   1: "ICV",
 };
 
+/**
+ * Reads `isGrouped` off a run payload: true when at least one non-deleted calibration group
+ * references the run as a CAL member or as its ICV, whatever the group's status. Returns null
+ * against an API build that does not send the field, so callers can stay silent instead of
+ * claiming the run is ungrouped.
+ */
+export function readIsGrouped(v: unknown): boolean | null {
+  return typeof v === "boolean" ? v : null;
+}
+
 /** Display strings for method config `defaultRegressionType` / snapshot `regressionType` integers. */
 export const REGRESSION_TYPE_LABEL: Record<number, string> = {
   0: "Average",
@@ -117,6 +179,33 @@ export const GROUP_STATUS_LABEL: Record<number, string> = {
   2: "Approved",
   3: "Rejected",
 };
+
+const GROUP_STATUS_BY_NAME: Record<string, number> = {
+  Draft: CalibrationGroupStatus.Draft,
+  Computed: CalibrationGroupStatus.Computed,
+  Approved: CalibrationGroupStatus.Approved,
+  Rejected: CalibrationGroupStatus.Rejected,
+};
+
+/** Normalizes API group status from enum name or integer. */
+export function normalizeGroupStatus(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v in GROUP_STATUS_BY_NAME) return GROUP_STATUS_BY_NAME[v];
+  return CalibrationGroupStatus.Draft;
+}
+
+export function groupStatusLabel(v: unknown): string {
+  const status = normalizeGroupStatus(v);
+  return GROUP_STATUS_LABEL[status] ?? (typeof v === "string" ? v : String(status));
+}
+
+export function groupStatusTone(v: unknown): "ok" | "warn" | "bad" | "neutral" {
+  const status = normalizeGroupStatus(v);
+  if (status === CalibrationGroupStatus.Approved) return "ok";
+  if (status === CalibrationGroupStatus.Rejected) return "bad";
+  if (status === CalibrationGroupStatus.Computed) return "warn";
+  return "neutral";
+}
 
 /** `Wltr.Domain.Enums.AnalyteCalStatus` — 0 Fail, 1 Pass. */
 export const AnalyteCalStatus = {
@@ -183,6 +272,10 @@ export type MeResponse = {
   firstName?: string | null;
   lastName?: string | null;
   laboratoryId?: string | null;
+  /** Home department; null/absent means unpartitioned (sees the whole lab). */
+  departmentId?: string | null;
+  /** When true, caller sees every department in the laboratory. */
+  worksAcrossDepartments?: boolean | null;
   qualifications?: string | null;
   hireDate?: string | null;
   roleNames?: string[] | null;
@@ -203,6 +296,40 @@ export type Paged<T> = {
   pageSize: number;
 };
 
+export type DashboardSummaryMetrics = {
+  instrumentsActive: number;
+  calRunsToday: number;
+  groupsPendingQa: number;
+  groupsApprovedMtd: number;
+};
+
+export type DashboardRecentCalibrationGroup = {
+  id: string;
+  name?: string | null;
+  instrumentName?: string | null;
+  analyteCount?: number | null;
+  /** API may return enum name (`Draft`) or integer status. */
+  status?: string | number | null;
+  createdAt?: string | null;
+};
+
+export type DashboardActionItemKind = "Recompute" | "Review";
+
+export type DashboardActionItem = {
+  kind?: DashboardActionItemKind | string | null;
+  type?: string | null;
+  title?: string | null;
+  name?: string | null;
+  priority?: string | null;
+  calibrationGroupId: string;
+};
+
+export type DashboardSummaryResponse = {
+  metrics: DashboardSummaryMetrics;
+  recentCalibrationGroups?: DashboardRecentCalibrationGroup[] | null;
+  actionItems?: DashboardActionItem[] | null;
+};
+
 export const PERMS = {
   view: "perm.view",
   usersManageLab: "perm.users.manage_lab",
@@ -213,6 +340,7 @@ export const PERMS = {
   groupsApprove: "perm.groups.approve",
   laboratoriesManage: "perm.laboratories.manage",
   laboratoriesCreate: "perm.laboratories.create",
+  departmentsManage: "perm.departments.manage",
   platformManage: "perm.platform.manage",
 } as const;
 
@@ -230,6 +358,53 @@ export function displayName(me: MeResponse | null | undefined): string {
   return me?.email ?? "User";
 }
 
+/** Lab config Excel export bundle — query param on GET /lab-config/export. */
+export type LabConfigBundle =
+  | "reference-catalog"
+  | "method-ruleset"
+  | "instrument-setup"
+  | "lab-config-package";
+
+export const LAB_CONFIG_BUNDLE_LABEL: Record<LabConfigBundle, string> = {
+  "reference-catalog": "Reference catalog",
+  "method-ruleset": "Method ruleset",
+  "instrument-setup": "Instrument setup",
+  "lab-config-package": "Full lab config package",
+};
+
+export const LAB_CONFIG_BUNDLE_DESCRIPTION: Record<LabConfigBundle, string> = {
+  "reference-catalog": "Analytes, internal standards, and calibration levels",
+  "method-ruleset": "Method configuration and per-analyte criteria",
+  "instrument-setup": "Instruments and suppressed-analyte mappings",
+  "lab-config-package": "All configuration sheets plus optional custom roles",
+};
+
+/** Import conflict strategy — query param on POST /lab-config/import. */
+export type LabConfigImportStrategy = "skip" | "update" | "fail";
+
+export const LAB_CONFIG_IMPORT_STRATEGY_LABEL: Record<LabConfigImportStrategy, string> = {
+  skip: "Skip existing rows",
+  update: "Update existing rows",
+  fail: "Fail on first conflict",
+};
+
+export type LabConfigImportRowError = {
+  sheet?: string | null;
+  row?: number | null;
+  column?: string | null;
+  message?: string | null;
+};
+
+export type LabConfigImportResult = {
+  success?: boolean;
+  dryRun?: boolean;
+  created?: number;
+  updated?: number;
+  skipped?: number;
+  failed?: number;
+  errors?: LabConfigImportRowError[] | null;
+};
+
 /** Full permission catalog for role administration UIs (matches OpenAPI permissions reference). */
 export const ALL_PERMISSIONS = [
   PERMS.view,
@@ -241,5 +416,6 @@ export const ALL_PERMISSIONS = [
   PERMS.rolesManageLab,
   PERMS.laboratoriesManage,
   PERMS.laboratoriesCreate,
+  PERMS.departmentsManage,
   PERMS.platformManage,
 ] as const;

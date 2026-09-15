@@ -1,7 +1,9 @@
 "use client";
 
+import { DepartmentPicker } from "@/components/department-picker";
 import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
 import { Badge, Button, Card, Label, PageHeader } from "@/components/ui";
+import { refreshAccessToken } from "@/lib/api/client";
 import {
   assignRoles,
   deactivateUser,
@@ -9,6 +11,7 @@ import {
   listRoles,
   reactivateUser,
   removeRoles,
+  setUserDepartment,
 } from "@/lib/api/wltr-api";
 import { hasPermission, PERMS } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
@@ -16,7 +19,7 @@ import { useToast } from "@/providers/toast-provider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type AssignedRole = {
   roleId: string;
@@ -44,13 +47,16 @@ function parseRoles(raw: unknown): AssignedRole[] {
 export default function UserDetailPage() {
   const { userId } = useParams<{ userId: string }>();
   const decodedUserId = decodeURIComponent(userId);
-  const { me } = useAuth();
+  const { me, refreshMe } = useAuth();
   const qc = useQueryClient();
   const toast = useToast();
   const platform = !me?.laboratoryId;
   const canManageRoles = hasPermission(me, PERMS.rolesManageLab);
+  const canManageUsers = hasPermission(me, PERMS.usersManageLab);
   const [lab, setLab] = useState(me?.laboratoryId ?? getRememberedLabId());
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>([]);
+  const [departmentId, setDepartmentId] = useState("");
+  const [worksAcross, setWorksAcross] = useState(false);
 
   const labParam = platform && lab.trim() ? lab.trim() : undefined;
 
@@ -74,6 +80,12 @@ export default function UserDetailPage() {
   const user = userQuery.data as Record<string, unknown> | undefined;
   const assignedRoles = useMemo(() => parseRoles(user?.roles), [user?.roles]);
   const assignedRoleIds = useMemo(() => new Set(assignedRoles.map((r) => r.roleId)), [assignedRoles]);
+
+  useEffect(() => {
+    if (!user) return;
+    setDepartmentId(typeof user.departmentId === "string" ? user.departmentId : "");
+    setWorksAcross(Boolean(user.worksAcrossDepartments));
+  }, [user]);
 
   const catalogRoles = useMemo(() => {
     const items = rolesCatalogQuery.data?.items ?? [];
@@ -145,6 +157,35 @@ export default function UserDetailPage() {
     onError: (err: unknown) => toast.error("Reactivate failed", err instanceof Error ? err.message : undefined),
   });
 
+  const saveDepartment = useMutation({
+    mutationFn: async () => {
+      await setUserDepartment(
+        decodedUserId,
+        {
+          departmentId: departmentId.trim() ? departmentId.trim() : null,
+          worksAcrossDepartments: worksAcross,
+        },
+        labParam ? { laboratoryId: labParam } : undefined,
+      );
+    },
+    onSuccess: async () => {
+      await invalidateUser();
+      const editingSelf = me?.userId === decodedUserId;
+      if (editingSelf) {
+        await refreshAccessToken();
+        await refreshMe();
+        toast.success("Department assignment saved", "Your token was refreshed so the change applies now.");
+      } else {
+        toast.success(
+          "Department assignment saved",
+          "Takes effect on the user's next sign-in or token refresh.",
+        );
+      }
+    },
+    onError: (err: unknown) =>
+      toast.error("Could not update department", err instanceof Error ? err.message : undefined),
+  });
+
   const toggleRoleSelection = (roleId: string) => {
     setSelectedRoleIds((prev) =>
       prev.includes(roleId) ? prev.filter((id) => id !== roleId) : [...prev, roleId],
@@ -153,6 +194,8 @@ export default function UserDetailPage() {
 
   const displayEmail = typeof user?.email === "string" ? user.email : decodedUserId;
   const isActive = user?.isActive !== false;
+  const departmentName =
+    typeof user?.departmentName === "string" && user.departmentName ? user.departmentName : null;
 
   return (
     <div className="space-y-6">
@@ -207,6 +250,20 @@ export default function UserDetailPage() {
                 ) : null}
               </dd>
             </div>
+            <div>
+              <dt className="text-neutral-600 dark:text-neutral-400">Home department</dt>
+              <dd className="mt-1">
+                {departmentName ??
+                  (typeof user.departmentId === "string" && user.departmentId
+                    ? user.departmentId
+                    : "Unassigned (whole lab)")}
+                {Boolean(user.worksAcrossDepartments) ? (
+                  <Badge tone="neutral" className="ml-2">
+                    Works across
+                  </Badge>
+                ) : null}
+              </dd>
+            </div>
             {typeof user.qualifications === "string" && user.qualifications ? (
               <div>
                 <dt className="text-neutral-600 dark:text-neutral-400">Qualifications</dt>
@@ -216,6 +273,46 @@ export default function UserDetailPage() {
           </dl>
         ) : null}
       </Card>
+
+      {canManageUsers ? (
+        <Card>
+          <div className="text-sm font-medium">Department assignment</div>
+          <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+            Soft workflow filter only — not an authorization gate. Clear the department to restore
+            laboratory-wide visibility. Unassigned is the default and is wide.
+            {platform ? " Select a laboratory above first." : null}
+          </p>
+          <div className="mt-4 max-w-md space-y-3">
+            <div>
+              <Label htmlFor="user-department">Home department</Label>
+              <DepartmentPicker
+                id="user-department"
+                value={departmentId}
+                onChange={setDepartmentId}
+                emptyLabel="Unassigned (whole lab)"
+                disabled={platform && !labParam}
+                laboratoryId={labParam}
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={worksAcross}
+                onChange={(e) => setWorksAcross(e.target.checked)}
+                disabled={platform && !labParam}
+              />
+              Works across departments
+            </label>
+            <Button
+              type="button"
+              disabled={saveDepartment.isPending || (platform && !labParam)}
+              onClick={() => saveDepartment.mutate()}
+            >
+              {saveDepartment.isPending ? "Saving…" : "Save assignment"}
+            </Button>
+          </div>
+        </Card>
+      ) : null}
 
       <Card>
         <div className="text-sm font-medium">Assigned roles</div>

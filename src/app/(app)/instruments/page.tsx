@@ -16,6 +16,7 @@ type InstrumentRow = {
   id: string;
   name: string;
   instrumentType: string | null;
+  departmentName: string | null;
   isActive: boolean;
 };
 
@@ -44,6 +45,7 @@ export default function InstrumentsPage() {
     id: s(r.id),
     name: s(r.name, "(unnamed)"),
     instrumentType: typeof r.instrumentType === "string" ? r.instrumentType : null,
+    departmentName: typeof r.departmentName === "string" ? r.departmentName : null,
     isActive: Boolean(r.isActive),
   }));
 
@@ -143,6 +145,7 @@ export default function InstrumentsPage() {
                 <tr className="border-b border-neutral-200 dark:border-neutral-800">
                   <th className="pb-2 text-left font-medium">Name</th>
                   <th className="pb-2 text-left font-medium">Type</th>
+                  <th className="pb-2 text-left font-medium">Department</th>
                   <th className="pb-2 text-left font-medium">Status</th>
                   <th className="pb-2 text-left font-medium">ID</th>
                   <th className="pb-2 text-left font-medium">Actions</th>
@@ -157,6 +160,9 @@ export default function InstrumentsPage() {
                       </Link>
                     </td>
                     <td className="py-2 pr-4 text-neutral-600 dark:text-neutral-400">{row.instrumentType ?? "—"}</td>
+                    <td className="py-2 pr-4 text-neutral-600 dark:text-neutral-400">
+                      {row.departmentName ?? "—"}
+                    </td>
                     <td className="py-2 pr-4">
                       <span
                         className={

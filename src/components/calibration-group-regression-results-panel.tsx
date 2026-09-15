@@ -1,13 +1,16 @@
 "use client";
 
 import { CalibrationPlotlyChart } from "@/components/calibration-plotly-chart";
+import { IcvCalculatorTable } from "@/components/icv-calculator-table";
 import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
 import { Button, Card, Label, Select } from "@/components/ui";
 import {
+  getCalibrationGroupAnalyteCurves,
   getCalibrationGroupChart,
   getCalibrationGroupRegressionDebug,
   getCalibrationGroupRegressionInputs,
   getCalibrationGroupReportCard,
+  getCalibrationGroupSummaryReport,
 } from "@/lib/api/wltr-api";
 import {
   buildCurveQueryParams,
@@ -18,6 +21,7 @@ import {
   resolveVariantOptions,
   variantKey,
 } from "@/lib/calibration-variant-utils";
+import { fmtIcvNum, icvPassLabel, parseIcvSnapshot, buildIcvReportContext } from "@/lib/icv-calculator";
 import {
   analyteCalStatusLabel,
   hasComputedRegressionOutputs,
@@ -298,6 +302,36 @@ export function CalibrationGroupRegressionResultsPanel({
     enabled: canSummarizeFromDebug && canFetchChart,
   });
 
+  const curvesQ = useQuery({
+    queryKey: ["calibration-group-analyte-curves", groupId, selected?.analyteId ?? "", effectiveLaboratoryId ?? ""],
+    queryFn: () => getCalibrationGroupAnalyteCurves(groupId, selected!.analyteId, platformParams),
+    enabled: canSummarizeFromDebug && canFetchChart,
+  });
+
+  const reportQ = useQuery({
+    queryKey: ["calibration-group-summary-report", groupId, effectiveLaboratoryId ?? ""],
+    queryFn: () => getCalibrationGroupSummaryReport(groupId, platformParams),
+    enabled: canSummarizeFromDebug && canFetchChart,
+    retry: false,
+  });
+
+  const icvReportContext = useMemo(
+    () =>
+      buildIcvReportContext(
+        reportQ.data as Record<string, unknown> | undefined,
+        selected?.analyteId ?? "",
+      ),
+    [reportQ.data, selected?.analyteId],
+  );
+
+  const curveRows = useMemo(
+    () =>
+      (Array.isArray(curvesQ.data) ? curvesQ.data : []).filter(
+        (c): c is Record<string, unknown> => typeof c === "object" && c !== null,
+      ),
+    [curvesQ.data],
+  );
+
   const summaryFromInputs = useMemo(
     () => (selectedForDisplay ? summarizePointsFromInputs(selectedForDisplay.points) : null),
     [selectedForDisplay],
@@ -337,6 +371,11 @@ export function CalibrationGroupRegressionResultsPanel({
     );
     push("ICV % diff", formatNum(getDebugField(d, "icvPercentDiff", "IcvPercentDiff"), 4));
     push("ICV passed", boolLabel(getDebugField(d, "icvPassed", "IcvPassed")));
+    const icv = parseIcvSnapshot(d);
+    push("ICV recovery %", icv.recoveryPercent == null ? "—" : `${fmtIcvNum(icv.recoveryPercent, 2)}%`);
+    push("ICV LCL", fmtIcvNum(icv.lowerControlLimit, 1));
+    push("ICV UCL", fmtIcvNum(icv.upperControlLimit, 1));
+    push("ICV LCL/UCL pass", icvPassLabel(icv.recoveryPassed));
     push("Failure reasons", failureReasonsCell(getDebugField(d, "failureReasons", "FailureReasons")));
 
     return rows;
@@ -497,6 +536,22 @@ export function CalibrationGroupRegressionResultsPanel({
           <p className="text-sm text-neutral-500">
             No analytes yet — attach CAL runs with measurements, then compute the group.
           </p>
+        ) : null}
+
+        {selected && canSummarizeFromDebug && curveRows.length > 0 ? (
+          <div>
+            <h3 className="mb-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">ICV Calculator</h3>
+            <IcvCalculatorTable
+              curves={curveRows}
+              highlightVariantKey={effectiveVariantKey || null}
+              referenceCurve={
+                debugQ.data && typeof debugQ.data === "object"
+                  ? (debugQ.data as Record<string, unknown>)
+                  : null
+              }
+              reportContext={icvReportContext}
+            />
+          </div>
         ) : null}
 
         {selected ? (

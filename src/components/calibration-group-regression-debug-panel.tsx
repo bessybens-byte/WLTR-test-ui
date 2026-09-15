@@ -1,13 +1,16 @@
 "use client";
 
 import { JsonPrettyView } from "@/components/json-pretty-view";
+import { IcvCalculatorTable } from "@/components/icv-calculator-table";
 import { LabPicker, getRememberedLabId } from "@/components/lab-picker";
 import { ExcelAnnotation, ExcelModelVariantTable, ExcelPageGuide } from "@/components/excel-annotation";
 import { Button, Card, Label, Select } from "@/components/ui";
 import {
+  getCalibrationGroupAnalyteCurves,
   getCalibrationGroupRegressionDebug,
   getCalibrationGroupRegressionInputs,
   getCalibrationGroupReportCard,
+  getCalibrationGroupSummaryReport,
 } from "@/lib/api/wltr-api";
 import {
   buildCurveQueryParams,
@@ -19,6 +22,7 @@ import {
   variantKey,
 } from "@/lib/calibration-variant-utils";
 import { hasComputedRegressionOutputs } from "@/lib/regression-wire";
+import { buildIcvReportContext } from "@/lib/icv-calculator";
 import type { MeResponse } from "@/lib/types/wltr";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -149,6 +153,22 @@ export function CalibrationGroupRegressionDebugPanel({
     !!selectedAnalyteId &&
     (!needPlatformLab || !!laboratoryIdOverride.trim());
 
+  const reportQ = useQuery({
+    queryKey: ["calibration-group-summary-report", groupId, effectiveLaboratoryId ?? ""],
+    queryFn: () => getCalibrationGroupSummaryReport(groupId, scopeParams),
+    enabled: canLoad,
+    retry: false,
+  });
+
+  const icvReportContext = useMemo(
+    () =>
+      buildIcvReportContext(
+        reportQ.data as Record<string, unknown> | undefined,
+        selectedAnalyteId,
+      ),
+    [reportQ.data, selectedAnalyteId],
+  );
+
   const debugQ = useQuery({
     queryKey: [
       "calibration-group-regression-debug",
@@ -161,6 +181,20 @@ export function CalibrationGroupRegressionDebugPanel({
     queryFn: () => getCalibrationGroupRegressionDebug(groupId, selectedAnalyteId, curveParams),
     enabled: canLoad,
   });
+
+  const curvesQ = useQuery({
+    queryKey: ["calibration-group-analyte-curves", groupId, selectedAnalyteId, effectiveLaboratoryId ?? ""],
+    queryFn: () => getCalibrationGroupAnalyteCurves(groupId, selectedAnalyteId, scopeParams),
+    enabled: canLoad,
+  });
+
+  const curveRows = useMemo(
+    () =>
+      (Array.isArray(curvesQ.data) ? curvesQ.data : []).filter(
+        (c): c is Record<string, unknown> => typeof c === "object" && c !== null,
+      ),
+    [curvesQ.data],
+  );
 
   return (
     <Card className="overflow-hidden p-0 shadow-sm ring-1 ring-black/[0.03] dark:ring-white/[0.04]">
@@ -295,6 +329,23 @@ export function CalibrationGroupRegressionDebugPanel({
 
         {debugQ.isLoading && canLoad ? (
           <div className="text-sm text-neutral-500">Loading regression snapshot…</div>
+        ) : null}
+
+        {curvesQ.isLoading && canLoad ? (
+          <div className="text-sm text-neutral-500">Loading ICV calculator…</div>
+        ) : null}
+
+        {curvesQ.isSuccess && curveRows.length > 0 ? (
+          <IcvCalculatorTable
+            curves={curveRows}
+            highlightVariantKey={effectiveVariantKey || null}
+            referenceCurve={
+              debugQ.data && typeof debugQ.data === "object"
+                ? (debugQ.data as Record<string, unknown>)
+                : null
+            }
+            reportContext={icvReportContext}
+          />
         ) : null}
 
         {debugQ.isSuccess && debugQ.data ? (

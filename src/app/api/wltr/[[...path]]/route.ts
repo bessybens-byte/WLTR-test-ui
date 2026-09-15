@@ -163,6 +163,8 @@ async function proxy(
 
   const res = new NextResponse(buf, { status });
   if (ct) res.headers.set("content-type", ct);
+  const cd = upstream.headers.get("content-disposition");
+  if (cd) res.headers.set("content-disposition", cd);
   return res;
 }
 

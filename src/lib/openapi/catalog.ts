@@ -82,5 +82,6 @@ export const API_PERMISSION_ROWS: { permission: string; label: string; heldBy: s
   { permission: "perm.groups.approve", label: "Groups approve", heldBy: "QA, LabAdmin, SuperAdmin" },
   { permission: "perm.laboratories.manage", label: "Lab settings manage", heldBy: "LabAdmin, SuperAdmin" },
   { permission: "perm.laboratories.create", label: "Laboratory create (platform)", heldBy: "SuperAdmin only" },
+  { permission: "perm.departments.manage", label: "Department manage", heldBy: "LabAdmin, SuperAdmin" },
   { permission: "perm.platform.manage", label: "Platform manage", heldBy: "SuperAdmin only" },
 ];

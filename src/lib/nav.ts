@@ -18,7 +18,7 @@ export const navSections: NavSection[] = [
   {
     title: "Overview",
     items: [
-      { href: "/dashboard", label: "Dashboard", description: "Your account and system status" },
+      { href: "/dashboard", label: "Dashboard", description: "Lab workflow overview and action items" },
       { href: "/account", label: "My profile", description: "Update your technician profile" },
       { href: "/technicians/me", label: "Technician record", description: "Your read-only technician profile" },
     ],
@@ -27,6 +27,7 @@ export const navSections: NavSection[] = [
     title: "Laboratory",
     items: [
       { href: "/laboratories", label: "Laboratories", perm: PERMS.view },
+      { href: "/departments", label: "Departments", perm: PERMS.view },
       { href: "/technicians", label: "Technicians", perm: PERMS.view },
       { href: "/users", label: "Users", perm: PERMS.usersManageLab },
       { href: "/roles", label: "Roles", perm: PERMS.rolesManageLab },
@@ -38,9 +39,10 @@ export const navSections: NavSection[] = [
     items: [
       { href: "/analytes", label: "Analytes", perm: PERMS.view },
       { href: "/internal-standards", label: "Internal standards", perm: PERMS.view },
-      { href: "/calibration-levels", label: "Calibration levels", perm: PERMS.view },
+      { href: "/calibration-level-sets", label: "Calibration level sets", perm: PERMS.view },
       { href: "/instruments", label: "Instruments", perm: PERMS.view },
       { href: "/method-configs", label: "Method configs", perm: PERMS.view },
+      { href: "/lab-config", label: "Export / import", perm: PERMS.view },
     ],
   },
   {

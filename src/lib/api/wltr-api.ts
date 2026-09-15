@@ -1,6 +1,13 @@
 import { apiFetch, apiJson } from "@/lib/api/client";
-import { parseErrorResponse } from "@/lib/api/errors";
-import type { MeResponse, Paged } from "@/lib/types/wltr";
+import { ApiError, parseErrorResponse, type ProblemDetails } from "@/lib/api/errors";
+import type {
+  DashboardSummaryResponse,
+  LabConfigBundle,
+  LabConfigImportResult,
+  LabConfigImportStrategy,
+  MeResponse,
+  Paged,
+} from "@/lib/types/wltr";
 
 export async function healthRoot(): Promise<string> {
   const res = await apiFetch("", { method: "GET" });
@@ -35,6 +42,92 @@ export async function createLaboratory(body: unknown): Promise<Record<string, un
 
 export async function updateLaboratory(id: string, body: unknown): Promise<void> {
   const res = await apiFetch(`Laboratories/${id}`, { method: "PUT", body: JSON.stringify(body) });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function listDepartments(params?: {
+  page?: number;
+  pageSize?: number;
+  sort?: string;
+  isActive?: boolean;
+  laboratoryId?: string;
+}): Promise<Paged<Record<string, unknown>>> {
+  const searchParams: Record<string, string | number | undefined> = {
+    page: params?.page,
+    pageSize: params?.pageSize,
+    sort: params?.sort,
+    laboratoryId: params?.laboratoryId,
+  };
+  if (params?.isActive !== undefined) searchParams.isActive = String(params.isActive);
+  return apiJson(`departments`, { searchParams });
+}
+
+export async function getDepartment(id: string): Promise<Record<string, unknown>> {
+  return apiJson(`departments/${id}`);
+}
+
+export async function createDepartment(body: {
+  name: string;
+  description?: string | null;
+}): Promise<Record<string, unknown>> {
+  return apiJson(`departments`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function updateDepartment(
+  id: string,
+  body: { name: string; description?: string | null; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`departments/${id}`, { method: "PUT", body: JSON.stringify(body) });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function setDepartmentActive(
+  id: string,
+  body: { isActive: boolean; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`departments/${id}/active`, { method: "PUT", body: JSON.stringify(body) });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Undo a mistaken create. Fails with 409 when anything still references the department. */
+export async function deleteDepartment(id: string): Promise<void> {
+  const res = await apiFetch(`departments/${id}`, { method: "DELETE" });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function setInstrumentDepartment(
+  id: string,
+  body: { departmentId: string; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`instruments/${id}/department`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function setMethodConfigDepartment(
+  id: string,
+  body: { departmentId: string },
+): Promise<void> {
+  const res = await apiFetch(`method-configs/${id}/department`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Assign or clear a user's home department. Pass `departmentId: null` to lift the partition. */
+export async function setUserDepartment(
+  userId: string,
+  body: { departmentId: string | null; worksAcrossDepartments: boolean },
+  params?: { laboratoryId?: string },
+): Promise<void> {
+  const res = await apiFetch(`Users/${encodeURIComponent(userId)}/department`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+    searchParams: params,
+  });
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
@@ -296,29 +389,84 @@ export async function deleteInternalStandard(id: string): Promise<void> {
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
-export async function listCalibrationLevels(params?: {
+export async function listCalibrationLevelSets(params?: {
   page?: number;
   pageSize?: number;
   sort?: string;
 }): Promise<Paged<Record<string, unknown>>> {
-  return apiJson(`calibration-levels`, { searchParams: params });
+  return apiJson(`calibration-level-sets`, { searchParams: params });
 }
 
-export async function getCalibrationLevel(id: string): Promise<Record<string, unknown>> {
-  return apiJson(`calibration-levels/${id}`);
+export async function getCalibrationLevelSet(id: string): Promise<Record<string, unknown>> {
+  return apiJson(`calibration-level-sets/${id}`);
 }
 
-export async function createCalibrationLevel(body: unknown): Promise<Record<string, unknown>> {
-  return apiJson(`calibration-levels`, { method: "POST", body: JSON.stringify(body) });
+export async function createCalibrationLevelSet(body: {
+  name: string;
+  departmentId?: string | null;
+}): Promise<Record<string, unknown>> {
+  return apiJson(`calibration-level-sets`, { method: "POST", body: JSON.stringify(body) });
 }
 
-export async function updateCalibrationLevel(id: string, body: unknown): Promise<void> {
-  const res = await apiFetch(`calibration-levels/${id}`, { method: "PUT", body: JSON.stringify(body) });
+/** Rename a set. The owning department is fixed at creation. Returns 409 on a stale `rowVersion`. */
+export async function updateCalibrationLevelSet(
+  id: string,
+  body: { name: string; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`calibration-level-sets/${id}`, { method: "PUT", body: JSON.stringify(body) });
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
-export async function deleteCalibrationLevel(id: string): Promise<void> {
-  const res = await apiFetch(`calibration-levels/${id}`, { method: "DELETE" });
+/** Retire (or reinstate) a ladder. Retired sets accept no new levels/runs but stay readable. */
+export async function setCalibrationLevelSetActive(
+  id: string,
+  body: { isActive: boolean; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`calibration-level-sets/${id}/active`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/** Undo a mistaken create. Fails with 409 when a method config or run still references the set. */
+export async function deleteCalibrationLevelSet(id: string): Promise<void> {
+  const res = await apiFetch(`calibration-level-sets/${id}`, { method: "DELETE" });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function listCalibrationLevels(
+  setId: string,
+  params?: { page?: number; pageSize?: number; sort?: string },
+): Promise<Paged<Record<string, unknown>>> {
+  return apiJson(`calibration-level-sets/${setId}/levels`, { searchParams: params });
+}
+
+export async function getCalibrationLevel(setId: string, id: string): Promise<Record<string, unknown>> {
+  return apiJson(`calibration-level-sets/${setId}/levels/${id}`);
+}
+
+export async function createCalibrationLevel(
+  setId: string,
+  body: { levelName: string; trueConcentration: number; sortOrder: number },
+): Promise<Record<string, unknown>> {
+  return apiJson(`calibration-level-sets/${setId}/levels`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function updateCalibrationLevel(
+  setId: string,
+  id: string,
+  body: { levelName: string; trueConcentration: number; sortOrder: number; rowVersion: string },
+): Promise<void> {
+  const res = await apiFetch(`calibration-level-sets/${setId}/levels/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+export async function deleteCalibrationLevel(setId: string, id: string): Promise<void> {
+  const res = await apiFetch(`calibration-level-sets/${setId}/levels/${id}`, { method: "DELETE" });
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
@@ -351,6 +499,16 @@ export async function deleteMethodConfig(id: string): Promise<void> {
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
+/**
+ * Server-owned family → quantitation-mode defaults so clients don't hardcode
+ * VOC→ISTD, DRO→ESTD, etc. Used to pre-fill the method config form on family selection.
+ */
+export async function getMethodConfigFamilyDefaults(): Promise<
+  { methodFamily?: string | null; quantitationMode?: string | null }[]
+> {
+  return apiJson(`method-configs/family-defaults`);
+}
+
 export async function listMethodConfigSnapshots(
   id: string,
   params?: { page?: number; pageSize?: number },
@@ -366,6 +524,37 @@ export async function createRun(body: unknown): Promise<Record<string, unknown>>
   return apiJson(`runs`, { method: "POST", body: JSON.stringify(body) });
 }
 
+/**
+ * Upload a calibration run (CAL or ICV) from an instrument export file.
+ * Multipart alternative to `createRun()` — send a file instead of pasting raw text.
+ * Returns the same `CreateRunResponse` shape with `id`, `warnings`, `measurementCount`,
+ * and `measurementWarnings`. Requires `perm.runs.upload`.
+ */
+export async function uploadRun(
+  file: File,
+  metadata: {
+    runType: string;
+    instrumentId: string;
+    runDate: string;
+    level?: string;
+    calibrationLevelSetId?: string;
+    importFormat?: string;
+    name?: string;
+  },
+): Promise<Record<string, unknown>> {
+  const form = new FormData();
+  form.append("file", file);
+  form.append("runType", metadata.runType);
+  form.append("instrumentId", metadata.instrumentId);
+  form.append("runDate", metadata.runDate);
+  if (metadata.level) form.append("level", metadata.level);
+  if (metadata.calibrationLevelSetId) form.append("calibrationLevelSetId", metadata.calibrationLevelSetId);
+  if (metadata.importFormat) form.append("importFormat", metadata.importFormat);
+  if (metadata.name) form.append("name", metadata.name);
+  return apiJson("runs/upload", { method: "POST", body: form });
+}
+
+/** Run detail. `isGrouped` mirrors the delete guard: `true` means `deleteRun()` will return 409. */
 export async function getRun(id: string): Promise<Record<string, unknown>> {
   return apiJson(`runs/${id}`);
 }
@@ -707,15 +896,30 @@ export async function getInstrument(id: string): Promise<Record<string, unknown>
   return apiJson(`instruments/${id}`);
 }
 
+/**
+ * Paged runs for the caller's laboratory. Every item carries `isGrouped`.
+ * `isGrouped` narrows to runs no group uses (`false`) or runs at least one group already uses
+ * (`true`); omit it for all runs. Filtering happens before paging, so `totalCount` reflects it.
+ */
 export async function listRuns(params?: {
   instrumentId?: string;
   runType?: string;
   status?: string;
+  isGrouped?: boolean;
   page?: number;
   pageSize?: number;
   sort?: string;
 }): Promise<Paged<Record<string, unknown>>> {
-  return apiJson(`runs`, { searchParams: params });
+  const searchParams: Record<string, string | number | undefined> = {
+    instrumentId: params?.instrumentId,
+    runType: params?.runType,
+    status: params?.status,
+    page: params?.page,
+    pageSize: params?.pageSize,
+    sort: params?.sort,
+  };
+  if (params?.isGrouped !== undefined) searchParams.isGrouped = String(params.isGrouped);
+  return apiJson(`runs`, { searchParams });
 }
 
 export async function listCalibrationGroups(params?: {
@@ -739,7 +943,115 @@ export async function updateCalibrationGroup(id: string, body: unknown): Promise
   if (!res.ok) throw await parseErrorResponse(res);
 }
 
-/** CAL and ICV run candidates with eligibility flags for a given instrument. */
+/**
+ * CAL and ICV run candidates with eligibility flags for a given instrument.
+ * Rows also carry `isGrouped`, which is advisory only — reuse across groups is allowed, so a
+ * grouped run stays eligible and selectable.
+ */
 export async function getCalibrationGroupCandidates(instrumentId: string): Promise<Record<string, unknown>> {
   return apiJson(`calibration-groups/candidates`, { searchParams: { instrumentId } });
+}
+
+/**
+ * Lab workflow snapshot for the dashboard.
+ * Requires `perm.view`. Lab users are scoped from the JWT; platform operators may pass
+ * `laboratoryId` to filter (omit for all labs).
+ */
+export async function getDashboardSummary(params?: {
+  laboratoryId?: string;
+  limit?: number;
+}): Promise<DashboardSummaryResponse> {
+  return apiJson<DashboardSummaryResponse>(`dashboard/summary`, { searchParams: params });
+}
+
+function parseContentDispositionFilename(header: string | null): string | undefined {
+  if (!header) return undefined;
+  const star = /filename\*=UTF-8''([^;]+)/i.exec(header);
+  if (star?.[1]) {
+    try {
+      return decodeURIComponent(star[1].replace(/"/g, ""));
+    } catch {
+      return star[1].replace(/"/g, "");
+    }
+  }
+  const plain = /filename="?([^";]+)"?/i.exec(header);
+  return plain?.[1]?.replace(/"/g, "");
+}
+
+function triggerBlobDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Triggers a browser download of a lab config Excel workbook. Call only from client event handlers.
+ * Requires `perm.view` (platform admins may pass `laboratoryId`).
+ */
+export async function downloadLabConfigExport(params: {
+  bundle: LabConfigBundle;
+  laboratoryId?: string;
+  methodConfigId?: string;
+  includeInlineCatalog?: boolean;
+  includeRoles?: boolean;
+}): Promise<void> {
+  const res = await apiFetch("lab-config/export", {
+    searchParams: {
+      bundle: params.bundle,
+      laboratoryId: params.laboratoryId,
+      methodConfigId: params.methodConfigId,
+      includeInlineCatalog:
+        params.includeInlineCatalog != null ? String(params.includeInlineCatalog) : undefined,
+      includeRoles: params.includeRoles != null ? String(params.includeRoles) : undefined,
+    },
+  });
+  if (!res.ok) throw await parseErrorResponse(res);
+  const blob = await res.blob();
+  const filename =
+    parseContentDispositionFilename(res.headers.get("content-disposition")) ??
+    `lab-config-${params.bundle}.xlsx`;
+  triggerBlobDownload(blob, filename);
+}
+
+/**
+ * Upload a lab config workbook for validation or import.
+ * Always returns the JSON result body when present (including row-level validation failures).
+ * Throws only for non-JSON transport/auth errors.
+ */
+export async function importLabConfig(
+  file: File,
+  params?: {
+    strategy?: LabConfigImportStrategy;
+    dryRun?: boolean;
+    laboratoryId?: string;
+  },
+): Promise<LabConfigImportResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await apiFetch("lab-config/import", {
+    method: "POST",
+    body: form,
+    searchParams: {
+      strategy: params?.strategy,
+      dryRun: params?.dryRun != null ? String(params.dryRun) : undefined,
+      laboratoryId: params?.laboratoryId,
+    },
+  });
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("json")) {
+    const body = (await res.json()) as LabConfigImportResult & ProblemDetails;
+    if (typeof body.success === "boolean") {
+      return body;
+    }
+    if (!res.ok) {
+      const detail = typeof body.detail === "string" ? body.detail : `HTTP ${res.status}`;
+      const title = typeof body.title === "string" ? body.title : detail;
+      throw new ApiError(detail || title, res.status, body);
+    }
+  }
+  if (!res.ok) throw await parseErrorResponse(res);
+  throw new ApiError("Unexpected import response", res.status);
 }

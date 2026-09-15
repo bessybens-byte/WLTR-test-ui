@@ -1,0 +1,118 @@
+                                       Quantitation Report    (Not Reviewed)
+
+  Data Path : D:\MassHunter\GCMS\1\data\230120 - DAQ\
+  Data File : 0120-09.D
+  Acq On    : 20 Jan 2023  08:24 pm
+  Operator  : MS4-IY/RKS
+  Sample    : 1 VOC CAL
+  Misc      : VD230120-04
+  ALS Vial  : 9   Sample Multiplier: 1
+
+  Quant Time: Jan 23 15:52:45 2023
+  Quant Method : D:\MassHunter\GCMS\1\methods\221027MS4.M
+  Quant Title  :
+  QLast Update : Mon Nov 14 12:37:20 2022
+  Response via : Initial Calibration
+
+          Compound                   R.T. QIon  Response  Conc Units Dev(Min)
+   --------------------------------------------------------------------------
+   Internal Standards
+     1) 1,4-Dichlorobenzene-d4-G   12.519  152   143503    10.00 ug/L   # 0.00
+     8) Fluorobenzene               6.531   96   312823    10.00 ug/L     0.01
+    36) Chlorobenzene-d5            9.959  117   249868    10.00 ug/L     0.00
+    74) 1,4-Dichlorobenzene-d4     12.519  152   143503    10.00 ug/L   # 0.00
+
+   System Monitoring Compounds
+     2) 1,2-Dichloroethane-d4-G     6.111  TIC   250355    11.62 ug/L    0.00
+     Spiked Amount     10.000                      Recovery   =  116.20%
+     3) Fluorobenzene-G             6.531  TIC   676193     6.55 ug/L    0.01
+     4) Toluene-d8-G                8.370  TIC   829007    11.49 ug/L    0.00
+     Spiked Amount     10.000                      Recovery   =  114.90%
+     5) Chlorobenzene-d5-G          9.959  TIC   820057    14.22 ug/L   -0.02
+     6) Bromofluorobenzene-G       11.250  TIC   622951     9.09 ug/L    0.00
+     Spiked Amount     10.000                      Recovery   =   90.90%
+    33) 1,2-Dichloroethane-d4       6.111  102    18567     9.29 ug/L    0.00
+     Spiked Amount     10.000                      Recovery   =   92.90%
+    44) Toluene-d8                  8.370   98   313124    10.10 ug/L    0.00
+     Spiked Amount     10.000                      Recovery   =  101.00%
+    61) Bromofluorobenzene         11.250   95   119190     9.64 ug/L    0.00
+     Spiked Amount     10.000                      Recovery   =   96.40%
+
+   Target Compounds                                                   Qvalue
+     7) GRO                         5.084  TIC  2898126m   Below Cal
+     9) Dichlorodifluoromethane     1.189   85     6965     1.08 ug/L      99
+    10) Chloromethane-P             1.337   50     9665     1.24 ug/L     100
+    11) Vinyl Chloride-C            1.426   62    10242     1.22 ug/L      98
+    12) Bromomethane                1.710   94     6627     1.35 ug/L      97
+    13) Chloroethane                1.806   64     6852     1.27 ug/L      95
+    14) Trichlorofluoromethane      2.046  101    15512     1.15 ug/L      99
+    15) 1,1-Dichloroethene-C        2.573   96     9597     1.16 ug/L      93
+    16) Acetone                     2.689   58     2683     0.44 ug/L #    72
+    17) tert-Butanol                3.468   59    10001    12.13 ug/L      85
+    18) Methylene Chloride          3.164   84    10421     1.20 ug/L      92
+    19) Methyl-tert-butyl ethe...   3.601   73    25891     1.11 ug/L      94
+    20) trans-1,2-Dichloroethene    3.537   96    10622     1.19 ug/L      94
+    21) Di-isopropyl ether          4.388   45    33798     1.31 ug/L      94
+    22) 1,1-Dichloroethane-P        4.183   63    19040     1.23 ug/L      99
+    23) Ethyl-tert-butyl ether...   4.918   59    29421     1.13 ug/L      94
+    24) 2-Butanone (MEK)            5.144   72     2882     3.55 ug/L #    53
+    25) cis-1,2-Dichloroethene      5.037   96    11674     1.16 ug/L      90
+    26) 2,2-Dichloropropane         5.020   77    15639     1.18 ug/L      99
+    27) Bromochloromethane          5.358  128     4785     0.95 ug/L      87
+    28) Chloroform-C                5.497   83    28228     1.68 ug/L      99
+    29) 1,1,1-Trichloroethane       5.691   97    16679     1.06 ug/L      95
+    30) Carbon Tetrachloride        5.900  117    15221     1.03 ug/L      97
+    31) 1,1-Dichloropropene         5.911   75    13135     1.08 ug/L      97
+    32) tert-Amyl methyl ether...   6.386   73    25894     1.02 ug/L      95
+    34) Benzene                     6.163   78    40132     1.13 ug/L     100
+    35) 1,2-Dichloroethane          6.207   62    13205     1.00 ug/L     100
+    37) Trichloroethene             6.968   95    10422     0.98 ug/L      99
+    38) 1,2-Dichloropropane-C       7.226   63     9617     1.10 ug/L      95
+    39) Dibromomethane              7.359   93     5604     1.00 ug/L      93
+    40) Bromodichloromethane        7.565   83    14257     1.11 ug/L      99
+    41) 2-Chloroethyl vinyl ether   7.950   63     4845     0.88 ug/L      96
+    42) cis-1,3-Dichloropropene     8.083   75    15110     1.04 ug/L      95
+    43) 4-Methyl-2-pentanone (...   0.000             0      N.D.
+    45) Toluene-C                   8.442   92    25612     1.08 ug/L      99
+    46) trans-1,3-Dichloropropene   8.711   75    13203     0.99 ug/L      98
+    47) 1,1,2-Trichloroethane       8.908   83     6324     0.97 ug/L      99
+    48) Tetrachloroethene           9.044  164     9741     1.00 ug/L      98
+    49) 2-Hexanone                  9.224   43     8498     1.49 ug/L      91
+    50) 1,3-Dichloropropane         9.085   76    13076     0.96 ug/L      99
+    51) Dibromochloromethane        9.328  129     9677     0.94 ug/L     100
+    52) 1,2-Dibromoethane           9.441  107     7097     0.87 ug/L      96
+    53) Chlorobenzene-P             9.988  112    26638     1.05 ug/L      92
+    54) Ethylbenzene-C             10.118   91    45983     0.99 ug/L      99
+    55) 1,1,1,2-Tetrachloroethane  10.084  131    10088     0.98 ug/L      99
+    56) m,p-Xylene                 10.249  106    37041     2.05 ug/L      97
+    57) o-Xylene                   10.683  106    17370     1.02 ug/L      99
+    58) Styrene                    10.697  104    28689     1.00 ug/L      93
+    59) Bromoform-P                10.888  173     6680     0.92 ug/L      91
+    60) Isopropylbenzene           11.091  105    43300     0.96 ug/L      99
+    62) 1,1,2,2-Tetrachloroeth...  11.424   83     8088     0.92 ug/L      98
+    63) Bromobenzene               11.410  156    12838     0.98 ug/L      94
+    64) n-Propylbenzene            11.543   91    48116     0.93 ug/L     100
+    65) 1,2,3-Trichloropropane     11.465   75     6738     0.86 ug/L     100
+    66) 2-Chlorotoluene            11.627   91    29918     0.96 ug/L      99
+    67) 1,3,5-Trimethylbenzene     11.740  105    36526     0.92 ug/L     100
+    68) 4-Chlorotoluene            11.748   91    34845     0.96 ug/L      99
+    69) tert-Butylbenzene          12.093  119    30351     0.89 ug/L      99
+    70) 1,2,4-Trimethylbenzene     12.145  105    37428     0.93 ug/L      99
+    71) sec-Butylbenzene           12.333  105    39396     0.81 ug/L      98
+    72) 4-Isopropyltoluene         12.495  119    36349     0.83 ug/L      97
+    73) 1,3-Dichlorobenzene        12.449  146    22538     0.95 ug/L      98
+    75) 1,4-Dichlorobenzene        12.545  146    22971     0.99 ug/L      94
+    76) n-Butylbenzene             12.944   91    29365     0.82 ug/L      98
+    77) 1,2-Dichlorobenzene        12.953  146    21671     0.98 ug/L      95
+    78) 1,2-Dibromo-3-chloropr...  13.772   75     2373     1.18 ug/L #    57
+    79) 1,2,4-Trichlorobenzene     14.725  180    13933     0.79 ug/L      97
+    80) Hexachlorobutadiene        14.913  225     5939     0.60 ug/L      96
+    81) Naphthalene                14.994  128    28911     0.87 ug/L     100
+    82) 1,2,3-Trichlorobenzene     15.260  180    12499     0.75 ug/L      98
+    83) 2-Methylnaphthalene        16.271  142    13956     0.64 ug/L      99
+    84) 1-Methylnaphthalene        16.477  142    12987     0.65 ug/L      96
+   --------------------------------------------------------------------------
+
+   (#) = qualifier out of range (m) = manual integration (+) = signals summed
+
+221027MS4.M Mon Jan 23 15:52:46 2023

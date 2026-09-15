@@ -1,12 +1,13 @@
 "use client";
 
-import { ExcelAnnotation, ExcelPageGuide } from "@/components/excel-annotation";
+import { ExcelAnnotation } from "@/components/excel-annotation";
 import { Button, Card, Input, Label, PageHeader } from "@/components/ui";
 import { createCalibrationLevel } from "@/lib/api/wltr-api";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function NewCalibrationLevelPage() {
+  const { id: setId } = useParams<{ id: string }>();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,9 +22,9 @@ export default function NewCalibrationLevelPage() {
     setBusy(true);
     setError(null);
     try {
-      const res = await createCalibrationLevel(form);
-      const id = String((res as { id?: string }).id ?? "");
-      router.replace(`/calibration-levels/${id}`);
+      const res = await createCalibrationLevel(setId, form);
+      const levelId = String((res as { id?: string }).id ?? "");
+      router.replace(`/calibration-level-sets/${setId}/levels/${levelId}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed");
     } finally {
@@ -33,14 +34,22 @@ export default function NewCalibrationLevelPage() {
 
   return (
     <div>
-      <PageHeader title="New calibration level" />
-      <ExcelPageGuide pageKey="calibration-levels" />
+      <PageHeader
+        title="New calibration level"
+        description={<span className="font-mono text-xs">{setId}</span>}
+      />
       <Card>
         <form className="space-y-4" onSubmit={onSubmit}>
           <div>
             <Label htmlFor="levelName">Level name</Label>
             <ExcelAnnotation fieldKey="calLevel.levelName" />
-            <Input id="levelName" value={form.levelName} onChange={(e) => setForm({ ...form, levelName: e.target.value })} required />
+            <Input
+              id="levelName"
+              value={form.levelName}
+              onChange={(e) => setForm({ ...form, levelName: e.target.value })}
+              required
+            />
+            <p className="mt-1 text-xs text-neutral-500">Unique within this set (after normalization).</p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div>

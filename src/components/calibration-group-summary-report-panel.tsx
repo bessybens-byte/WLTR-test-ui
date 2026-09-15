@@ -1,6 +1,7 @@
 "use client";
 
 import { ExcelAnnotation, ExcelPageGuide, ExcelSectionHint, ExcelTh } from "@/components/excel-annotation";
+import { IcvCalculatorForAnalyte } from "@/components/icv-calculator-for-analyte";
 import { Card } from "@/components/ui";
 import { ApiError } from "@/lib/api/errors";
 import { getCalibrationGroupSummaryReport } from "@/lib/api/wltr-api";
@@ -259,11 +260,16 @@ export function CalibrationGroupSummaryReportPanel({
           <section>
             <h3 className="mb-1 text-sm font-semibold">4. Linear dynamic range</h3>
             <ExcelAnnotation fieldKey="summary.ldr.header" compact className="mb-3" />
+            <p className="mb-4 text-xs text-neutral-600 dark:text-neutral-400">
+              Each analyte uses its own selected regression model. The ICV Calculator below mirrors the Excel workbook
+              using data from this report plus all nine computed variants.
+            </p>
             {ldr.length === 0 ? (
               <p className="text-sm text-neutral-500">No LDR data.</p>
             ) : (
-              <div className="space-y-4">
-                {ldr.map((analyte) => {
+              <div className="space-y-8">
+                {ldr.map((analyte, analyteIdx) => {
+                  const analyteId = String(analyte.analyteId ?? "");
                   const points = Array.isArray(analyte.points)
                     ? (analyte.points as Record<string, unknown>[])
                     : [];
@@ -277,18 +283,25 @@ export function CalibrationGroupSummaryReportPanel({
                         <span className="ml-3 font-mono text-neutral-600 dark:text-neutral-400">
                           slope={fmtNum(analyte.slope)} intercept={fmtNum(analyte.intercept)}
                         </span>
-                        {analyte.icvTrueConcentration != null ? (
-                          <span className="ml-3 text-neutral-600 dark:text-neutral-400">
-                            ICV true={fmtNum(analyte.icvTrueConcentration)} calc=
-                            {fmtNum(analyte.icvCalculatedConcentration)} %Diff=
-                            {fmtNum(analyte.icvPercentDiff, 2)} CDS %Diff=
-                            {fmtNum(analyte.icvCdsPercentDiff, 4)}{" "}
-                            {passFailBadge(analyte.icvPassed)} / CDS {passFailBadge(analyte.icvCdsPassed)}
-                          </span>
-                        ) : null}
+                      </div>
+                      <div className="p-3">
+                        {analyteId ? (
+                          <IcvCalculatorForAnalyte
+                            groupId={groupId}
+                            analyteId={analyteId}
+                            laboratoryId={me?.laboratoryId ?? undefined}
+                            report={data}
+                            showLegend={analyteIdx === 0}
+                          />
+                        ) : (
+                          <p className="text-xs text-neutral-500">Missing analyte id — cannot load ICV calculator.</p>
+                        )}
                       </div>
                       {points.length ? (
-                        <div className="overflow-x-auto p-2">
+                        <div className="overflow-x-auto border-t border-neutral-200 p-2 dark:border-neutral-800">
+                          <p className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
+                            Calibration point residuals
+                          </p>
                           <table className="w-full border-collapse text-xs">
                             <thead>
                               <tr className="text-left text-neutral-600 dark:text-neutral-400">

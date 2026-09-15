@@ -82,9 +82,9 @@
           "Analytes"
         ],
         "summary": "Creates a canonical analyte for the caller's laboratory.",
-        "description": "The laboratory is derived from the `LaboratoryId` JWT claim. Returns <strong>400</strong>\r\nwhen the caller's token has no laboratory claim.\r\n\r\nNames are normalized before the uniqueness check — `Benzene`, `BENZENE`, and `ben-zene`\r\nare treated as the same name. A duplicate returns <strong>400</strong> with the conflicting name in\r\nthe error detail.\r\nOn success the response body contains the new analyte's GUID and the `Location` header\r\npoints to `GET /api/analytes/{id}`.",
+        "description": "The laboratory is derived from the `LaboratoryId` JWT claim. Returns <strong>400</strong>\r\nwhen the caller's token has no laboratory claim.\r\n\r\nNames are normalized before the uniqueness check — `Benzene`, `BENZENE`, and `ben-zene`\r\nare treated as the same name. A duplicate returns <strong>400</strong> with the conflicting name in\r\nthe error detail.\r\nOn success the response body contains the new analyte's GUID and the `Location` header\r\npoints to `GET /api/analytes/{id}`.\r\nThe optional `role` field (`Target` / `InternalStandard` / `Surrogate`, default\r\n`Target`) sets the analyte's QC role. Use `Surrogate` for spiked surrogate / system-monitoring\r\ncompounds so uploaded rows are categorized for recovery and %RSD monitoring even when the instrument\r\nexport lists them under a mismatched section header.",
         "requestBody": {
-          "description": "Canonical analyte name.",
+          "description": "Canonical analyte name, optional CAS number, default internal standard, and QC role.",
           "content": {
             "application/json": {
               "schema": {
@@ -311,7 +311,7 @@
           "Analytes"
         ],
         "summary": "Updates a canonical analyte name.",
-        "description": "Applies the same name normalization and per-laboratory uniqueness check as create.\r\nReturns <strong>400</strong> when the analyte is not found, has been deleted, or belongs to another laboratory.\r\nCross-lab ids are treated as not-found rather than forbidden.",
+        "description": "Applies the same name normalization and per-laboratory uniqueness check as create.\r\nReturns <strong>400</strong> when the analyte is not found, has been deleted, or belongs to another laboratory.\r\nCross-lab ids are treated as not-found rather than forbidden.\r\n\r\nThis is a full replacement: the `role` field defaults to `Target` when omitted, so include it\r\nto preserve a non-default role. Changing the role re-categorizes future uploads and triggers a laboratory\r\nmeasurement remap so existing rows reflect the new role.",
         "parameters": [
           {
             "name": "id",
@@ -325,7 +325,7 @@
           }
         ],
         "requestBody": {
-          "description": "Replacement canonical name.",
+          "description": "Replacement canonical name, optional CAS number, default internal standard, and QC role.",
           "content": {
             "application/json": {
               "schema": {
@@ -1908,7 +1908,7 @@
           "Calibration groups"
         ],
         "summary": "Returns the full regression debug snapshot for a single analyte curve within a calibration group.",
-        "description": "\r\nExposes every intermediate value stored at compute time — weighted sums (S0, Sx, Sy, Sxx, Sxy),\r\n            normal-equation denominator, fitted coefficients, curve-level diagnostics (SSE, SST, RSE, R²),\r\n            ICV results, and per-point predicted/residual/percent-diff values — so QA reviewers can\r\n            compare the application's output against the legacy Excel workbook step by step.\r\n\r\n<strong>Status prerequisite:</strong> the endpoint returns <strong>404</strong> when the group\r\n            has not yet been computed (no `CalibrationCurve` row exists for this analyte), when the\r\n            analyte is not present in the group's CAL runs, or when the group is outside the caller's laboratory scope.\r\n\r\n<strong>Access:</strong> restricted to `perm.groups.approve` — only QA and Lab Admin roles.\r\n\r\n<strong>Laboratory scope:</strong> lab users may only read groups in their JWT laboratory.\r\n            Platform operators must supply `laboratoryId`; omitting it returns <strong>400</strong>.",
+        "description": "\r\nExposes every intermediate value stored at compute time — weighted sums (S0, Sx, Sy, Sxx, Sxy),\r\n            normal-equation denominator, fitted coefficients, curve-level diagnostics (SSE, SST, RSE, R²),\r\n            ICV results, and per-point predicted/residual/percent-diff values — so QA reviewers can\r\n            compare the application's output against the legacy Excel workbook step by step.\r\n\r\n<strong>ICV verification (workbook \"ICV Calculator\" parity):</strong> the response carries\r\n            `icvTrueConcentration`, `icvCalculatedConcentration`, `icvPercentDiff`, `icvPassed`,\r\n            and the CDS-parity fields, plus the per-analyte recovery window it is judged against —\r\n            `icvLcsLowerControlLimit` / `icvLcsUpperControlLimit` (from the method-config snapshot;\r\n            `null` when not configured). These bounds are the same snapshot values that drive\r\n            `icvLcsRecoveryPassed`, so the number and the pass/fail always agree.\r\n\r\n<strong>Status prerequisite:</strong> the endpoint returns <strong>404</strong> when the group\r\n            has not yet been computed (no `CalibrationCurve` row exists for this analyte), when the\r\n            analyte is not present in the group's CAL runs, or when the group is outside the caller's laboratory scope.\r\n\r\n<strong>Access:</strong> restricted to `perm.groups.approve` — only QA and Lab Admin roles.\r\n\r\n<strong>Laboratory scope:</strong> lab users may only read groups in their JWT laboratory.\r\n            Platform operators must supply `laboratoryId`; omitting it returns <strong>400</strong>.",
         "parameters": [
           {
             "name": "id",
@@ -2015,7 +2015,7 @@
           "Calibration groups"
         ],
         "summary": "Returns all computed regression variants for one analyte within a calibration group.",
-        "description": "\r\nEach element in the returned array corresponds to one `(RegressionType, WeightingMode)` pair that\r\n            was computed during the last `POST .../compute` call. The payload shape per element is identical\r\n            to the single-variant `regression-debug` endpoint. Use this endpoint to compare all variants\r\n            side-by-side without making a separate request per variant.\r\n\r\nReturns an <strong>empty array</strong> when the group has not yet been computed (Draft status) or\r\n            when no `CalibrationCurve` rows exist for the specified analyte.\r\n\r\n<strong>Access:</strong> restricted to `perm.groups.approve` — only QA and Lab Admin roles.\r\n\r\n<strong>Laboratory scope:</strong> lab users may only read groups in their JWT laboratory.\r\n            Platform operators must supply `laboratoryId`; omitting it returns <strong>400</strong>.",
+        "description": "\r\nEach element in the returned array corresponds to one `(RegressionType, WeightingMode)` pair that\r\n            was computed during the last `POST .../compute` call. The payload shape per element is identical\r\n            to the single-variant `regression-debug` endpoint. Use this endpoint to compare all variants\r\n            side-by-side without making a separate request per variant.\r\n\r\nThis is the closest match to the workbook's <strong>ICV Calculator</strong> table: every variant row carries the\r\n            ICV verification fields (`icvCalculatedConcentration`, `icvPercentDiff`, `icvPassed`, CDS parity)\r\n            alongside the per-analyte recovery window (`icvLcsLowerControlLimit` / `icvLcsUpperControlLimit`), so a\r\n            client can render the analyte's ICV calc-conc, %Diff, and control limits model-by-model in one call.\r\n\r\nReturns an <strong>empty array</strong> when the group has not yet been computed (Draft status) or\r\n            when no `CalibrationCurve` rows exist for the specified analyte.\r\n\r\n<strong>Access:</strong> restricted to `perm.groups.approve` — only QA and Lab Admin roles.\r\n\r\n<strong>Laboratory scope:</strong> lab users may only read groups in their JWT laboratory.\r\n            Platform operators must supply `laboratoryId`; omitting it returns <strong>400</strong>.",
         "parameters": [
           {
             "name": "id",
@@ -2093,6 +2093,108 @@
           },
           "404": {
             "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calibration-groups/{id}/analytes/{analyteId}/variant-comparison": {
+      "get": {
+        "tags": [
+          "Calibration groups"
+        ],
+        "summary": "Returns the per-analyte variant-comparison deck (Excel \"DVD\"): one row per calibration level with the back-calculated concentration and %Diff from every computed regression variant side-by-side.",
+        "description": "\r\nEach row anchors on the level's true concentration (`standardConcentration`) and the Average-RF-predicted\r\n            response ratio (`calculatedResponseRatio`), then lists `(CalcConc, %Diff)` pairs for the Average RF,\r\n            Linear (equal / 1x / 1x²), Linear forced-zero, Quadratic (equal / 1x / 1x²), and Quadratic forced-zero models.\r\n            A variant's columns are `null` when it did not compute for the analyte or the inversion was undefined.\r\n\r\n<strong>Prerequisite:</strong> the group must have been computed. Draft groups return <strong>409</strong>;\r\n            a missing/out-of-scope group or an analyte with no computed curves returns <strong>404</strong>.\r\n\r\n<strong>Permissions:</strong>\r\n  `perm.groups.approve`. Platform operators must pass `laboratoryId`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Calibration group identifier (UUID).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "analyteId",
+            "in": "path",
+            "description": "Analyte identifier (UUID) whose comparison deck should be returned.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "laboratoryId",
+            "in": "query",
+            "description": "Required for platform operators; ignored for lab users.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VariantComparisonResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -2529,7 +2631,7 @@
           "Calibration groups"
         ],
         "summary": "Returns the ranked Report Card comparing every computed regression variant for the group.",
-        "description": "\r\nEach variant `(regressionType, weightingMode)` carries a `reportCardScore` (count of analytes with\r\n            `calStatus == Pass`), per-analyte diagnostics, and an `isSuggestedModel` flag set on the top-ranked\r\n            variant. Variants are ordered by descending score, breaking ties toward the simpler model.\r\n\r\nReturns <strong>409 Conflict</strong> when the group has not been computed, and <strong>404</strong> when the\r\n            group is missing or outside the caller's laboratory scope.",
+        "description": "\r\nEach variant `(regressionType, weightingMode)` carries a `reportCardScore` (count of analytes with\r\n            `calStatus == Pass`), per-analyte diagnostics, and an `isSuggestedModel` flag set on the top-ranked\r\n            variant. Variants are ordered by descending score, breaking ties toward the simpler model.\r\n\r\n<strong>Per-analyte ranking breakdown</strong>: each analyte row includes `pointTotal` (the workbook\r\n            composite score, lower is better), `modelRank` (1 = best within the analyte), and a `rankingBreakdown`\r\n            object exposing the individual addends that sum to `pointTotal` — mirroring the workbook's explicit\r\n            `SUM(BF:BP)` columns:\r\n            <c>pointTotal = passGate + pointsBelowLowerBound + pointsAboveUpperBound + failTotalDoubleCounted\r\n            + probeDeviationRankSum + overallDeviationRank + negativeAreaRank + icvRank</c>.\r\n            The breakdown is recomputed deterministically from the stored curves, points, and method-config snapshot, so it\r\n            always reconciles with the persisted `pointTotal`; it is `null` for variants that could not be ranked\r\n            (for example, an analyte with no low-level probe ladder).\r\n\r\n<strong>What the rank points mean</strong>: `pointTotal` is a demerit score — <em>lower is better</em>. It\r\n            rewards a variant for behaving well where it matters most: back-calculating concentration in the region between\r\n            zero response and the lowest calibration standard (near the reporting limit). Points accrue from failing the\r\n            primary acceptance criterion (a large `passGate` penalty), from calibration points outside the %Diff bounds\r\n            (counted twice), and from each variant's <em>relative rank</em> against its siblings on the low-level probe\r\n            deviations, overall deviation, negative back-calculated areas, and ICV %Diff. The variant with the lowest\r\n            `pointTotal` gets `modelRank == 1` and is flagged `isRecommendedModel`.\r\n\r\n<strong>Forced-zero variants are full ranking participants</strong> — they receive a numeric `pointTotal`\r\n            like every other variant and <em>can</em> win the overall recommendation (this mirrors the workbook, whose own\r\n            \"best overall ranked model\" cell selects a forced-zero model on some datasets). A forced-zero\r\n            `pointTotal` is therefore never blank; a `null` means the variant could not be ranked at all, not that\r\n            it was excluded for being forced-zero. Because some labs disallow through-origin models, each analyte also\r\n            exposes `isRecommendedNonForcedZeroModel` (and the recommendation object carries the best non-forced-zero\r\n            pick separately) so QA can choose the best model that is <em>not</em> forced-zero when policy requires it.\r\n\r\nReturns <strong>409 Conflict</strong> when the group has not been computed, and <strong>404</strong> when the\r\n            group is missing or outside the caller's laboratory scope.",
         "parameters": [
           {
             "name": "id",
@@ -2601,7 +2703,8 @@
         "tags": [
           "Calibration groups"
         ],
-        "summary": "Returns the four-table Summary Report for the selected regression model.",
+        "summary": "Returns the full self-contained Summary Report for the selected regression model.",
+        "description": "\r\nThis is the <strong>single workbook-parity endpoint</strong> (see ADR 0003): one call reproduces the entire Excel\r\n            Summary Report sheet, so a client never has to compose it from multiple endpoints. Every analyte is reported under\r\n            <em>its own selected regression model</em>, so different analytes in one group may show different regression\r\n            types / weightings.\r\n\r\n<strong>How to read the report</strong> — each block answers a different question:\r\n<list type=\"bullet\">\r\n  <item>\r\n    <description>\r\n      <strong>administrative</strong> — <em>what rules applied?</em> The frozen method-config limits\r\n              (`rsdPercentLimit`, `isRsdPercentLimit`, `icvLimitPercent`, `icvCdsParityPercent`) and run\r\n              metadata. If `isComputationStale` is `true`, the group changed after compute — recompute before sign-off.</description>\r\n  </item>\r\n  <item>\r\n    <description>\r\n      <strong>executive</strong> — <em>did each analyte pass?</em> One headline `calStatus`\r\n              (Pass/Fail) per analyte with `failureReasons` and the individual gate flags. Flag convention throughout:\r\n              `true` = configured & passed, `false` = configured & failed, `null` = not configured / not applicable.</description>\r\n  </item>\r\n  <item>\r\n    <description>\r\n      <strong>responseFactors</strong> — <em>is the response consistent across levels?</em> Mean RF,\r\n              RF `%RSD`, and per-level points (RF = responseRatio Y / amountRatio X). Evidence behind average / RF models.</description>\r\n  </item>\r\n  <item>\r\n    <description>\r\n      <strong>linearDynamicRange</strong> — <em>how good is the fit, and does ICV verify?</em> Curve\r\n              `slope`/`intercept`, per-point residuals/%Diff, and the ICV block (see below).</description>\r\n  </item>\r\n  <item>\r\n    <description>\r\n      <strong>internalStandardEvaluation</strong> — <em>were the internal standards stable?</em>\r\n              Response `%RSD` per IS vs `isRsdPercentLimit`.</description>\r\n  </item>\r\n  <item>\r\n    <description>\r\n      <strong>surrogateEvaluation</strong> — <em>did surrogates recover?</em> Recovery min/max % vs\r\n              the control-limit window per surrogate/SMC. (Both IS blocks are computed by the same engine as\r\n              `GET .../internal-standard-summaries`, which remains for drill-down, so the numbers never diverge.)</description>\r\n  </item>\r\n</list>\r\n\r\n<strong>Reading the ICV block (in linearDynamicRange).</strong> The ICV is a separately-prepared standard at a known\r\n            concentration. WLTR inverts its `icvObservedResponse` (raw area from the linked ICV run) through the selected\r\n            curve to get `icvCalculatedConcentration`, then compares to `icvTrueConcentration`:\r\n            `icvPercentDiff = (calc − true) / true × 100` and `icvRecoveryPercent = 100 + icvPercentDiff` (100% =\r\n            perfect). `icvCdsReportedConcentration` / `icvCdsPercentDiff` cross-check WLTR against the instrument's own\r\n            value; `icvLcsLowerControlLimit`/`icvLcsUpperControlLimit` is the recovery pass window. All ICV fields are\r\n            `null` when the analyte has no ICV configured or no ICV run is linked; the raw `icvObservedResponse` /\r\n            `icvCdsReportedConcentration` are additionally `null` when absent from the export.\r\n\r\nReturns <strong>409 Conflict</strong> when the group has not been computed or no model has been selected.",
         "parameters": [
           {
             "name": "id",
@@ -2771,18 +2874,28 @@
         }
       }
     },
-    "/api/calibration-groups/{id}/select-model": {
+    "/api/calibration-groups/{id}/analytes/{analyteId}/select-model": {
       "post": {
         "tags": [
           "Calibration groups"
         ],
-        "summary": "Selects the regression model variant a QA reviewer will sign off on.",
-        "description": "\r\nRequires the group to be `Computed` and not stale, and the `(regressionType, weightingMode)` pair to\r\n            exist among the computed curves. Selection is cleared automatically on every recompute. A model must be selected\r\n            before the group can be approved.\r\n\r\n<strong>Permissions:</strong>\r\n  `perm.groups.approve`.",
+        "summary": "Selects the regression model variant a QA reviewer will sign off on for a single analyte.",
+        "description": "\r\nWorkbook-parity per-analyte model choice. Requires the group to be `Computed` and not stale, and a computed\r\n            curve to exist for the analyte under the chosen variant. Cleared automatically on every recompute.\r\n\r\n<strong>Permissions:</strong>\r\n  `perm.groups.approve`.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
             "description": "Calibration group identifier (UUID).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "analyteId",
+            "in": "path",
+            "description": "Analyte identifier (UUID).",
             "required": true,
             "schema": {
               "type": "string",
@@ -2796,6 +2909,92 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SelectModelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calibration-groups/{id}/select-recommended-models": {
+      "post": {
+        "tags": [
+          "Calibration groups"
+        ],
+        "summary": "Applies each analyte's low-level-extrapolation recommended model as its selection.",
+        "description": "\r\nRequires the group to be `Computed` and not stale. Sets every analyte's selection to its recommended model\r\n            (overall, or the recommended non-forced-zero model when `excludeForcedZero` is true).\r\n\r\n<strong>Permissions:</strong>\r\n  `perm.groups.approve`.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Calibration group identifier (UUID).",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Recommendation options.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SelectRecommendedModelsRequest"
               }
             }
           }
@@ -3424,18 +3623,17 @@
         }
       }
     },
-    "/api/calibration-levels": {
+    "/api/calibration-level-sets": {
       "get": {
         "tags": [
-          "Calibration levels"
+          "Calibration level sets"
         ],
-        "summary": "Returns a page of calibration levels for the caller's laboratory.",
-        "description": "Results are always scoped to the `LaboratoryId` claim in the caller's JWT.\r\nPlatform operators without a laboratory claim receive an empty page.\r\nSoft-deleted levels are excluded.",
+        "summary": "Returns a page of calibration level sets for the caller's laboratory.",
+        "description": "Scoped to the caller's laboratory; soft-deleted sets are excluded.",
         "parameters": [
           {
             "name": "page",
             "in": "query",
-            "description": "1-based page index (default 1).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -3444,7 +3642,6 @@
           {
             "name": "pageSize",
             "in": "query",
-            "description": "Items per page, capped at 100 (default 25).",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -3453,7 +3650,437 @@
           {
             "name": "sort",
             "in": "query",
-            "description": "Optional sort expression: `field` or `field:asc` / `field:desc`.\r\nSupported fields: `sortOrder` (default), `levelName`, `trueConcentration`, `createdAt`.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagedResultOfCalibrationLevelSetListItemDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Calibration level sets"
+        ],
+        "summary": "Creates a new calibration level set for the caller's laboratory.",
+        "requestBody": {
+          "description": "Set name and optional target department.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCalibrationLevelSetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateCalibrationLevelSetResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calibration-level-sets/{id}": {
+      "get": {
+        "tags": [
+          "Calibration level sets"
+        ],
+        "summary": "Returns full calibration level set detail by id.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalibrationLevelSetDetailDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Calibration level sets"
+        ],
+        "summary": "Renames a calibration level set.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Replacement name and concurrency token.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCalibrationLevelSetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Calibration level sets"
+        ],
+        "summary": "Deletes a calibration level set that nothing references, along with its levels.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calibration-level-sets/{id}/active": {
+      "put": {
+        "tags": [
+          "Calibration level sets"
+        ],
+        "summary": "Retires or reinstates a calibration level set.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Target active state and concurrency token.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCalibrationLevelSetActiveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/calibration-level-sets/{setId}/levels": {
+      "get": {
+        "tags": [
+          "Calibration levels"
+        ],
+        "summary": "Returns a page of calibration levels in the given set.",
+        "parameters": [
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -3489,6 +4116,16 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -3496,10 +4133,20 @@
         "tags": [
           "Calibration levels"
         ],
-        "summary": "Creates a new calibration level for the caller's laboratory.",
-        "description": "The laboratory is derived from the `LaboratoryId` JWT claim; the caller cannot specify a\r\ndifferent lab. Returns <strong>400</strong> if there is no laboratory claim in the token.\r\n\r\n<strong>Name uniqueness:</strong> the name is normalized (trimmed, lowercased, underscores/hyphens/\r\nwhitespace stripped) before the uniqueness check. `Cal_1ppb` and `CAL 1 PPB` collide;\r\nthe duplicate returns <strong>400</strong> with the conflicting name in the error detail.\r\nOn success the response body contains the new level's GUID and the `Location` header\r\npoints to `GET /api/calibration-levels/{id}`.",
+        "summary": "Adds a calibration level to the given set.",
+        "parameters": [
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
-          "description": "Level name, true concentration (≥ 0), and display sort order (≥ 0).",
+          "description": "Level name, true concentration, and sort order.",
           "content": {
             "application/json": {
               "schema": {
@@ -3548,22 +4195,39 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       }
     },
-    "/api/calibration-levels/{id}": {
+    "/api/calibration-level-sets/{setId}/levels/{id}": {
       "get": {
         "tags": [
           "Calibration levels"
         ],
-        "summary": "Returns full calibration level detail by id.",
-        "description": "Returns <strong>404</strong> if the level does not exist, has been soft-deleted, or belongs to a\r\ndifferent laboratory than the caller's JWT claim. Cross-lab reads are not distinguished from\r\nnot-found to prevent IDOR enumeration.",
+        "summary": "Returns full calibration level detail by id within its set.",
         "parameters": [
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           {
             "name": "id",
             "in": "path",
-            "description": "Calibration level GUID.",
             "required": true,
             "schema": {
               "type": "string",
@@ -3618,13 +4282,20 @@
         "tags": [
           "Calibration levels"
         ],
-        "summary": "Updates a calibration level. Edits apply to future work only; historical computations are unaffected.",
-        "description": "\"Future work only\" means that `CalibrationPoint` rows already computed retain the concentration\r\nvalues used at computation time. Only new runs and recomputations will use the updated value.\r\n\r\nIf the name changes, the same normalization and per-laboratory uniqueness check as create is applied;\r\na collision returns <strong>400</strong>. Attempting to update a level that belongs to a different\r\nlaboratory also returns <strong>400</strong> (IDOR protection).",
+        "summary": "Updates a calibration level.",
         "parameters": [
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           {
             "name": "id",
             "in": "path",
-            "description": "Calibration level GUID to update.",
             "required": true,
             "schema": {
               "type": "string",
@@ -3633,7 +4304,7 @@
           }
         ],
         "requestBody": {
-          "description": "Replacement level name, true concentration (≥ 0), and display sort order (≥ 0).",
+          "description": "Replacement level fields and concurrency token.",
           "content": {
             "application/json": {
               "schema": {
@@ -3675,6 +4346,26 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
       },
@@ -3682,13 +4373,20 @@
         "tags": [
           "Calibration levels"
         ],
-        "summary": "Soft-deletes a calibration level. Returns 409 if referenced by any run or computed point.",
-        "description": "The level is soft-deleted (excluded from all queries) rather than physically removed to preserve\r\naudit trail integrity.\r\n\r\nReturns <strong>409 Conflict</strong> if at least one `CalibrationRun` or\r\n`CalibrationPoint` references this level. Remove or reassign those records first.\r\nReturns <strong>400</strong> if the level is not found, has already been deleted, or belongs to\r\na different laboratory than the caller's JWT claim.",
+        "summary": "Soft-deletes a calibration level.",
         "parameters": [
+          {
+            "name": "setId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
           {
             "name": "id",
             "in": "path",
-            "description": "Calibration level GUID to delete.",
             "required": true,
             "schema": {
               "type": "string",
@@ -3722,6 +4420,16 @@
           },
           "403": {
             "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -5744,10 +6452,12 @@
           "Method configuration"
         ],
         "summary": "Returns per-analyte acceptance limits configured for the method.",
+        "description": "Returns all rows for the method config as a flat list (not paginated). Each row covers one analyte and\r\nincludes all acceptance criteria fields: response factor, %RSD, CCC/SPCC flags, ICV/LCS limits,\r\n`concentrationMultiplier` (default `1`), and — for surrogates — spike amount and recovery bounds.\r\nAn empty array means no per-analyte overrides have been saved yet.\r\n\r\nReturns <strong>404</strong> when the config does not exist, has been soft-deleted, or belongs to another laboratory.\r\nCross-lab ids are treated as not-found to prevent existence disclosure.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "Method config GUID.",
             "required": true,
             "schema": {
               "type": "string",
@@ -5769,6 +6479,26 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "404": {
             "description": "Not Found",
             "content": {
@@ -5786,10 +6516,12 @@
           "Method configuration"
         ],
         "summary": "Replaces the full per-analyte criteria set for the method configuration.",
+        "description": "This is a full replacement — all existing rows are deleted and replaced atomically with the rows in the\r\nrequest body. Send an empty `rows` array to clear all per-analyte criteria.\r\n\r\nIf the submitted rows are identical to what is already stored, the operation is a no-op: no database\r\nwrites occur, no new method config snapshot is created, and the version number is not incremented.\r\nOtherwise, a new `MethodConfigSnapshot` is appended and the config version is incremented.\r\n<strong>concentrationMultiplier</strong> (optional, default `1`): scales the analyte's true\r\nconcentration before regression fitting. Set to a value other than `1` when the instrument\r\nreports concentrations in different units from the workbook standard. Must be `> 0`.\r\n<strong>Surrogate / SMC fields</strong> (`surrogateSpikeAmount`, `surrogateRecoveryLowerLimit`,\r\n`surrogateRecoveryUpperLimit`): applicable only to analytes whose role is `Surrogate`\r\n(set on the analyte via `POST/PUT /api/analytes`). Omit or send `null` for non-surrogate analytes.\r\n`surrogateRecoveryUpperLimit` must be strictly greater than `surrogateRecoveryLowerLimit` when both are provided.\r\nReturns <strong>400</strong> for validation errors: duplicate analyte ids, analyte not found or in another lab,\r\n`concentrationMultiplier ≤ 0`, or invalid surrogate limit ordering.\r\nReturns <strong>404</strong> when the config does not exist, has been soft-deleted, or belongs to another laboratory.",
         "parameters": [
           {
             "name": "id",
             "in": "path",
+            "description": "Method config GUID.",
             "required": true,
             "schema": {
               "type": "string",
@@ -5798,6 +6530,7 @@
           }
         ],
         "requestBody": {
+          "description": "Full replacement set of per-analyte criteria rows.",
           "content": {
             "application/json": {
               "schema": {
@@ -5812,6 +6545,26 @@
           },
           "400": {
             "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
             "content": {
               "application/json": {
                 "schema": {
@@ -7177,6 +7930,50 @@
           }
         }
       }
+    },
+    "/api/method-configs/family-defaults": {
+      "get": {
+        "tags": [
+          "Method configuration"
+        ],
+        "summary": "Returns the server-owned method-family → quantitation-mode defaults.",
+        "description": "A single server-owned map so clients do not hardcode VOC→ISTD, DRO→ESTD, etc. Used to pre-fill the method config form when a family is selected.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MethodFamilyDefaultsResponse"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7232,6 +8029,9 @@
             "description": "Display name of the default internal standard, or `null` when none is assigned.",
             "nullable": true
           },
+          "role": {
+            "$ref": "#/components/schemas/AnalyteRole"
+          },
           "aliases": {
             "type": "array",
             "items": {
@@ -7262,6 +8062,9 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "role": {
+            "$ref": "#/components/schemas/AnalyteRole"
           }
         },
         "additionalProperties": false,
@@ -7296,6 +8099,14 @@
         },
         "additionalProperties": false,
         "description": "Minimal analyte reference for embedding within other detail DTOs."
+      },
+      "AnalyteRole": {
+        "enum": [
+          "Target",
+          "InternalStandard",
+          "Surrogate"
+        ],
+        "type": "string"
       },
       "AnalyteSuggestionItemDto": {
         "type": "object",
@@ -7667,14 +8478,18 @@
             "type": "boolean",
             "description": "True when analyte exclusion list or point include/exclude changes have been made after the last compute.\r\nThe group must be recomputed before it can be approved."
           },
-          "selectedRegressionType": {
-            "$ref": "#/components/schemas/RegressionType"
-          },
-          "selectedWeightingMode": {
-            "$ref": "#/components/schemas/WeightingMode"
-          },
           "approval": {
             "$ref": "#/components/schemas/ApprovalRecordResponse"
+          },
+          "instrumentName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Instrument display name; falls back to \"\" only if the row is unresolvable."
+          },
+          "methodConfigName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Method config display name; falls back to \"\" only if the row is unresolvable."
           }
         },
         "additionalProperties": false,
@@ -7728,6 +8543,16 @@
             "type": "string",
             "description": "UTC creation timestamp.",
             "format": "date-time"
+          },
+          "instrumentName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Instrument display name; falls back to \"\" only if the row is unresolvable."
+          },
+          "methodConfigName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Method config display name; falls back to \"\" only if the row is unresolvable."
           }
         },
         "additionalProperties": false,
@@ -7782,18 +8607,28 @@
             "type": "boolean",
             "description": "True when calibration data changed after the last compute; the card may be out of date."
           },
-          "selectedRegressionType": {
-            "$ref": "#/components/schemas/RegressionType"
-          },
-          "selectedWeightingMode": {
-            "$ref": "#/components/schemas/WeightingMode"
-          },
           "variants": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ReportCardVariantDto"
             },
             "description": "Variants ordered by rank (descending score, simplest-model tie-break).",
+            "nullable": true
+          },
+          "analyteRecommendations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportCardAnalyteRecommendationDto"
+            },
+            "description": "Workbook-parity per-analyte model recommendation driven by the low-level extrapolation Point Total.",
+            "nullable": true
+          },
+          "analyteSelections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReportCardAnalyteSelectionDto"
+            },
+            "description": "Current QA-selected model per analyte.",
             "nullable": true
           }
         },
@@ -7830,19 +8665,15 @@
           },
           "methodConfigSnapshotId": {
             "type": "string",
+            "description": "Frozen method-config snapshot used at compute time; null for legacy groups computed before snapshots.",
             "format": "uuid",
             "nullable": true
           },
           "methodConfigVersion": {
             "type": "integer",
+            "description": "Version of the snapshot (or the live config when no snapshot exists) the numbers were computed against.",
             "format": "int32",
             "nullable": true
-          },
-          "selectedRegressionType": {
-            "$ref": "#/components/schemas/RegressionType"
-          },
-          "selectedWeightingMode": {
-            "$ref": "#/components/schemas/WeightingMode"
           },
           "administrative": {
             "$ref": "#/components/schemas/SummaryReportAdministrativeDto"
@@ -7867,19 +8698,31 @@
               "$ref": "#/components/schemas/SummaryReportLdrAnalyteDto"
             },
             "nullable": true
+          },
+          "internalStandardEvaluation": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InternalStandardSummaryDto"
+            },
+            "description": "Response-stability rows for internal standards only (surrogates are in SurrogateEvaluation).",
+            "nullable": true
+          },
+          "surrogateEvaluation": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InternalStandardSummaryDto"
+            },
+            "description": "Recovery rows for surrogate / system-monitoring compounds only.",
+            "nullable": true
           }
         },
         "additionalProperties": false,
-        "description": "Full Summary Report payload for a computed calibration group with a selected model."
+        "description": "Full Summary Report payload for a computed calibration group with a selected model. Single self-contained\r\nendpoint reproducing the entire workbook Summary Report sheet (see ADR 0003), including the Internal Standard\r\nand Surrogate evaluation blocks."
       },
       "CalibrationLevelDetailDto": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "laboratoryId": {
             "type": "string",
             "format": "uuid"
           },
@@ -7894,6 +8737,15 @@
           "sortOrder": {
             "type": "integer",
             "format": "int32"
+          },
+          "calibrationLevelSetId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte",
+            "description": "Concurrency token that an update must echo back."
           }
         },
         "additionalProperties": false,
@@ -7917,6 +8769,10 @@
           "sortOrder": {
             "type": "integer",
             "format": "int32"
+          },
+          "calibrationLevelSetId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false,
@@ -8054,6 +8910,22 @@
             "type": "string",
             "description": "User-supplied display label; defaults to `\"{RunType} {RunDate:yyyy-MM-dd}\"` when not provided at upload.",
             "nullable": true
+          },
+          "calibrationLevelSetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Calibration level set that owns the run's level; null for ICV / unbound."
+          },
+          "calibrationLevelName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Resolved calibration level label (e.g. \"Cal_10ppb\"); null for ICV / unbound."
+          },
+          "calibrationLevelSetName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Name of the owning calibration level set; null for ICV / unbound."
           }
         },
         "additionalProperties": false,
@@ -8110,6 +8982,9 @@
             "description": "Optional default internal standard for methods that use IS normalization.",
             "format": "uuid",
             "nullable": true
+          },
+          "role": {
+            "$ref": "#/components/schemas/AnalyteRole"
           }
         },
         "additionalProperties": false,
@@ -8500,6 +9375,24 @@
             "description": "Optional inclusive upper bound for mean IS response (summary warnings).",
             "format": "double",
             "nullable": true
+          },
+          "calibrationLevelSetId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Calibration level set this configuration evaluates against; must belong to the same department as the config."
+          },
+          "methodFamily": {
+            "type": "string",
+            "enum": [
+              "VOC",
+              "GRO",
+              "BTEX",
+              "DRO",
+              "ORO",
+              "Anions"
+            ],
+            "nullable": true,
+            "description": "Optional method family tag; null/absent means untagged."
           }
         },
         "additionalProperties": false,
@@ -8547,6 +9440,25 @@
             "type": "string",
             "description": "Optional human-readable label for the run. Defaults to `\"{RunType} {RunDate:yyyy-MM-dd}\"` when omitted.\r\nMaximum 256 characters.",
             "nullable": true
+          },
+          "calibrationLevelSetId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Calibration level set that owns the level. Required for CAL runs; ignored for ICV.",
+            "nullable": true
+          },
+          "importFormat": {
+            "type": "string",
+            "enum": [
+              "MassHunterText",
+              "ChemStationCsv",
+              "PidText",
+              "IcSlk",
+              "IcCsv",
+              "Generic"
+            ],
+            "nullable": true,
+            "description": "Parser selector; null means conservative auto-detect only."
           }
         },
         "additionalProperties": false,
@@ -8801,6 +9713,22 @@
             "type": "string",
             "description": "Human-readable reason when not eligible for the row's type.",
             "nullable": true
+          },
+          "calibrationLevelSetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Calibration level set a CAL run was bound to; null for ICV or unbound runs."
+          },
+          "calibrationLevelName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Display name of the resolved calibration level; null when the run has no level."
+          },
+          "calibrationLevelSetName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Display name of the bound calibration level set; null for ICV or unbound runs."
           }
         },
         "additionalProperties": false,
@@ -9033,70 +9961,116 @@
         "properties": {
           "normalizedKey": {
             "type": "string",
+            "description": "Compound name normalized for grouping/matching; use RawCompoundName for display.",
             "nullable": true
           },
           "rawCompoundName": {
             "type": "string",
+            "description": "Compound name as it appeared in the raw export.",
             "nullable": true
+          },
+          "category": {
+            "$ref": "#/components/schemas/CompoundCategory"
           },
           "min": {
             "type": "number",
+            "description": "Minimum response observed across injections.",
             "format": "double"
           },
           "max": {
             "type": "number",
+            "description": "Maximum response observed across injections.",
             "format": "double"
           },
           "mean": {
             "type": "number",
+            "description": "Mean response across injections (compared to ThresholdMin/ThresholdMax when configured).",
             "format": "double"
           },
           "count": {
             "type": "integer",
+            "description": "Number of measurement rows aggregated.",
             "format": "int32"
           },
           "distinctCalibrationRunCount": {
             "type": "integer",
+            "description": "Number of distinct runs contributing (basis for %RSD); null when not computed for this scope.",
             "format": "int32",
             "nullable": true
           },
           "thresholdMin": {
             "type": "number",
+            "description": "Configured minimum acceptable mean response; null when not configured.",
             "format": "double",
             "nullable": true
           },
           "thresholdMax": {
             "type": "number",
+            "description": "Configured maximum acceptable mean response; null when not configured.",
             "format": "double",
             "nullable": true
           },
           "responseRsdPercent": {
             "type": "number",
+            "description": "Response %RSD across runs — the IS stability metric; null when not computable.",
             "format": "double",
             "nullable": true
           },
           "isRsdPercentLimit": {
             "type": "number",
+            "description": "Max allowed response %RSD; null when not configured.",
             "format": "double",
             "nullable": true
           },
           "isRsdPassed": {
             "type": "boolean",
+            "description": "True when ResponseRsdPercent is within the limit; null when no limit configured.",
             "nullable": true
           },
           "isWarning": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Roll-up flag: true when any threshold/%RSD/recovery check on this row failed."
           },
           "warningMessages": {
             "type": "array",
             "items": {
               "type": "string"
             },
+            "description": "Human-readable explanations for each failed check; empty when the row is clean.",
+            "nullable": true
+          },
+          "recoveryMinPercent": {
+            "type": "number",
+            "description": "Lowest per-injection surrogate recovery %; null for internal standards.",
+            "format": "double",
+            "nullable": true
+          },
+          "recoveryMaxPercent": {
+            "type": "number",
+            "description": "Highest per-injection surrogate recovery %; null for internal standards.",
+            "format": "double",
+            "nullable": true
+          },
+          "recoveryLowerLimit": {
+            "type": "number",
+            "description": "Lower recovery control limit; null when not configured.",
+            "format": "double",
+            "nullable": true
+          },
+          "recoveryUpperLimit": {
+            "type": "number",
+            "description": "Upper recovery control limit; null when not configured.",
+            "format": "double",
+            "nullable": true
+          },
+          "recoveryPassed": {
+            "type": "boolean",
+            "description": "True when all recoveries fall inside the control-limit window; null when not applicable.",
             "nullable": true
           }
         },
         "additionalProperties": false,
-        "description": "Aggregated internal-standard response statistics for one normalized compound name in scope."
+        "description": "Aggregated response statistics for one internal standard or surrogate (grouped by normalized compound name)."
       },
       "InvitationsController_InviteCreatedResponse": {
         "type": "object",
@@ -9276,50 +10250,136 @@
         "additionalProperties": false,
         "description": "Laboratory summary returned from list endpoints."
       },
+      "LowLevelExtrapolationResponse": {
+        "type": "object",
+        "properties": {
+          "lowestCalibrationConcentration": {
+            "type": "number",
+            "description": "Anchor X — lowest included calibration concentration (amount ratio).",
+            "format": "double"
+          },
+          "lowestCalibrationResponse": {
+            "type": "number",
+            "description": "Anchor Y — response at the lowest calibration point.",
+            "format": "double"
+          },
+          "pointTotal": {
+            "type": "integer",
+            "description": "Composite ranking score (lower is better); `null` when ranking was not computed.",
+            "format": "int32",
+            "nullable": true
+          },
+          "modelRank": {
+            "type": "integer",
+            "description": "Ascending rank of this variant within the analyte (1 = best); `null` when not computed.",
+            "format": "int32",
+            "nullable": true
+          },
+          "negativeAreaPenalty": {
+            "type": "integer",
+            "description": "Count (0-3) of the three lowest probes that back-calculate a negative concentration.",
+            "format": "int32",
+            "nullable": true
+          },
+          "overallDeviation": {
+            "type": "number",
+            "description": "Sum of absolute deviation across the probes; `null` when not computed.",
+            "format": "double",
+            "nullable": true
+          },
+          "isRecommendedModel": {
+            "type": "boolean",
+            "description": "`true` on the analyte's overall recommended variant."
+          },
+          "isRecommendedNonForcedZeroModel": {
+            "type": "boolean",
+            "description": "`true` on the recommended variant among non-forced-zero models."
+          },
+          "quadraticInverseCaution": {
+            "type": "boolean",
+            "description": "`true` when the recommendation is a quadratic inverse-weighted model (workbook \"check instrument COD\" caution)."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Ranking summary for one fitted curve's behavior between zero and the lowest calibration point. The per-probe\r\nback-calculation rows are merged into the curve's point list (flagged `LowLevelExtrapolation`)."
+      },
       "MethodAnalyteCriteriaDto": {
         "type": "object",
         "properties": {
           "analyteId": {
             "type": "string",
+            "description": "Analyte GUID.",
             "format": "uuid"
           },
           "analyteName": {
             "type": "string",
+            "description": "Display name of the analyte.",
             "nullable": true
           },
           "isSpcc": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the analyte is treated as a surrogate/positive-control compound (SPCC)."
           },
           "minResponseFactor": {
             "type": "number",
+            "description": "Minimum acceptable response factor; `null` disables the gate.",
             "format": "double",
             "nullable": true
           },
           "isCcc": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Whether the analyte is a continuing-calibration-check (CCC) compound."
           },
           "maxRsdPercent": {
             "type": "number",
+            "description": "Maximum acceptable %RSD across calibration levels; `null` disables the gate.",
             "format": "double",
             "nullable": true
           },
           "methodBlankLimit": {
             "type": "number",
+            "description": "Upper limit for method-blank response; `null` disables the gate.",
             "format": "double",
             "nullable": true
           },
           "icvLcsConcentration": {
             "type": "number",
+            "description": "Expected ICV/LCS concentration for acceptance testing.",
             "format": "double",
             "nullable": true
           },
           "icvLcsLowerControlLimit": {
             "type": "number",
+            "description": "Lower control limit for ICV/LCS recovery acceptance.",
             "format": "double",
             "nullable": true
           },
           "icvLcsUpperControlLimit": {
             "type": "number",
+            "description": "Upper control limit for ICV/LCS recovery acceptance.",
+            "format": "double",
+            "nullable": true
+          },
+          "concentrationMultiplier": {
+            "type": "number",
+            "description": "Per-analyte true-concentration multiplier applied before regression fitting.\r\nDefaults to `1` (no scaling). Use when the instrument reports raw peak area that must be\r\nscaled to match the workbook's expected concentration units.",
+            "format": "double"
+          },
+          "surrogateSpikeAmount": {
+            "type": "number",
+            "description": "Nominal spiked amount for surrogate/SMC compounds; denominator for recovery calculation. `null` if not a surrogate.",
+            "format": "double",
+            "nullable": true
+          },
+          "surrogateRecoveryLowerLimit": {
+            "type": "number",
+            "description": "Lower acceptance limit (%) for surrogate recovery; `null` disables the gate.",
+            "format": "double",
+            "nullable": true
+          },
+          "surrogateRecoveryUpperLimit": {
+            "type": "number",
+            "description": "Upper acceptance limit (%) for surrogate recovery; `null` disables the gate.",
             "format": "double",
             "nullable": true
           }
@@ -9411,6 +10471,24 @@
           "currentVersion": {
             "type": "integer",
             "format": "int32"
+          },
+          "methodFamily": {
+            "type": "string",
+            "enum": [
+              "VOC",
+              "GRO",
+              "BTEX",
+              "DRO",
+              "ORO",
+              "Anions"
+            ],
+            "nullable": true,
+            "description": "Optional method family tag; null/absent means untagged."
+          },
+          "calibrationLevelSetId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Calibration level set this configuration evaluates against. Non-nullable: every config has one."
           }
         },
         "additionalProperties": false,
@@ -9523,6 +10601,30 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "methodFamily": {
+            "type": "string",
+            "enum": [
+              "VOC",
+              "GRO",
+              "BTEX",
+              "DRO",
+              "ORO",
+              "Anions"
+            ],
+            "nullable": true,
+            "description": "Optional method family tag; null/absent means untagged."
+          },
+          "calibrationLevelSetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Frozen calibration level set id (schema v6+); null for historical pre-set rows."
+          },
+          "calibrationLevelSetName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Name of the frozen calibration level set; null exactly when calibrationLevelSetId is null."
           }
         },
         "additionalProperties": false,
@@ -9955,17 +11057,28 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Calibration point identifier.",
-            "format": "uuid"
+            "description": "Calibration point identifier; `null` for synthetic low-level extrapolation rows.",
+            "format": "uuid",
+            "nullable": true
           },
           "calibrationRunId": {
             "type": "string",
-            "description": "Source CAL run identifier.",
-            "format": "uuid"
+            "description": "Source CAL run identifier; `null` for synthetic low-level extrapolation rows.",
+            "format": "uuid",
+            "nullable": true
           },
           "runName": {
             "type": "string",
-            "description": "Display name of the source CAL run.",
+            "description": "Display name of the source CAL run, or the probe label for extrapolation rows.",
+            "nullable": true
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RegressionPointKind"
+          },
+          "deviation": {
+            "type": "number",
+            "description": "`|CalcConcentration − StandardConcentration|` for extrapolation rows; `null` for calibration rows.",
+            "format": "double",
             "nullable": true
           },
           "calibrationLevelId": {
@@ -9979,15 +11092,15 @@
             "description": "Display name of the calibration level (e.g. `Cal_10ppb`); `null` when no level is linked.",
             "nullable": true
           },
-          "trueConcentration": {
+          "standardConcentration": {
             "type": "number",
-            "description": "Absolute true concentration from the calibration level (e.g. µg/L) — Excel \"True Conct\".\r\n`null` when no level is linked. Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is derived as\r\n`TrueConcentration / IS_conc` for ISTD methods.",
+            "description": "Absolute true standard concentration from the calibration level (e.g. µg/L) — Excel\r\n\"True Conct\" / \"Standard Concentration\". `null` when no level is linked.\r\nWltr.Api.Models.RegressionDebugPointResponse.AmountRatio is derived as `StandardConcentration / IS_conc` for ISTD methods.",
             "format": "double",
             "nullable": true
           },
           "amountRatio": {
             "type": "number",
-            "description": "Regression X-axis value (Excel \"Amount Ratio (X-Value)\"). For ISTD methods:\r\n`analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not configured:\r\nthe raw true concentration.",
+            "description": "Regression X-axis value (Excel \"Amount Ratio (X-Value)\"). For ISTD methods:\r\n`analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not configured:\r\nthe raw standard concentration.",
             "format": "double"
           },
           "responseRatio": {
@@ -10047,7 +11160,7 @@
           },
           "calcConcentration": {
             "type": "number",
-            "description": "Back-calculated absolute concentration (Excel \"Calc Conct\") = Wltr.Api.Models.RegressionDebugPointResponse.TrueConcentration × (1 + Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff / 100);\r\n`null` when Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff or Wltr.Api.Models.RegressionDebugPointResponse.TrueConcentration is `null`.",
+            "description": "Back-calculated absolute concentration (Excel \"Calc Conct\") = Wltr.Api.Models.RegressionDebugPointResponse.StandardConcentration × (1 + Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff / 100);\r\n`null` when Wltr.Api.Models.RegressionDebugPointResponse.PercentDiff or Wltr.Api.Models.RegressionDebugPointResponse.StandardConcentration is `null`.",
             "format": "double",
             "nullable": true
           },
@@ -10071,6 +11184,12 @@
           "inverseAmountRatioSquared": {
             "type": "number",
             "description": "1 / Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio² (Excel \"Inverse Amount Ratio Squared\"); the weighting factor under `1/x²` weighting mode.\r\n`null` when Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is zero.",
+            "format": "double",
+            "nullable": true
+          },
+          "calculatedResponseRatio": {
+            "type": "number",
+            "description": "Average-RF-predicted response ratio (Excel DVD row 244) = `MeanResponseFactor × AmountRatio`;\r\nthe Y-value the Average RF model predicts at this point's X-position regardless of the curve's model.\r\n`null` when the Average RF mean response factor was not available or Wltr.Api.Models.RegressionDebugPointResponse.AmountRatio is zero.",
             "format": "double",
             "nullable": true
           }
@@ -10267,6 +11386,18 @@
             "description": "`true` when ICV/LCS recovery is within the per-analyte LCL/UCL; `null` when limits are not configured.",
             "nullable": true
           },
+          "icvLcsLowerControlLimit": {
+            "type": "number",
+            "description": "Per-analyte lower control limit the ICV/LCS recovery is judged against; `null` when not configured.",
+            "format": "double",
+            "nullable": true
+          },
+          "icvLcsUpperControlLimit": {
+            "type": "number",
+            "description": "Per-analyte upper control limit the ICV/LCS recovery is judged against; `null` when not configured.",
+            "format": "double",
+            "nullable": true
+          },
           "points": {
             "type": "array",
             "items": {
@@ -10274,6 +11405,9 @@
             },
             "description": "Per-point debug data ordered by true concentration ascending.",
             "nullable": true
+          },
+          "lowLevelExtrapolation": {
+            "$ref": "#/components/schemas/LowLevelExtrapolationResponse"
           }
         },
         "additionalProperties": false,
@@ -10284,12 +11418,22 @@
         "properties": {
           "sourceRunId": {
             "type": "string",
-            "description": "Calibration run that contributed this point.",
-            "format": "uuid"
+            "description": "Calibration run that contributed this point; `null` for synthetic low-level extrapolation rows.",
+            "format": "uuid",
+            "nullable": true
           },
           "sourceRunName": {
             "type": "string",
-            "description": "Display name of the source run.",
+            "description": "Display name of the source run, or the probe label for extrapolation rows.",
+            "nullable": true
+          },
+          "kind": {
+            "$ref": "#/components/schemas/RegressionPointKind"
+          },
+          "deviation": {
+            "type": "number",
+            "description": "`|CalcConcentration − StandardConcentration|` for extrapolation rows; `null` for calibration rows.",
+            "format": "double",
             "nullable": true
           },
           "calibrationLevelId": {
@@ -10303,15 +11447,15 @@
             "description": "Display name of the calibration level (e.g. `Cal_10ppb`); `null` when no level is linked.",
             "nullable": true
           },
-          "trueConcentration": {
+          "standardConcentration": {
             "type": "number",
-            "description": "Absolute true concentration from the calibration level (e.g. µg/L) — Excel \"True Conct\".\r\n`null` when no level is linked. Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is derived as\r\n`TrueConcentration / IS_conc` for ISTD methods.",
+            "description": "Absolute true standard concentration from the calibration level (e.g. µg/L) — Excel\r\n\"True Conct\" / \"Standard Concentration\". `null` when no level is linked.\r\nWltr.Api.Models.RegressionInputPointResponse.AmountRatio is derived as `StandardConcentration / IS_conc` for ISTD methods.",
             "format": "double",
             "nullable": true
           },
           "amountRatio": {
             "type": "number",
-            "description": "Regression X-axis value (Excel \"Amount Ratio (X-Value)\"). For ISTD methods:\r\n`analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not\r\nconfigured: the raw true concentration.",
+            "description": "Regression X-axis value (Excel \"Amount Ratio (X-Value)\"). For ISTD methods:\r\n`analyte_true_conc / IS_conc`. For ESTD methods or when IS concentration is not\r\nconfigured: the raw standard concentration.",
             "format": "double"
           },
           "responseRatio": {
@@ -10367,7 +11511,7 @@
           },
           "calcConcentration": {
             "type": "number",
-            "description": "Back-calculated absolute concentration (Excel \"Calc Conct\") = Wltr.Api.Models.RegressionInputPointResponse.TrueConcentration × (1 + Wltr.Api.Models.RegressionInputPointResponse.PercentDiff / 100);\r\n`null` when Wltr.Api.Models.RegressionInputPointResponse.PercentDiff or Wltr.Api.Models.RegressionInputPointResponse.TrueConcentration is `null`.",
+            "description": "Back-calculated absolute concentration (Excel \"Calc Conct\") = Wltr.Api.Models.RegressionInputPointResponse.StandardConcentration × (1 + Wltr.Api.Models.RegressionInputPointResponse.PercentDiff / 100);\r\n`null` when Wltr.Api.Models.RegressionInputPointResponse.PercentDiff or Wltr.Api.Models.RegressionInputPointResponse.StandardConcentration is `null`.",
             "format": "double",
             "nullable": true
           },
@@ -10391,6 +11535,12 @@
           "inverseAmountRatioSquared": {
             "type": "number",
             "description": "1 / Wltr.Api.Models.RegressionInputPointResponse.AmountRatio² (Excel \"Inverse Amount Ratio Squared\"); the weighting factor under `1/x²` weighting mode.\r\n`null` when Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is zero.",
+            "format": "double",
+            "nullable": true
+          },
+          "calculatedResponseRatio": {
+            "type": "number",
+            "description": "Average-RF-predicted response ratio (Excel DVD row 244) = `MeanResponseFactor × AmountRatio`;\r\nthe Y-value the Average RF model predicts at this point's X-position. `null` when the group has\r\nnot been computed, Wltr.Api.Models.RegressionInputPointResponse.AmountRatio is zero, or the Average RF mean response factor was\r\nnot available.",
             "format": "double",
             "nullable": true
           }
@@ -10418,17 +11568,29 @@
             },
             "description": "Per-level, per-run data points sorted by true concentration (X) ascending.",
             "nullable": true
+          },
+          "lowLevelExtrapolation": {
+            "$ref": "#/components/schemas/LowLevelExtrapolationResponse"
           }
         },
         "additionalProperties": false,
         "description": "Assembled regression input for one analyte, as returned by\r\n`GET /api/calibration-groups/{id}/regression-inputs`."
+      },
+      "RegressionPointKind": {
+        "enum": [
+          "Calibration",
+          "LowLevelExtrapolation"
+        ],
+        "type": "string",
+        "description": "Distinguishes real calibration points from synthetic low-level extrapolation probes that share the same\r\npoint table (matching the Excel workbook, which lists the extrapolated rows alongside the cal points)."
       },
       "RegressionType": {
         "enum": [
           "Average",
           "Linear",
           "LinearForcedZero",
-          "Quadratic"
+          "Quadratic",
+          "QuadraticForcedZero"
         ],
         "type": "string"
       },
@@ -10473,6 +11635,7 @@
             "items": {
               "$ref": "#/components/schemas/SaveMethodAnalyteCriteriaRequest"
             },
+            "description": "Complete list of per-analyte criteria rows. This is a full replacement — any existing rows\r\nnot present here are removed. Send an empty array to clear all per-analyte criteria.\r\nEach analyte id must be unique within this list and must belong to the same laboratory as the config.",
             "nullable": true
           }
         },
@@ -10527,10 +11690,153 @@
           "icvPassed": {
             "type": "boolean",
             "nullable": true
+          },
+          "pointTotal": {
+            "type": "integer",
+            "description": "Workbook low-level-extrapolation composite demerit score for this variant within the analyte — <b>lower is better</b>,\r\nand `modelRank == 1` marks the winner. Populated for <b>every</b> ranked variant, including forced-zero ones\r\n(they are full ranking participants and can win); `null` only when the variant could not be ranked at all\r\n(e.g. no low-level probe ladder), never merely because it is forced-zero.",
+            "format": "int32",
+            "nullable": true
+          },
+          "modelRank": {
+            "type": "integer",
+            "description": "Ascending rank of PointTotal within the analyte (1 = best); null until ranked.",
+            "format": "int32",
+            "nullable": true
+          },
+          "negativeAreaPenalty": {
+            "type": "integer",
+            "description": "Count (0-3) of the three lowest probes back-calculating a negative concentration.",
+            "format": "int32",
+            "nullable": true
+          },
+          "isRecommendedModel": {
+            "type": "boolean",
+            "description": "True when this is the analyte's overall recommended (lowest Point Total) variant; a forced-zero variant may carry this flag."
+          },
+          "isRecommendedNonForcedZeroModel": {
+            "type": "boolean",
+            "description": "True when this is the analyte's recommended variant among non-forced-zero models (for labs that disallow through-origin fits)."
+          },
+          "rankingBreakdown": {
+            "$ref": "#/components/schemas/ReportCardRankingBreakdownDto"
           }
         },
         "additionalProperties": false,
         "description": "Per-analyte acceptance summary for a single Report Card variant."
+      },
+      "ReportCardAnalyteRecommendationDto": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "nullable": true
+          },
+          "recommendedRegressionType": {
+            "$ref": "#/components/schemas/RegressionType"
+          },
+          "recommendedWeightingMode": {
+            "$ref": "#/components/schemas/WeightingMode"
+          },
+          "recommendedPointTotal": {
+            "type": "integer",
+            "description": "Point Total of the overall recommended variant, or null when unranked.",
+            "format": "int32",
+            "nullable": true
+          },
+          "nonForcedZeroRegressionType": {
+            "$ref": "#/components/schemas/RegressionType"
+          },
+          "nonForcedZeroWeightingMode": {
+            "$ref": "#/components/schemas/WeightingMode"
+          },
+          "quadraticInverseCaution": {
+            "type": "boolean",
+            "description": "True when the recommendation is a quadratic inverse-weighted pick (\"check instrument COD\")."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Per-analyte model recommendation: the lowest-Point-Total variant overall and among non-forced-zero models."
+      },
+      "ReportCardAnalyteSelectionDto": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "nullable": true
+          },
+          "regressionType": {
+            "$ref": "#/components/schemas/RegressionType"
+          },
+          "weightingMode": {
+            "$ref": "#/components/schemas/WeightingMode"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Current QA-selected model for a single analyte within the group."
+      },
+      "ReportCardRankingBreakdownDto": {
+        "type": "object",
+        "properties": {
+          "passGate": {
+            "type": "integer",
+            "description": "1 when the variant passes its primary criterion, otherwise 100.",
+            "format": "int32"
+          },
+          "pointsBelowLowerBound": {
+            "type": "integer",
+            "description": "Included points whose %Diff fell below the lower bound.",
+            "format": "int32"
+          },
+          "pointsAboveUpperBound": {
+            "type": "integer",
+            "description": "Included points whose %Diff exceeded the upper bound.",
+            "format": "int32"
+          },
+          "failTotalDoubleCounted": {
+            "type": "integer",
+            "description": "The below+above failure total, added a second time per the workbook double-count.",
+            "format": "int32"
+          },
+          "probeDeviationRanks": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Ascending rank (1 = best) of each low-level probe's deviation, in probe-ladder order.",
+            "nullable": true
+          },
+          "probeDeviationRankSum": {
+            "type": "integer",
+            "description": "Sum of ProbeDeviationRanks.",
+            "format": "int32"
+          },
+          "overallDeviationRank": {
+            "type": "integer",
+            "description": "Ascending rank of the summed probe deviation.",
+            "format": "int32"
+          },
+          "negativeAreaRank": {
+            "type": "integer",
+            "description": "Ascending rank of the negative-area penalty.",
+            "format": "int32"
+          },
+          "icvRank": {
+            "type": "integer",
+            "description": "Ascending rank of the absolute ICV %Diff.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "The individual ranker addends that sum to a variant's Point Total, mirroring the workbook's explicit\r\n`SUM(BF:BP)` columns: <c>PointTotal = PassGate + PointsBelowLowerBound + PointsAboveUpperBound +\r\nFailTotalDoubleCounted + ProbeDeviationRankSum + OverallDeviationRank + NegativeAreaRank + IcvRank</c>."
       },
       "ReportCardVariantDto": {
         "type": "object",
@@ -10799,6 +12105,46 @@
             "type": "integer",
             "description": "Number of compound measurements stored for this run.",
             "format": "int32"
+          },
+          "importFormat": {
+            "type": "string",
+            "enum": [
+              "MassHunterText",
+              "ChemStationCsv",
+              "PidText",
+              "IcSlk",
+              "IcCsv",
+              "Generic"
+            ],
+            "nullable": true,
+            "description": "Parser selector; null means conservative auto-detect only."
+          },
+          "detectorSignal": {
+            "type": "string",
+            "nullable": true,
+            "description": "ChemStation Signal: file metadata (not a Front/Back picker); null on MassHunter/PID."
+          },
+          "calibrationLevelId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Resolved calibration level for CAL runs, if any."
+          },
+          "calibrationLevelSetId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Calibration level set that owns the run's level; null for ICV / unbound."
+          },
+          "calibrationLevelName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Resolved calibration level label (e.g. \"Cal_10ppb\"); null for ICV / unbound."
+          },
+          "calibrationLevelSetName": {
+            "type": "string",
+            "nullable": true,
+            "description": "Name of the owning calibration level set; null for ICV / unbound."
           }
         },
         "additionalProperties": false,
@@ -10832,7 +12178,9 @@
           "DuplicateCalibrationLevelInGroup",
           "CalibrationRunReferenceMissing",
           "InvalidCalibrationRunStatus",
-          "InvalidResponseRatio"
+          "InvalidResponseRatio",
+          "CalibrationLevelSetMismatch",
+          "ImportFormatMismatch"
         ],
         "type": "string",
         "description": "Identifies the kind of validation issue on a calibration measurement row or group-level readiness finding."
@@ -10917,41 +12265,75 @@
         "properties": {
           "analyteId": {
             "type": "string",
+            "description": "GUID of the analyte this row applies to. Must belong to the same laboratory as the method config.",
             "format": "uuid"
           },
           "isSpcc": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Marks this analyte as a Surrogate/Positive-Control Compound (SPCC).\r\nSPCC analytes are flagged in summary reports and evaluated separately from standard target analytes."
           },
           "minResponseFactor": {
             "type": "number",
+            "description": "Minimum acceptable response factor for this analyte; `null` disables the gate.\r\nThe response factor is the ratio of instrument response to known concentration.\r\nMust be greater than `0` when provided.",
             "format": "double",
             "nullable": true
           },
           "isCcc": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Marks this analyte as a Continuing Calibration Check (CCC) compound.\r\nCCC analytes are subject to additional QC acceptance checks during group computation."
           },
           "maxRsdPercent": {
             "type": "number",
+            "description": "Maximum acceptable %RSD (relative standard deviation) across calibration levels for this analyte;\r\n`null` disables the gate. Must be greater than `0` when provided.",
             "format": "double",
             "nullable": true
           },
+          "concentrationMultiplier": {
+            "maximum": 1.7976931348623157e+308,
+            "minimum": 5e-324,
+            "type": "number",
+            "description": "Per-analyte true-concentration multiplier; omit or send `1` for no scaling. Must be greater than 0.",
+            "format": "double"
+          },
           "methodBlankLimit": {
             "type": "number",
+            "description": "Upper limit for the method-blank response for this analyte; `null` disables the gate.\r\nUsed to flag when a blank sample produces an unexpectedly high signal.",
             "format": "double",
             "nullable": true
           },
           "icvLcsConcentration": {
             "type": "number",
+            "description": "Expected true concentration of the ICV/LCS standard for this analyte.\r\nRequired when `icvLcsLowerControlLimit` or `icvLcsUpperControlLimit` are set.",
             "format": "double",
             "nullable": true
           },
           "icvLcsLowerControlLimit": {
             "type": "number",
+            "description": "Lower control limit (%) for ICV/LCS recovery acceptance; `null` disables the lower bound.",
             "format": "double",
             "nullable": true
           },
           "icvLcsUpperControlLimit": {
             "type": "number",
+            "description": "Upper control limit (%) for ICV/LCS recovery acceptance; `null` disables the upper bound.",
+            "format": "double",
+            "nullable": true
+          },
+          "surrogateSpikeAmount": {
+            "type": "number",
+            "description": "Nominal spiked amount for a surrogate / system-monitoring compound; denominator for recovery.",
+            "format": "double",
+            "nullable": true
+          },
+          "surrogateRecoveryLowerLimit": {
+            "type": "number",
+            "description": "Lower control limit (%) for surrogate / SMC recovery acceptance; omit to disable the gate.",
+            "format": "double",
+            "nullable": true
+          },
+          "surrogateRecoveryUpperLimit": {
+            "type": "number",
+            "description": "Upper control limit (%) for surrogate / SMC recovery acceptance; omit to disable the gate.",
             "format": "double",
             "nullable": true
           }
@@ -10972,6 +12354,17 @@
         "additionalProperties": false,
         "description": "Request body for selecting the regression model variant a QA reviewer will sign off on."
       },
+      "SelectRecommendedModelsRequest": {
+        "type": "object",
+        "properties": {
+          "excludeForcedZero": {
+            "type": "boolean",
+            "description": "When true, applies each analyte's recommended non-forced-zero model instead of the overall recommendation."
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request body for applying each analyte's low-level-extrapolation recommended model."
+      },
       "SummaryReportAdministrativeDto": {
         "type": "object",
         "properties": {
@@ -10981,44 +12374,54 @@
           },
           "computedAt": {
             "type": "string",
+            "description": "When the group was computed; null if never computed.",
             "format": "date-time",
             "nullable": true
           },
           "computationVersion": {
             "type": "string",
+            "description": "Engine version tag that produced these numbers (for reproducibility / audit).",
             "nullable": true
           },
           "rsdPercentLimit": {
             "type": "number",
+            "description": "Max allowed calibration %RSD (used by average / response-factor acceptance).",
             "format": "double"
           },
           "isRsdPercentLimit": {
             "type": "number",
+            "description": "Max allowed internal-standard response %RSD.",
             "format": "double"
           },
           "icvLimitPercent": {
             "type": "number",
+            "description": "Max allowed absolute ICV %Diff from true (the primary ICV gate).",
             "format": "double"
           },
           "icvCdsParityPercent": {
             "type": "number",
+            "description": "Max allowed %Diff between WLTR's ICV calc and the instrument (CDS) reported value.",
             "format": "double"
           },
           "soilDilutionFactor": {
             "type": "number",
+            "description": "Reporting dilution factor for soil matrices; null when not configured.",
             "format": "double",
             "nullable": true
           },
           "aqueousDilutionFactor": {
             "type": "number",
+            "description": "Reporting dilution factor for aqueous matrices; null when not configured.",
             "format": "double",
             "nullable": true
           },
           "isComputationStale": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "True when the group was edited after compute — treat the report as out of date."
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Run metadata plus the frozen global acceptance limits that were in force for this computation."
       },
       "SummaryReportExecutiveAnalyteDto": {
         "type": "object",
@@ -11031,6 +12434,12 @@
             "type": "string",
             "nullable": true
           },
+          "selectedRegressionType": {
+            "$ref": "#/components/schemas/RegressionType"
+          },
+          "selectedWeightingMode": {
+            "$ref": "#/components/schemas/WeightingMode"
+          },
           "calStatus": {
             "$ref": "#/components/schemas/AnalyteCalStatus"
           },
@@ -11039,55 +12448,67 @@
             "items": {
               "type": "string"
             },
+            "description": "Human-readable reasons the analyte failed; empty when it passed.",
             "nullable": true
           },
           "rSquared": {
             "type": "number",
+            "description": "Coefficient of determination; how much variance the fit explains (closer to 1 is better). Not meaningful for average models.",
             "format": "double",
             "nullable": true
           },
           "correlationR": {
             "type": "number",
+            "description": "Correlation coefficient of the fit.",
             "format": "double",
             "nullable": true
           },
           "rse": {
             "type": "number",
+            "description": "Relative standard error of the regression; lower is a tighter fit.",
             "format": "double",
             "nullable": true
           },
           "responseFactorRsd": {
             "type": "number",
+            "description": "%RSD of the per-level response factors; the precision metric for average / RF acceptance.",
             "format": "double",
             "nullable": true
           },
           "meanResponseFactor": {
             "type": "number",
+            "description": "Mean response factor across included levels.",
             "format": "double",
             "nullable": true
           },
           "icvPassed": {
             "type": "boolean",
+            "description": "ICV %Diff within `IcvLimitPercent`; null when no ICV configured.",
             "nullable": true
           },
           "icvCdsPassed": {
             "type": "boolean",
+            "description": "WLTR ICV calc agrees with the instrument (CDS) value within `IcvCdsParityPercent`; null when not applicable.",
             "nullable": true
           },
           "icvLcsRecoveryPassed": {
             "type": "boolean",
+            "description": "ICV recovery inside the per-analyte LCL/UCL window; null when no window configured.",
             "nullable": true
           },
           "spccMinRfPassed": {
             "type": "boolean",
+            "description": "SPCC minimum-response-factor check passed; null when the analyte is not an SPCC.",
             "nullable": true
           },
           "cccRsdPassed": {
             "type": "boolean",
+            "description": "CCC %RSD check passed; null when the analyte is not a CCC.",
             "nullable": true
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "One headline pass/fail row per analyte for its selected model — the report's verdict line."
       },
       "SummaryReportLdrAnalyteDto": {
         "type": "object",
@@ -11102,38 +12523,76 @@
           },
           "slope": {
             "type": "number",
+            "description": "Fitted curve slope (response per unit amount ratio).",
             "format": "double"
           },
           "intercept": {
             "type": "number",
+            "description": "Fitted curve intercept; 0 for forced-zero models.",
             "format": "double"
           },
           "icvTrueConcentration": {
             "type": "number",
+            "description": "Known prepared ICV concentration.",
             "format": "double",
             "nullable": true
           },
           "icvCalculatedConcentration": {
             "type": "number",
+            "description": "Concentration WLTR back-calculates from the ICV response via the selected curve.",
             "format": "double",
             "nullable": true
           },
           "icvPercentDiff": {
             "type": "number",
+            "description": "(calc − true) / true × 100 — the primary ICV accuracy metric.",
             "format": "double",
             "nullable": true
           },
           "icvCdsPercentDiff": {
             "type": "number",
+            "description": "%Diff between WLTR's ICV calc and the instrument (CDS) reported concentration.",
             "format": "double",
             "nullable": true
           },
           "icvPassed": {
             "type": "boolean",
+            "description": "True when |IcvPercentDiff| is within the global `IcvLimitPercent`.",
             "nullable": true
           },
           "icvCdsPassed": {
             "type": "boolean",
+            "description": "True when WLTR and CDS agree within `IcvCdsParityPercent`.",
+            "nullable": true
+          },
+          "icvLcsLowerControlLimit": {
+            "type": "number",
+            "description": "Lower recovery control limit for this analyte; null when not configured.",
+            "format": "double",
+            "nullable": true
+          },
+          "icvLcsUpperControlLimit": {
+            "type": "number",
+            "description": "Upper recovery control limit for this analyte; null when not configured.",
+            "format": "double",
+            "nullable": true
+          },
+          "icvObservedResponse": {
+            "type": "number",
+            "description": "Raw ICV response (area) from the linked ICV run; null when no ICV run is linked or not exported.",
+            "format": "double",
+            "nullable": true
+          },
+          "icvCdsReportedConcentration": {
+            "type": "number",
+            "description": "Instrument (CDS) reported ICV concentration; null when not exported or no ICV run is linked.",
+            "format": "double",
+            "nullable": true
+          },
+          "icvRecoveryPercent": {
+            "type": "number",
+            "description": "ICV recovery percent (`100 + IcvPercentDiff`), where 100% is a perfect recovery; null when ICV %Diff is not available.",
+            "format": "double",
             "nullable": true
           },
           "points": {
@@ -11144,7 +12603,8 @@
             "nullable": true
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Curve fit and ICV verification detail per analyte — the deepest evidence block."
       },
       "SummaryReportLdrPointDto": {
         "type": "object",
@@ -11155,35 +12615,42 @@
           },
           "x": {
             "type": "number",
+            "description": "Amount ratio (X) for the level.",
             "format": "double"
           },
           "y": {
             "type": "number",
+            "description": "Observed response ratio (Y) for the level.",
             "format": "double"
           },
           "predictedY": {
             "type": "number",
+            "description": "Response the curve predicts at this X; null when not computable.",
             "format": "double",
             "nullable": true
           },
           "residual": {
             "type": "number",
+            "description": "Observed minus predicted (Y − PredictedY); how far off the fit is here.",
             "format": "double",
             "nullable": true
           },
           "percentDiff": {
             "type": "number",
+            "description": "Back-calculated concentration %Diff from the level's true concentration — the acceptance metric per point.",
             "format": "double",
             "nullable": true
           },
           "isIncluded": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "False when the point was excluded from the fit; excluded points still display."
           },
           "acceptance": {
             "$ref": "#/components/schemas/PointAcceptance"
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "One calibration level's fit quality within the Linear Dynamic Range table."
       },
       "SummaryReportResponseFactorAnalyteDto": {
         "type": "object",
@@ -11214,7 +12681,8 @@
             "nullable": true
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Response-factor audit trail per analyte: the mean RF, its %RSD, and the per-level points behind them."
       },
       "SummaryReportResponseFactorPointDto": {
         "type": "object",
@@ -11225,21 +12693,26 @@
           },
           "x": {
             "type": "number",
+            "description": "Amount ratio (analyte amount / internal-standard amount) for this level.",
             "format": "double"
           },
           "y": {
             "type": "number",
+            "description": "Response ratio (analyte response / internal-standard response) for this level.",
             "format": "double"
           },
           "responseFactor": {
             "type": "number",
+            "description": "RF for the level = Y / X (0 when X is 0).",
             "format": "double"
           },
           "isIncluded": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "False when the point was excluded from the mean/%RSD (e.g. manual exclusion); excluded points still display for transparency."
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "One calibration level's contribution to the response-factor audit."
       },
       "SuppressAnalyteRequest": {
         "type": "object",
@@ -11347,6 +12820,9 @@
             "description": "Optional default internal standard.",
             "format": "uuid",
             "nullable": true
+          },
+          "role": {
+            "$ref": "#/components/schemas/AnalyteRole"
           }
         },
         "additionalProperties": false,
@@ -11401,6 +12877,12 @@
             "type": "integer",
             "description": "Display ordering hint.",
             "format": "int32"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte",
+            "description": "Concurrency token from the last read of the level.",
+            "nullable": true
           }
         },
         "additionalProperties": false,
@@ -11651,6 +13133,24 @@
             "description": "Optional inclusive upper bound for mean IS response (summary warnings).",
             "format": "double",
             "nullable": true
+          },
+          "calibrationLevelSetId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Calibration level set this configuration evaluates against; must belong to the same department as the config."
+          },
+          "methodFamily": {
+            "type": "string",
+            "enum": [
+              "VOC",
+              "GRO",
+              "BTEX",
+              "DRO",
+              "ORO",
+              "Anions"
+            ],
+            "nullable": true,
+            "description": "Optional method family tag; null/absent means untagged."
           }
         },
         "additionalProperties": false,
@@ -11788,6 +13288,174 @@
         "additionalProperties": false,
         "description": "User list row."
       },
+      "VariantComparisonResponse": {
+        "type": "object",
+        "properties": {
+          "analyteId": {
+            "type": "string",
+            "description": "Canonical analyte identifier.",
+            "format": "uuid"
+          },
+          "analyteName": {
+            "type": "string",
+            "description": "Canonical analyte display name.",
+            "nullable": true
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VariantComparisonRowResponse"
+            },
+            "description": "Per-level comparison rows ordered by standard concentration ascending.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Per-analyte variant-comparison deck (Excel \"DVD\") as returned by\r\n`GET /api/calibration-groups/{id}/analytes/{analyteId}/variant-comparison`."
+      },
+      "VariantComparisonRowResponse": {
+        "type": "object",
+        "properties": {
+          "calibrationRunId": {
+            "type": "string",
+            "description": "Source CAL run identifier for this level.",
+            "format": "uuid"
+          },
+          "calibrationLevelId": {
+            "type": "string",
+            "description": "Calibration level that supplied the true concentration; `null` when the run had no level.",
+            "format": "uuid",
+            "nullable": true
+          },
+          "levelName": {
+            "type": "string",
+            "description": "Display name of the calibration level (e.g. `Cal_10ppb`); `null` when no level is linked.",
+            "nullable": true
+          },
+          "standardConcentration": {
+            "type": "number",
+            "description": "Absolute true standard concentration for the level (Excel \"Standard Concentration\"); `null` when no level is linked.",
+            "format": "double",
+            "nullable": true
+          },
+          "calculatedResponseRatio": {
+            "type": "number",
+            "description": "Average-RF-predicted response ratio (Excel DVD row 244) = `MeanRF × AmountRatio`; `null` when not computable.",
+            "format": "double",
+            "nullable": true
+          },
+          "averageRf": {
+            "type": "number",
+            "description": "Calculated concentration from the Average RF model.",
+            "format": "double",
+            "nullable": true
+          },
+          "averageRfDiff": {
+            "type": "number",
+            "description": "%Diff for the Average RF model.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastEqualWeighting": {
+            "type": "number",
+            "description": "Calculated concentration from Linear least-squares, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastEqualWeightingDiff": {
+            "type": "number",
+            "description": "%Diff for Linear, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastInverseConct": {
+            "type": "number",
+            "description": "Calculated concentration from Linear least-squares, 1/x weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastInverseConctDiff": {
+            "type": "number",
+            "description": "%Diff for Linear, 1/x weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastInverseSq": {
+            "type": "number",
+            "description": "Calculated concentration from Linear least-squares, 1/x² weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastInverseSqDiff": {
+            "type": "number",
+            "description": "%Diff for Linear, 1/x² weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastForced": {
+            "type": "number",
+            "description": "Calculated concentration from Linear forced-zero least-squares, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "leastForcedDiff": {
+            "type": "number",
+            "description": "%Diff for Linear forced-zero, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticEqualWeighting": {
+            "type": "number",
+            "description": "Calculated concentration from Quadratic regression, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticEqualWeightingDiff": {
+            "type": "number",
+            "description": "%Diff for Quadratic, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticInverseConct": {
+            "type": "number",
+            "description": "Calculated concentration from Quadratic regression, 1/x weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticInverseConctDiff": {
+            "type": "number",
+            "description": "%Diff for Quadratic, 1/x weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticInverseSq": {
+            "type": "number",
+            "description": "Calculated concentration from Quadratic regression, 1/x² weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticInverseSqDiff": {
+            "type": "number",
+            "description": "%Diff for Quadratic, 1/x² weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticForced": {
+            "type": "number",
+            "description": "Calculated concentration from Quadratic forced-zero regression, equal weighting.",
+            "format": "double",
+            "nullable": true
+          },
+          "quadraticForcedDiff": {
+            "type": "number",
+            "description": "%Diff for Quadratic forced-zero, equal weighting.",
+            "format": "double",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "One row of the variant-comparison deck as returned by\r\n`GET /api/calibration-groups/{id}/analytes/{analyteId}/variant-comparison`."
+      },
       "WeightingMode": {
         "enum": [
           "None",
@@ -11796,6 +13464,204 @@
         ],
         "type": "string",
         "description": "**Weighted least-squares** mode for calibration curves. JSON strings (enum names; ordinal in parentheses): `None` (0, w=1 for each included point), `InverseX` (1, w=1/X), `InverseXSquared` (2, w=1/X²). Inverse modes require every **included** point to have curve X > 0 at compute; a variant with an included X ≤ 0 is skipped (no curve), it does not fail the whole compute. Excluded points get weight 0. Full narrative: OpenAPI description section **Calibration regression and weighting**."
+      },
+      "CalibrationLevelSetListItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Lightweight projection for calibration level set list responses."
+      },
+      "CalibrationLevelSetDetailDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "laboratoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "departmentName": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "updatedBy": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Full detail projection for a single calibration level set."
+      },
+      "CreateCalibrationLevelSetRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name; unique within the department after normalization.",
+            "nullable": true
+          },
+          "departmentId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Owning department; inferred for single-department labs.",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request body for creating a department-scoped calibration level set."
+      },
+      "UpdateCalibrationLevelSetRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "New display name; unique within the set's department.",
+            "nullable": true
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request body for renaming a calibration level set."
+      },
+      "SetCalibrationLevelSetActiveRequest": {
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean",
+            "description": "False retires the ladder so it accepts no new work."
+          },
+          "rowVersion": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Request body for retiring or reinstating a calibration level set."
+      },
+      "CreateCalibrationLevelSetResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Response returned when a calibration level set is created."
+      },
+      "PagedResultOfCalibrationLevelSetListItemDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalibrationLevelSetListItemDto"
+            },
+            "nullable": true
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Paginated list envelope per API conventions."
+      },
+      "MethodFamilyDefaultsResponse": {
+        "type": "object",
+        "properties": {
+          "methodFamily": {
+            "type": "string",
+            "enum": [
+              "VOC",
+              "GRO",
+              "BTEX",
+              "DRO",
+              "ORO",
+              "Anions"
+            ],
+            "nullable": true,
+            "description": "Optional method family tag; null/absent means untagged."
+          },
+          "quantitationMode": {
+            "type": "string",
+            "enum": [
+              "InternalStandard",
+              "ExternalStandard"
+            ],
+            "nullable": true,
+            "description": "Server-chosen quantitation mode for the family."
+          }
+        },
+        "additionalProperties": false,
+        "description": "One row of GET /api/method-configs/family-defaults."
       }
     },
     "securitySchemes": {
@@ -11867,6 +13733,10 @@
     },
     {
       "name": "Wltr.Api"
+    },
+    {
+      "name": "Calibration level sets",
+      "description": "HTTP API for department-scoped calibration level sets (named ladders of calibration standards)."
     }
   ]
 }

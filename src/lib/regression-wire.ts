@@ -1,6 +1,6 @@
 /** OpenAPI wire helpers for calibration regression enums and point fields. */
 
-export type RegressionTypeWire = "Average" | "Linear" | "LinearForcedZero" | "Quadratic";
+export type RegressionTypeWire = "Average" | "Linear" | "LinearForcedZero" | "Quadratic" | "QuadraticForcedZero";
 export type WeightingModeWire = "None" | "InverseX" | "InverseXSquared";
 export type ExclusionReasonWire =
   | "None"
@@ -15,6 +15,7 @@ const REGRESSION_TYPE_BY_NAME: Record<string, RegressionTypeWire> = {
   Linear: "Linear",
   LinearForcedZero: "LinearForcedZero",
   Quadratic: "Quadratic",
+  QuadraticForcedZero: "QuadraticForcedZero",
 };
 
 const WEIGHTING_MODE_BY_NAME: Record<string, WeightingModeWire> = {
@@ -28,6 +29,7 @@ const REGRESSION_TYPE_ORDINAL: Record<number, RegressionTypeWire> = {
   1: "Linear",
   2: "LinearForcedZero",
   3: "Quadratic",
+  4: "QuadraticForcedZero",
 };
 
 const WEIGHTING_MODE_ORDINAL: Record<number, WeightingModeWire> = {
@@ -41,6 +43,7 @@ export const REGRESSION_TYPE_LABEL: Record<RegressionTypeWire, string> = {
   Linear: "Linear",
   LinearForcedZero: "Linear (forced zero)",
   Quadratic: "Quadratic",
+  QuadraticForcedZero: "Quadratic (forced zero)",
 };
 
 export const WEIGHTING_MODE_LABEL: Record<WeightingModeWire, string> = {

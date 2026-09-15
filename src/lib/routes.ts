@@ -16,6 +16,9 @@ export const ROUTE_RULES: readonly RouteRule[] = [
   { pattern: /^\/laboratories\/new$/, permissions: [PERMS.laboratoriesCreate] },
   { pattern: /^\/laboratories(\/|$)/, permissions: [PERMS.view] },
 
+  { pattern: /^\/departments\/new$/, permissions: [PERMS.departmentsManage] },
+  { pattern: /^\/departments(\/|$)/, permissions: [PERMS.view] },
+
   { pattern: /^\/technicians\/new$/, permissions: [PERMS.usersManageLab] },
   { pattern: /^\/technicians(\/|$)/, permissions: [PERMS.view] },
 
@@ -29,14 +32,17 @@ export const ROUTE_RULES: readonly RouteRule[] = [
   { pattern: /^\/internal-standards\/new$/, permissions: [PERMS.configEdit] },
   { pattern: /^\/internal-standards(\/|$)/, permissions: [PERMS.view] },
 
-  { pattern: /^\/calibration-levels\/new$/, permissions: [PERMS.configEdit] },
-  { pattern: /^\/calibration-levels(\/|$)/, permissions: [PERMS.view] },
+  { pattern: /^\/calibration-level-sets\/new$/, permissions: [PERMS.configEdit] },
+  { pattern: /^\/calibration-level-sets\/[^/]+\/levels\/new$/, permissions: [PERMS.configEdit] },
+  { pattern: /^\/calibration-level-sets(\/|$)/, permissions: [PERMS.view] },
 
   { pattern: /^\/instruments\/new$/, permissions: [PERMS.configEdit] },
   { pattern: /^\/instruments(\/|$)/, permissions: [PERMS.view] },
 
   { pattern: /^\/method-configs\/new$/, permissions: [PERMS.configEdit] },
   { pattern: /^\/method-configs(\/|$)/, permissions: [PERMS.view] },
+
+  { pattern: /^\/lab-config(\/|$)/, permissions: [PERMS.view] },
 
   { pattern: /^\/runs\/upload$/, permissions: [PERMS.runsUpload] },
   { pattern: /^\/runs(\/|$)/, permissions: [PERMS.view] },
@@ -79,5 +85,6 @@ export const PERMISSION_LABELS: Record<string, string> = {
   [PERMS.groupsApprove]: "Regression QA review (debug & charts)",
   [PERMS.laboratoriesManage]: "Manage laboratory settings",
   [PERMS.laboratoriesCreate]: "Create laboratories",
+  [PERMS.departmentsManage]: "Manage departments",
   [PERMS.platformManage]: "Platform administration",
 };
