@@ -1645,7 +1645,66 @@ export interface paths {
             };
         };
         post?: never;
-        delete?: never;
+        /**
+         * Soft-deletes a Draft calibration group and releases its runs.
+         * @description Deletes an abandoned draft group: clears its CAL run membership, drops the optional ICV reference, and hard-deletes its excluded-analytes list — in one transaction. Released runs return to ungrouped only if no other group references them; runs are never deleted. Draft-only: Computed/Approved/Rejected return 409. Recorded in the audit trail as CalibrationGroupDeleted.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    id: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description No Content */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+            };
+        };
         options?: never;
         head?: never;
         patch?: never;
@@ -8566,6 +8625,11 @@ export interface components {
             instrumentName?: string | null;
             /** @description Method config display name; falls back to "" only if the row is unresolvable. */
             methodConfigName?: string | null;
+            /**
+             * Format: int32
+             * @description Number of CAL runs in the group; 0 for an empty draft.
+             */
+            calRunCount?: number;
         };
         /** @description Regression readiness payload for `GET /api/calibration-groups/{id}/readiness` (`application/json`). */
         CalibrationGroupReadinessResponse: {
@@ -8821,10 +8885,7 @@ export interface components {
              * @description Primary key of a lab-scoped `MethodConfig`. Must belong to the same laboratory as the instrument.
              */
             methodConfigId?: string;
-            /**
-             * @description One or more <strong>CAL</strong> run ids. Each id must be unique in this array, refer to a CAL run on Wltr.Api.Models.CreateCalibrationGroupRequest.InstrumentId,
-             *     have a resolved calibration level, and <strong>pairwise distinct</strong>`calibrationLevelId` values across the set.
-             */
+            /** @description CAL run ids; may be empty to create/keep an empty draft. Each id must be unique, target a CAL run on the group's instrument, and have pairwise-distinct calibration levels. */
             calRunIds?: string[] | null;
             /**
              * Format: uuid
@@ -11193,7 +11254,7 @@ export interface components {
              * @description Method configuration for the group (lab-scoped, same as create).
              */
             methodConfigId?: string;
-            /** @description CAL run ids; must be on the same instrument as the group. */
+            /** @description CAL run ids; may be empty to create/keep an empty draft. Each id must be unique, target a CAL run on the group's instrument, and have pairwise-distinct calibration levels. */
             calRunIds?: string[] | null;
             /**
              * Format: uuid

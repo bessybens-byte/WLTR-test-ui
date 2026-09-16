@@ -147,6 +147,7 @@ export default function CalibrationGroupsPage() {
       status: typeof r.status === "number" ? r.status : 0,
       methodConfigId: s(r.methodConfigId),
       methodConfigName: typeof r.methodConfigName === "string" ? r.methodConfigName : null,
+      calRunCount: typeof r.calRunCount === "number" ? r.calRunCount : null,
       createdAt: s(r.createdAt),
     };
   });
@@ -219,7 +220,6 @@ export default function CalibrationGroupsPage() {
     setBusy(true);
     setCreateError(null);
     try {
-      if (selectedCalIds.size === 0) throw new Error("Select at least one eligible CAL run.");
       const res = await createCalibrationGroup({
         instrumentId: selectedInstrumentId,
         methodConfigId: methodConfigId.trim(),
@@ -273,6 +273,7 @@ export default function CalibrationGroupsPage() {
                   <th className="pb-2 text-left font-medium">Name</th>
                   <th className="pb-2 text-left font-medium">Instrument</th>
                   <th className="pb-2 text-left font-medium">Method config</th>
+                  <th className="pb-2 text-left font-medium">CAL runs</th>
                   <th className="pb-2 text-left font-medium">Created</th>
                   <th className="pb-2 text-left font-medium">ID</th>
                   <th className="pb-2"></th>
@@ -301,6 +302,15 @@ export default function CalibrationGroupsPage() {
                         <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
                           {row.methodConfigId.slice(0, 8)}…
                         </span>
+                      )}
+                    </td>
+                    <td className="py-2 pr-4">
+                      {row.calRunCount === null ? (
+                        <span className="text-neutral-500">—</span>
+                      ) : row.calRunCount === 0 ? (
+                        <Badge tone="neutral">Empty</Badge>
+                      ) : (
+                        row.calRunCount
                       )}
                     </td>
                     <td className="py-2 pr-4">{formatDate(row.createdAt)}</td>
@@ -350,7 +360,8 @@ export default function CalibrationGroupsPage() {
           <div className="mb-1 text-sm font-medium">Create draft group</div>
           <p className="mb-4 text-xs text-neutral-600 dark:text-neutral-400">
             Assign an optional <span className="font-medium">group name</span>, pick CAL runs (with run labels when the
-            API provides them), and optional ICV. Requires{" "}
+            API provides them), and optional ICV. CAL runs are optional — leave them empty to create an{" "}
+            <span className="font-medium">empty draft</span> you can fill later. Requires{" "}
             <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">perm.runs.upload</code> and an active lab
             technician profile.
           </p>
@@ -413,7 +424,7 @@ export default function CalibrationGroupsPage() {
                 onToggle={toggleCal}
               />
               <p className="mt-1 text-xs text-neutral-500">
-                Selected: {selectedCalIds.size} CAL run(s). Runs marked{" "}
+                Selected: {selectedCalIds.size} CAL run(s). Leave empty to create an empty draft. Runs marked{" "}
                 <span className="font-medium">In use</span> already belong to another group — reusing them is allowed,
                 they are just dimmed.
               </p>
@@ -458,7 +469,7 @@ export default function CalibrationGroupsPage() {
             {createError ? <div className="text-sm text-red-600">{createError}</div> : null}
             <Button
               type="submit"
-              disabled={busy || selectedInstrumentId === "" || methodConfigId === "" || selectedCalIds.size === 0}
+              disabled={busy || selectedInstrumentId === "" || methodConfigId === ""}
             >
               {busy ? "Creating…" : "Create draft group"}
             </Button>

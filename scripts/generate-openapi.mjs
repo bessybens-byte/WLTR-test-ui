@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyCalibrationSetsPatch, applyIcSlkParserPatch } from "./openapi-calibration-sets-patch.mjs";
+import { applyCalibrationSetsPatch, applyIcSlkParserPatch, applyEmptyDraftPatch } from "./openapi-calibration-sets-patch.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
@@ -46,6 +46,8 @@ function copyRichOpenApi() {
   // feat/ic-slk-parser additions: methodFamily, importFormat, detectorSignal,
   // family-defaults, and validation codes 11/12.
   applyIcSlkParserPatch(doc);
+  // Empty calibration group drafts: empty calRunIds, DELETE endpoint, calRunCount.
+  applyEmptyDraftPatch(doc);
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(doc, null, 2));
   console.log(`WLTR OpenAPI: wrote ${path.relative(root, OUT)} from ${path.relative(root, src)}`);
@@ -103,7 +105,7 @@ const paths = {
   "/api/runs/{id}/analyte-mapping/resolve": ["post"],
   "/api/calibration-groups": ["get", "post"],
   "/api/calibration-groups/candidates": ["get"],
-  "/api/calibration-groups/{id}": ["get", "put"],
+  "/api/calibration-groups/{id}": ["get", "put", "delete"],
   "/api/calibration-groups/{id}/readiness": ["get"],
   "/api/calibration-groups/{id}/regression-inputs": ["get"],
   "/api/calibration-groups/{id}/compute": ["post"],

@@ -1607,6 +1607,69 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Calibration groups"
+        ],
+        "summary": "Soft-deletes a Draft calibration group and releases its runs.",
+        "description": "Deletes an abandoned draft group: clears its CAL run membership, drops the optional ICV reference, and hard-deletes its excluded-analytes list — in one transaction. Released runs return to ungrouped only if no other group references them; runs are never deleted. Draft-only: Computed/Approved/Rejected return 409. Recorded in the audit trail as CalibrationGroupDeleted.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/calibration-groups/{id}/internal-standard-summaries": {
@@ -8553,6 +8616,11 @@
             "type": "string",
             "nullable": true,
             "description": "Method config display name; falls back to \"\" only if the row is unresolvable."
+          },
+          "calRunCount": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Number of CAL runs in the group; 0 for an empty draft."
           }
         },
         "additionalProperties": false,
@@ -9025,7 +9093,7 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "One or more <strong>CAL</strong> run ids. Each id must be unique in this array, refer to a CAL run on Wltr.Api.Models.CreateCalibrationGroupRequest.InstrumentId,\r\nhave a resolved calibration level, and <strong>pairwise distinct</strong>`calibrationLevelId` values across the set.",
+            "description": "CAL run ids; may be empty to create/keep an empty draft. Each id must be unique, target a CAL run on the group's instrument, and have pairwise-distinct calibration levels.",
             "nullable": true
           },
           "icvRunId": {
@@ -12847,7 +12915,7 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "CAL run ids; must be on the same instrument as the group.",
+            "description": "CAL run ids; may be empty to create/keep an empty draft. Each id must be unique, target a CAL run on the group's instrument, and have pairwise-distinct calibration levels.",
             "nullable": true
           },
           "icvRunId": {

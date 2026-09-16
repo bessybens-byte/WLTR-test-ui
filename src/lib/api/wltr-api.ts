@@ -944,6 +944,15 @@ export async function updateCalibrationGroup(id: string, body: unknown): Promise
 }
 
 /**
+ * Soft-delete a Draft calibration group and release its runs back to ungrouped.
+ * Draft-only — Computed/Approved/Rejected return 409. Requires `perm.runs.upload`.
+ */
+export async function deleteCalibrationGroup(id: string): Promise<void> {
+  const res = await apiFetch(`calibration-groups/${id}`, { method: "DELETE" });
+  if (!res.ok) throw await parseErrorResponse(res);
+}
+
+/**
  * CAL and ICV run candidates with eligibility flags for a given instrument.
  * Rows also carry `isGrouped`, which is advisory only — reuse across groups is allowed, so a
  * grouped run stays eligible and selectable.

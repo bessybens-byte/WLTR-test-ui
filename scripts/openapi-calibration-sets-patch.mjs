@@ -640,3 +640,59 @@ function insertFamilyDefaultsPath(doc) {
     },
   };
 }
+
+/**
+ * Empty calibration group drafts — third idempotent patch.
+ *
+ * `calRunIds` may now be empty on create/update (an "empty draft"); a new
+ * `DELETE /api/calibration-groups/{id}` soft-deletes a Draft group; and the
+ * group list item gains `calRunCount` so the UI can tell an empty draft apart
+ * from a populated group.
+ */
+export function applyEmptyDraftPatch(doc) {
+  const schemas = doc.components?.schemas ?? {};
+  const addProp = (schema, key, prop) => {
+    if (schema?.properties && !schema.properties[key]) schema.properties[key] = prop;
+  };
+
+  // calRunCount on the group list item.
+  addProp(schemas.CalibrationGroupListItemResponse, "calRunCount", {
+    type: "integer",
+    format: "int32",
+    description: "Number of CAL runs in the group; 0 for an empty draft.",
+  });
+
+  // calRunIds may now be empty on create/update.
+  for (const key of ["CreateCalibrationGroupRequest", "UpdateCalibrationGroupRequest"]) {
+    const req = schemas[key];
+    if (req?.properties?.calRunIds) {
+      req.properties.calRunIds.description =
+        "CAL run ids; may be empty to create/keep an empty draft. Each id must be unique, target a CAL run on the group's instrument, and have pairwise-distinct calibration levels.";
+    }
+  }
+
+  insertGroupDeletePath(doc);
+}
+
+function insertGroupDeletePath(doc) {
+  doc.paths ??= {};
+  const p = doc.paths["/api/calibration-groups/{id}"];
+  if (!p || p.delete) return;
+
+  p.delete = {
+    tags: ["Calibration groups"],
+    summary: "Soft-deletes a Draft calibration group and releases its runs.",
+    description:
+      "Deletes an abandoned draft group: clears its CAL run membership, drops the optional ICV reference, and hard-deletes its excluded-analytes list — in one transaction. Released runs return to ungrouped only if no other group references them; runs are never deleted. Draft-only: Computed/Approved/Rejected return 409. Recorded in the audit trail as CalibrationGroupDeleted.",
+    parameters: [
+      { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+    ],
+    responses: {
+      204: { description: "No Content" },
+      401: { description: "Unauthorized", content: { "application/json": { schema: { $ref: "#/components/schemas/ProblemDetails" } } } },
+      403: { description: "Forbidden", content: { "application/json": { schema: { $ref: "#/components/schemas/ProblemDetails" } } } },
+      404: { description: "Not Found", content: { "application/json": { schema: { $ref: "#/components/schemas/ProblemDetails" } } } },
+      409: { description: "Conflict", content: { "application/json": { schema: { $ref: "#/components/schemas/ProblemDetails" } } } },
+    },
+  };
+}

@@ -11,9 +11,11 @@ import { CalibrationGroupSummaryReportPanel } from "@/components/calibration-gro
 import { CalibrationGroupWorkflowPanel } from "@/components/calibration-group-workflow-panel";
 import { ExcelAnnotation, ExcelPageGuide } from "@/components/excel-annotation";
 import { InternalStandardSummariesPanel } from "@/components/internal-standard-summaries-panel";
+import { ConfirmDialog } from "@/components/modal";
 import { Stepper, Tabs, type StepItem } from "@/components/tabs";
 import { Badge, Button, Callout, Card, Input, Label, PageHeader, Select } from "@/components/ui";
 import {
+  deleteCalibrationGroup,
   getCalibrationGroup,
   getCalibrationGroupCandidates,
   listMethodConfigs,
@@ -21,9 +23,10 @@ import {
 } from "@/lib/api/wltr-api";
 import { CalibrationGroupStatus, GROUP_STATUS_LABEL, groupStatusTone, hasPermission, normalizeGroupStatus, PERMS, RUN_STATUS_LABEL } from "@/lib/types/wltr";
 import { useAuth } from "@/providers/auth-provider";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/providers/toast-provider";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 
 function s(v: unknown, fallback = ""): string {
@@ -221,7 +224,6 @@ function useGroupEdit(groupId: string, group: GroupDetail, onSaved: () => void) 
     setBusy(true);
     setError(null);
     try {
-      if (selectedCalIds.size === 0) throw new Error("Select at least one CAL run.");
       await updateCalibrationGroup(groupId, {
         name: groupName.trim() || null,
         methodConfigId: methodConfigId.trim(),
@@ -319,7 +321,9 @@ function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps
             selectedIds={selectedCalIds}
             onToggle={toggleCal}
           />
-          <p className="mt-1 text-xs text-neutral-500">Selected: {selectedCalIds.size} CAL run(s).</p>
+          <p className="mt-1 text-xs text-neutral-500">
+            Selected: {selectedCalIds.size} CAL run(s). Leave empty to turn this into an empty draft.
+          </p>
         </div>
 
         <div>
@@ -352,7 +356,7 @@ function EditGroupForm({ groupId, group, onCancel, onSaved }: EditGroupFormProps
 
         {error ? <div className="text-sm text-red-600">{error}</div> : null}
         <div className="flex gap-3">
-          <Button type="submit" disabled={busy || methodConfigId === "" || selectedCalIds.size === 0}>
+          <Button type="submit" disabled={busy || methodConfigId === ""}>
             {busy ? "Saving…" : "Save changes"}
           </Button>
           <Button type="button" variant="secondary" onClick={onCancel} disabled={busy}>
@@ -541,12 +545,16 @@ export default function CalibrationGroupDetailPage() {
 function CalibrationGroupDetailContent() {
   const { id } = useParams<{ id: string }>();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const qc = useQueryClient();
+  const toast = useToast();
   const { me } = useAuth();
   const canEdit = hasPermission(me, PERMS.runsUpload);
   const canCompute = hasPermission(me, PERMS.runsUpload);
   const canViewRegressionDebug = hasPermission(me, PERMS.groupsApprove);
   const canViewCalibrationChart = hasPermission(me, PERMS.view);
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [tab, setTab] = useState<GroupTabId>(() => tabFromSearchParam(searchParams.get("tab")) ?? "overview");
 
   useEffect(() => {
@@ -565,7 +573,22 @@ function CalibrationGroupDetailContent() {
   }, [groupQuery.data, id]);
 
   const canEditGroup = canEdit && group !== null && isEditable(group.status);
+  const canDeleteGroup = canEdit && group !== null && group.status === CalibrationGroupStatus.Draft;
   const computed = !!group && group.status >= CalibrationGroupStatus.Computed;
+
+  const del = useMutation({
+    mutationFn: async () => deleteCalibrationGroup(id),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["calibration-groups"] });
+      toast.success("Draft group deleted");
+      router.replace("/calibration-groups");
+    },
+    onError: (err: unknown) =>
+      toast.error(
+        "Delete failed",
+        err instanceof Error ? err.message : "Only Draft groups can be deleted.",
+      ),
+  });
 
   const tabs = useMemo(
     () =>
@@ -596,9 +619,16 @@ function CalibrationGroupDetailContent() {
           )
         }
         actions={
-          <Link href="/calibration-groups">
-            <Button variant="secondary" type="button">All groups</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/calibration-groups">
+              <Button variant="secondary" type="button">All groups</Button>
+            </Link>
+            {canDeleteGroup ? (
+              <Button variant="danger" type="button" onClick={() => setConfirmDelete(true)}>
+                Delete draft
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
@@ -700,6 +730,20 @@ function CalibrationGroupDetailContent() {
           ) : null}
         </>
       ) : null}
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          del.mutate();
+        }}
+        title="Delete this draft group?"
+        message="Deletes the group and returns its CAL runs to the ungrouped pool. Runs are never deleted. Only Draft groups can be deleted."
+        confirmLabel="Delete draft"
+        danger
+        busy={del.isPending}
+      />
     </div>
   );
 }
